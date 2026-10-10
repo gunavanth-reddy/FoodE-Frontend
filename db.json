@@ -1,0 +1,38 @@
+{
+  "users": [
+    {
+      "id": "1",
+      "name": "Gunavanth Reddy",
+      "email": "user@foode.com",
+      "password": "123456",
+      "role": "user"
+    },
+    {
+      "id": "2",
+      "name": "Pizza Hut",
+      "email": "restaurant@foode.com",
+      "password": "123456",
+      "role": "restaurant"
+    },
+    {
+      "id": "3",
+      "name": "Super Admin",
+      "email": "admin@foode.com",
+      "password": "123456",
+      "role": "superadmin"
+    },
+    {
+      "name": "guna",
+      "email": "guna@gmai.com",
+      "phone": "9000753933",
+      "password": "Guna@10011",
+      "role": "user",
+      "status": "active",
+      "id": "K7z6U9bFexs"
+    }
+  ],
+  "restaurants": [],
+  "foods": [],
+  "orders": [],
+  "$schema": "./node_modules/json-server/schema.json"
+}
