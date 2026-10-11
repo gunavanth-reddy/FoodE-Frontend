@@ -1,7 +1,15 @@
 const mongoose = require("mongoose");
 
+// =====================================================
+// DELIVERY SLOT SCHEMA
+// =====================================================
+
 const deliverySlotSchema = new mongoose.Schema(
   {
+    // =================================================
+    // RESTAURANT
+    // =================================================
+
     restaurant: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Restaurant",
@@ -9,65 +17,75 @@ const deliverySlotSchema = new mongoose.Schema(
       index: true,
     },
 
-    // Date in YYYY-MM-DD format using the India local calendar.
-    date: {
-      type: String,
-      trim: true,
-      default: null,
-      match: [
-        /^\d{4}-\d{2}-\d{2}$/,
-        "Date must be YYYY-MM-DD",
-      ],
-      index: true,
-    },
+    // =================================================
+    // SLOT START TIME
+    // =================================================
+    // Example: "12:00"
+    // =================================================
 
-    // Stored in 24-hour HH:MM format.
-    // Example: 09:00 = 9 AM, 14:30 = 2:30 PM.
     startTime: {
       type: String,
       required: [true, "Start time is required"],
       trim: true,
       match: [
-        /^([01]\d|2[0-3]):[0-5]\d$/,
-        "Start time must be HH:MM",
+        /^([01]\d|2[0-3]):([0-5]\d)$/,
+        "Start time must be in HH:MM format",
       ],
     },
+
+    // =================================================
+    // SLOT END TIME
+    // =================================================
+    // Example: "12:30"
+    // =================================================
 
     endTime: {
       type: String,
       required: [true, "End time is required"],
       trim: true,
       match: [
-        /^([01]\d|2[0-3]):[0-5]\d$/,
-        "End time must be HH:MM",
+        /^([01]\d|2[0-3]):([0-5]\d)$/,
+        "End time must be in HH:MM format",
       ],
     },
 
-    // Automatically calculated from startTime and endTime.
-    durationMinutes: {
-      type: Number,
-      default: null,
-      min: [
-        10,
-        "Slot duration must be at least 10 minutes",
-      ],
-    },
+    // =================================================
+    // DELIVERY TIME
+    // =================================================
+    // Example:
+    //
+    // {
+    //   min: 20,
+    //   max: 35
+    // }
+    //
+    // =================================================
 
-    // Expected delivery ETA in minutes.
     deliveryTime: {
       min: {
         type: Number,
         required: true,
         default: 20,
-        min: [1, "Minimum delivery time must be at least 1 minute"],
+        min: [
+          1,
+          "Minimum delivery time must be at least 1 minute",
+        ],
       },
+
       max: {
         type: Number,
         required: true,
         default: 35,
-        min: [1, "Maximum delivery time must be at least 1 minute"],
+        min: [
+          1,
+          "Maximum delivery time must be at least 1 minute",
+        ],
       },
     },
+
+    // =================================================
+    // SLOT STATUS
+    // =================================================
 
     isActive: {
       type: Boolean,
@@ -75,11 +93,26 @@ const deliverySlotSchema = new mongoose.Schema(
       index: true,
     },
 
-    // Booking closes this many minutes before startTime.
+    // =================================================
+    // BOOKING CUTOFF
+    // =================================================
+    //
+    // Example:
+    //
+    // Slot: 12:00 - 12:30
+    // Cutoff: 10 minutes
+    //
+    // Booking closes at 11:50
+    //
+    // =================================================
+
     cutoffMinutes: {
       type: Number,
       default: 10,
-      min: [0, "Cutoff minutes cannot be negative"],
+      min: [
+        0,
+        "Cutoff minutes cannot be negative",
+      ],
     },
   },
   {
@@ -87,9 +120,11 @@ const deliverySlotSchema = new mongoose.Schema(
   }
 );
 
-/* ================= HELPERS ================= */
+// =====================================================
+// TIME HELPER
+// =====================================================
 
-const timeToMinutes = (time) => {
+function timeToMinutes(time) {
   if (
     typeof time !== "string" ||
     !/^([01]\d|2[0-3]):[0-5]\d$/.test(time)
@@ -97,138 +132,128 @@ const timeToMinutes = (time) => {
     return null;
   }
 
-  const [hours, minutes] = time.split(":").map(Number);
+  const [hours, minutes] = time
+    .split(":")
+    .map(Number);
 
   return hours * 60 + minutes;
-};
+}
 
-const isValidCalendarDate = (value) => {
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(String(value || ""))) {
-    return false;
-  }
-
-  const [year, month, day] = String(value).split("-").map(Number);
-
-  const date = new Date(
-    Date.UTC(year, month - 1, day)
-  );
-
-  return (
-    date.getUTCFullYear() === year &&
-    date.getUTCMonth() === month - 1 &&
-    date.getUTCDate() === day
-  );
-};
-
-/* ================= VALIDATION ================= */
+// =====================================================
+// VALIDATION
+// =====================================================
 
 deliverySlotSchema.pre("validate", function () {
-  // Validate date only when supplied.
-  // Keeping this optional supports legacy documents.
+  // ===================================================
+  // DELIVERY TIME VALIDATION
+  // ===================================================
+
   if (
-    this.date != null &&
-    !isValidCalendarDate(this.date)
+    this.deliveryTime &&
+    this.deliveryTime.min != null &&
+    this.deliveryTime.max != null
   ) {
-    this.invalidate(
-      "date",
-      "Date must be a valid YYYY-MM-DD date"
-    );
+    if (
+      this.deliveryTime.min >
+      this.deliveryTime.max
+    ) {
+      this.invalidate(
+        "deliveryTime.max",
+        "Maximum delivery time must be greater than or equal to minimum delivery time."
+      );
+    }
   }
 
-  const start = timeToMinutes(this.startTime);
-  const end = timeToMinutes(this.endTime);
+  // ===================================================
+  // START / END TIME VALIDATION
+  // ===================================================
 
-  if (start !== null && end !== null) {
-    const duration = end - start;
+  if (this.startTime && this.endTime) {
+    const startMinutes =
+      timeToMinutes(this.startTime);
 
-    if (duration <= 0) {
-      this.invalidate(
-        "endTime",
-        "End time must be later than start time"
-      );
-    } else {
-      if (duration < 10) {
+    const endMinutes =
+      timeToMinutes(this.endTime);
+
+    if (
+      startMinutes !== null &&
+      endMinutes !== null
+    ) {
+      // End must be after start
+      if (startMinutes >= endMinutes) {
         this.invalidate(
-          "durationMinutes",
-          "Slot duration must be at least 10 minutes"
+          "endTime",
+          "End time must be later than start time."
         );
       }
 
+      // Slot must be exactly 30 minutes
       if (
-        this.durationMinutes != null &&
-        Number(this.durationMinutes) !== duration
+        endMinutes - startMinutes !== 30
       ) {
         this.invalidate(
-          "durationMinutes",
-          "Duration must match startTime and endTime"
-        );
-      }
-
-      // Ensure cutoff occurs before the slot begins,
-      // rather than at or after the slot's end.
-      if (
-        this.cutoffMinutes != null &&
-        Number(this.cutoffMinutes) >= duration
-      ) {
-        this.invalidate(
-          "cutoffMinutes",
-          "Cutoff must be smaller than the slot duration"
+          "endTime",
+          "Delivery slot must be exactly 30 minutes."
         );
       }
     }
   }
 
-  // Validate expected delivery ETA.
-  if (
-    this.deliveryTime?.min != null &&
-    this.deliveryTime?.max != null &&
-    Number(this.deliveryTime.min) >
-      Number(this.deliveryTime.max)
-  ) {
-    this.invalidate(
-      "deliveryTime.max",
-      "Maximum delivery time must be greater than or equal to minimum"
-    );
-  }
+  // ===================================================
+  // CUTOFF VALIDATION
+  // ===================================================
 
   if (
     this.cutoffMinutes != null &&
-    (!Number.isFinite(Number(this.cutoffMinutes)) ||
-      Number(this.cutoffMinutes) < 0)
+    this.startTime
   ) {
-    this.invalidate(
-      "cutoffMinutes",
-      "Cutoff must be a non-negative number"
-    );
+    const startMinutes =
+      timeToMinutes(this.startTime);
+
+    if (startMinutes !== null) {
+      if (
+        this.cutoffMinutes >
+        startMinutes
+      ) {
+        this.invalidate(
+          "cutoffMinutes",
+          "Cutoff minutes cannot exceed the time from midnight to slot start."
+        );
+      }
+    }
   }
 });
 
-/* ================= INDEXES ================= */
+// =====================================================
+// INDEXES
+// =====================================================
 
-// Supports finding slots for a restaurant and date.
+// Restaurant + active slots
 deliverySlotSchema.index({
   restaurant: 1,
-  date: 1,
+  isActive: 1,
+});
+
+// Restaurant + slot start time
+deliverySlotSchema.index({
+  restaurant: 1,
   startTime: 1,
 });
 
-// Supports filtering active slots for a specific date.
+// Restaurant + active + start time
 deliverySlotSchema.index({
   restaurant: 1,
-  date: 1,
   isActive: 1,
   startTime: 1,
 });
 
-// Supports existing queries that filter by restaurant and status.
-deliverySlotSchema.index({
-  restaurant: 1,
-  isActive: 1,
-  startTime: 1,
-});
-
-/* ================= EXPORT ================= */
+// =====================================================
+// MODEL EXPORT
+// =====================================================
 
 module.exports =
   mongoose.models.DeliverySlot ||
-  mongoose.model("DeliverySlot", deliverySlotSchema);
+  mongoose.model(
+    "DeliverySlot",
+    deliverySlotSchema
+  );

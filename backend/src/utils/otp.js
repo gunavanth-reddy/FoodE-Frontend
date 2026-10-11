@@ -1,18 +1,34 @@
-const crypto = require("crypto");
+﻿const crypto = require("crypto");
 
-const generateOTP = () => crypto.randomInt(100000, 1000000).toString();
-const hashOTP = (otp) => crypto.createHash("sha256").update(String(otp)).digest("hex");
-const getOTPExpiry = () => new Date(Date.now() + 5 * 60 * 1000);
-
-const otpMatches = (candidate, storedHash) => {
-  const candidateHash = Buffer.from(hashOTP(candidate), "hex");
-  let stored;
-  try {
-    stored = Buffer.from(String(storedHash), "hex");
-  } catch {
-    return false;
-  }
-  return candidateHash.length === stored.length && crypto.timingSafeEqual(candidateHash, stored);
+const generateOTP = () => {
+  return crypto.randomInt(100000, 1000000).toString();
 };
 
-module.exports = { generateOTP, hashOTP, getOTPExpiry, otpMatches };
+const hashOTP = (otp) => {
+  return crypto.createHash("sha256").update(String(otp)).digest("hex");
+};
+
+const getOTPExpiry = () => {
+  return new Date(Date.now() + 5 * 60 * 1000);
+};
+
+const otpMatches = (otp, storedHash) => {
+  if (!otp || !storedHash) return false;
+
+  const submittedHash = hashOTP(otp);
+  const stored = String(storedHash);
+
+  if (!/^[a-f0-9]{64}$/i.test(stored)) return false;
+
+  return crypto.timingSafeEqual(
+    Buffer.from(submittedHash, "hex"),
+    Buffer.from(stored, "hex")
+  );
+};
+
+module.exports = {
+  generateOTP,
+  hashOTP,
+  getOTPExpiry,
+  otpMatches,
+};

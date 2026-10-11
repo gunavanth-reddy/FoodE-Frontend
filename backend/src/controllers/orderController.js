@@ -19,53 +19,79 @@ const {
 // HELPERS
 // =====================================================
 
-const isValidTime = (time) =>
-  typeof time === "string" && /^([01]\d|2[0-3]):([0-5]\d)$/.test(time);
-
 const timeToMinutes = (time) => {
-  if (!isValidTime(time)) return null;
+  if (
+    typeof time !== "string" ||
+    !/^([01]\d|2[0-3]):([0-5]\d)$/.test(time)
+  ) {
+    return null;
+  }
+
   const [hours, minutes] = time.split(":").map(Number);
+
   return hours * 60 + minutes;
 };
 
-const getIndiaParts = () => {
-  const formatter = new Intl.DateTimeFormat("en-CA", {
+// =====================================================
+// CURRENT INDIA TIME
+// =====================================================
+
+const getCurrentIndiaMinutes = () => {
+  const formatter = new Intl.DateTimeFormat("en-IN", {
     timeZone: "Asia/Kolkata",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
     hour: "2-digit",
     minute: "2-digit",
     hour12: false,
   });
-  const parts = Object.fromEntries(
-    formatter.formatToParts(new Date())
-      .filter((part) => part.type !== "literal")
-      .map((part) => [part.type, part.value])
+
+  const parts = formatter.formatToParts(new Date());
+
+  const hour = Number(
+    parts.find((part) => part.type === "hour")?.value || 0
   );
-  let hour = Number(parts.hour || 0);
-  if (hour === 24) hour = 0;
-  return {
-    date: `${parts.year}-${parts.month}-${parts.day}`,
-    minutes: hour * 60 + Number(parts.minute || 0),
-  };
+
+  const minute = Number(
+    parts.find((part) => part.type === "minute")?.value || 0
+  );
+
+  return hour * 60 + minute;
 };
 
-const isValidDate = (value) => {
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(String(value || ""))) return false;
-  const [year, month, day] = String(value).split("-").map(Number);
-  const date = new Date(Date.UTC(year, month - 1, day));
-  return date.getUTCFullYear() === year && date.getUTCMonth() === month - 1 && date.getUTCDate() === day;
-};
+// =====================================================
+// CHECK DELIVERY SLOT CUTOFF
+// =====================================================
 
-const isSlotBookable = (slot, todayDate, currentMinutes) => {
-  const slotDate = slot.date || todayDate;
-  if (slotDate < todayDate) return false;
-  if (slotDate > todayDate) return true;
-  const start = timeToMinutes(slot.startTime);
-  if (start == null) return false;
-  const cutoff = Number(slot.cutoffMinutes ?? 10);
-  return currentMinutes < start - cutoff;
+const isSlotClosedForBooking = (slot) => {
+  if (!slot || !slot.startTime) {
+    return true;
+  }
+
+  const startMinutes = timeToMinutes(slot.startTime);
+
+  if (startMinutes === null) {
+    return true;
+  }
+
+  // Fixed 10-minute cutoff
+  const cutoffMinutes =
+    startMinutes - 10;
+
+  const currentMinutes =
+    getCurrentIndiaMinutes();
+
+  // Normal same-day cutoff
+  if (cutoffMinutes >= 0) {
+    return currentMinutes >= cutoffMinutes;
+  }
+
+  // Midnight-safe handling
+  const normalizedCutoff =
+    cutoffMinutes + 24 * 60;
+
+  return (
+    currentMinutes >= normalizedCutoff &&
+    currentMinutes < startMinutes
+  );
 };
 
 // =====================================================
@@ -166,51 +192,63 @@ const createOrder = async (req, res) => {
     }
 
     // ==========================================
-    // DELIVERY SLOT — SERVER IS THE AUTHORITY
+    // DELIVERY SLOT
     // ==========================================
 
-    const selectedSlot = await DeliverySlot.findOne({
-      _id: deliverySlot.slotId,
-      restaurant: restaurant._id,
-      isActive: true,
-    });
+    const selectedSlot =
+      await DeliverySlot.findOne({
+        _id: deliverySlot.slotId,
+        restaurant: restaurant._id,
+        isActive: true,
+      });
 
     if (!selectedSlot) {
       return res.status(400).json({
         success: false,
-        message: "Selected delivery slot is not available",
+        message:
+          "Selected delivery slot is not available",
       });
     }
 
-    const india = getIndiaParts();
-    const slotDate = selectedSlot.date || deliverySlot.date || india.date;
-
-    if (!isValidDate(slotDate) || slotDate < india.date) {
-      return res.status(400).json({
-        success: false,
-        message: "Selected delivery slot date is no longer available",
-      });
-    }
-
-    if (!isSlotBookable({ ...selectedSlot.toObject(), date: slotDate }, india.date, india.minutes)) {
-      return res.status(400).json({
-        success: false,
-        message: "Selected delivery slot is closed for booking. Please choose another slot.",
-      });
-    }
-
-    const expectedDuration =
-      timeToMinutes(selectedSlot.endTime) - timeToMinutes(selectedSlot.startTime);
+    // ==========================================
+    // CHECK CUTOFF
+    // ==========================================
 
     if (
-      deliverySlot.startTime && deliverySlot.startTime !== selectedSlot.startTime ||
-      deliverySlot.endTime && deliverySlot.endTime !== selectedSlot.endTime ||
-      deliverySlot.date && deliverySlot.date !== slotDate ||
-      deliverySlot.durationMinutes != null && Number(deliverySlot.durationMinutes) !== expectedDuration
+      isSlotClosedForBooking(
+        selectedSlot
+      )
     ) {
       return res.status(400).json({
         success: false,
-        message: "Invalid delivery slot details",
+        message:
+          "Selected delivery slot is closed for booking. Please choose another slot.",
+      });
+    }
+
+    // ==========================================
+    // VERIFY CLIENT SLOT TIMES
+    // ==========================================
+
+    if (
+      deliverySlot.startTime &&
+      deliverySlot.startTime !==
+        selectedSlot.startTime
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid delivery slot",
+      });
+    }
+
+    if (
+      deliverySlot.endTime &&
+      deliverySlot.endTime !==
+        selectedSlot.endTime
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid delivery slot",
       });
     }
 
@@ -425,11 +463,14 @@ const createOrder = async (req, res) => {
         },
 
         deliverySlot: {
-          slotId: selectedSlot._id,
-          date: slotDate,
-          startTime: selectedSlot.startTime,
-          endTime: selectedSlot.endTime,
-          durationMinutes: expectedDuration,
+          slotId:
+            selectedSlot._id,
+
+          startTime:
+            selectedSlot.startTime,
+
+          endTime:
+            selectedSlot.endTime,
         },
 
         subtotal,

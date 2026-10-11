@@ -1,10 +1,19 @@
 // =====================================================
 // USER MODEL
 // =====================================================
+
 const mongoose = require("mongoose");
+
+// =====================================================
+// USER SCHEMA
+// =====================================================
 
 const userSchema = new mongoose.Schema(
   {
+    // ===================================================
+    // BASIC INFORMATION
+    // ===================================================
+
     name: {
       type: String,
       required: [true, "Name is required"],
@@ -13,39 +22,31 @@ const userSchema = new mongoose.Schema(
       maxlength: [100, "Name cannot exceed 100 characters"],
     },
 
-    // Email is optional for legacy owner/admin accounts, but required
-    // by the public customer-registration controller.
-    email: {
-      type: String,
-      trim: true,
-      lowercase: true,
-      unique: true,
-      sparse: true,
-    },
-
-    isEmailVerified: {
-      type: Boolean,
-      default: false,
-      index: true,
-    },
-
-    emailVerifiedAt: {
-      type: Date,
-      default: null,
-    },
+    // ===================================================
+    // MOBILE NUMBER
+    // ===================================================
 
     phone: {
       type: String,
       required: [true, "Mobile number is required"],
       unique: true,
       trim: true,
+      index: true,
     },
+
+    // ===================================================
+    // FCM NOTIFICATION TOKEN
+    // ===================================================
 
     fcmToken: {
       type: String,
       default: null,
       trim: true,
     },
+
+    // ===================================================
+    // PASSWORD
+    // ===================================================
 
     password: {
       type: String,
@@ -54,15 +55,27 @@ const userSchema = new mongoose.Schema(
       select: false,
     },
 
+    // ===================================================
+    // USER ROLE
+    // ===================================================
+
     role: {
       type: String,
       enum: {
-        values: ["user", "restaurant_owner", "admin"],
+        values: [
+          "user",
+          "restaurant_owner",
+          "admin",
+        ],
         message: "Invalid user role",
       },
       default: "user",
       index: true,
     },
+
+    // ===================================================
+    // ACCOUNT STATUS
+    // ===================================================
 
     isActive: {
       type: Boolean,
@@ -70,33 +83,71 @@ const userSchema = new mongoose.Schema(
       index: true,
     },
 
+    // ===================================================
+    // PROFILE IMAGE
+    // ===================================================
+
     profileImage: {
       type: String,
       default: "",
       trim: true,
     },
 
-    // Kept for compatibility with existing phone-verification features.
+    // ===================================================
+    // PHONE VERIFICATION
+    // ===================================================
+
     isPhoneVerified: {
       type: Boolean,
       default: false,
     },
 
-    // Legacy fields are retained to avoid breaking existing records/code.
+    // ===================================================
+    // PASSWORD RESET
+    // ===================================================
+
     resetPasswordOTP: {
       type: String,
       default: null,
       select: false,
     },
+
     resetPasswordOTPExpiry: {
       type: Date,
       default: null,
       select: false,
     },
   },
-  { timestamps: true }
+
+  // =====================================================
+  // TIMESTAMPS
+  // =====================================================
+
+  {
+    timestamps: true,
+  }
 );
 
-userSchema.index({ role: 1, isActive: 1 });
+// =====================================================
+// INDEXES
+// =====================================================
 
-module.exports = mongoose.models.User || mongoose.model("User", userSchema);
+userSchema.index(
+  { phone: 1 },
+  { unique: true }
+);
+
+userSchema.index({
+  role: 1,
+  isActive: 1,
+});
+
+// =====================================================
+// EXPORT MODEL
+// =====================================================
+
+const User =
+  mongoose.models.User ||
+  mongoose.model("User", userSchema);
+
+module.exports = User;

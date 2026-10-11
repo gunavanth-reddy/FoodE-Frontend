@@ -1,4 +1,5 @@
-// =====================================================
+
+ // =====================================================
 // FOODE EXPRESS APP
 // =====================================================
 
@@ -18,18 +19,7 @@ const deliverySlotRoutes = require("./routes/deliverySlotRoutes");
 const orderRoutes = require("./routes/orderRoutes");
 const reviewRoutes = require("./routes/reviewRoutes");
 const notificationRoutes = require("./routes/notificationRoutes");
-const favoriteRoutes = require("./routes/favoriteRoutes");
-const searchRoutes = require("./routes/searchRoutes");
-const paymentRoutes = require("./routes/paymentRoutes");
-const adminRoutes = require("./routes/adminRoutes");
-
-// =====================================================
-// ADMIN ANALYTICS
-// =====================================================
-
-const adminAnalyticsRoutes = require(
-  "./routes/adminAnalyticsRoutes"
-);
+const adminAnalyticsRoutes = require("./routes/adminAnalyticsRoutes");
 
 // =====================================================
 // APP
@@ -37,162 +27,56 @@ const adminAnalyticsRoutes = require(
 
 const app = express();
 
+// Render proxy configuration for express-rate-limit.
+// Use this when the service is directly behind Render's proxy.
+app.set("trust proxy", 1);
+
 // =====================================================
 // GLOBAL MIDDLEWARE
 // =====================================================
 
-app.use(
-  cors()
-);
-
-app.use(
-  express.json()
-);
+app.use(cors());
+app.use(express.json());
 
 // =====================================================
 // API ROUTES
 // =====================================================
 
-// -----------------------------------------------------
-// AUTH
-// -----------------------------------------------------
-
-app.use(
-  "/api/auth",
-  authRoutes
-);
-
-// -----------------------------------------------------
-// RESTAURANTS
-// -----------------------------------------------------
-
-app.use(
-  "/api/restaurants",
-  restaurantRoutes
-);
-
-// -----------------------------------------------------
-// CATEGORIES
-// -----------------------------------------------------
-
-app.use(
-  "/api/categories",
-  categoryRoutes
-);
-
-// -----------------------------------------------------
-// FOODS
-// -----------------------------------------------------
-
-app.use(
-  "/api/foods",
-  foodRoutes
-);
-
-// -----------------------------------------------------
-// CART
-// -----------------------------------------------------
-
-app.use(
-  "/api/cart",
-  cartRoutes
-);
-
-// -----------------------------------------------------
-// DELIVERY SLOTS
-// -----------------------------------------------------
-
-app.use(
-  "/api/delivery-slots",
-  deliverySlotRoutes
-);
-
-// -----------------------------------------------------
-// ORDERS
-// -----------------------------------------------------
-
-app.use(
-  "/api/orders",
-  orderRoutes
-);
-
-// -----------------------------------------------------
-// REVIEWS
-// -----------------------------------------------------
-
-app.use(
-  "/api/reviews",
-  reviewRoutes
-);
-
-// -----------------------------------------------------
-// NOTIFICATIONS
-// -----------------------------------------------------
-
-app.use(
-  "/api/notifications",
-  notificationRoutes
-);
-
-// -----------------------------------------------------
-// FAVORITES
-// -----------------------------------------------------
-app.use("/api/favorites", favoriteRoutes);
-
-// -----------------------------------------------------
-// SEARCH
-// -----------------------------------------------------
-app.use("/api/search", searchRoutes);
-
-// -----------------------------------------------------
-// PAYMENTS
-// -----------------------------------------------------
-app.use("/api/payments", paymentRoutes);
-
-// -----------------------------------------------------
-// ADMIN
-// -----------------------------------------------------
-app.use("/api/admin", adminRoutes);
-
-// -----------------------------------------------------
-// ADMIN ANALYTICS
-// -----------------------------------------------------
-
-app.use(
-  "/api/admin/analytics",
-  adminAnalyticsRoutes
-);
+app.use("/api/auth", authRoutes);
+app.use("/api/restaurants", restaurantRoutes);
+app.use("/api/categories", categoryRoutes);
+app.use("/api/foods", foodRoutes);
+app.use("/api/cart", cartRoutes);
+app.use("/api/delivery-slots", deliverySlotRoutes);
+app.use("/api/orders", orderRoutes);
+app.use("/api/reviews", reviewRoutes);
+app.use("/api/notifications", notificationRoutes);
+app.use("/api/admin/analytics", adminAnalyticsRoutes);
 
 // =====================================================
 // HEALTH CHECK
 // =====================================================
 
-app.get(
-  "/",
-  (req, res) => {
-    return res.status(200).json({
-      success: true,
-      message: "FoodE Backend Running",
-    });
-  }
-);
+app.get("/", (req, res) => {
+  return res.status(200).json({
+    success: true,
+    message: "FoodE Backend Running",
+  });
+});
 
 // =====================================================
 // 404 HANDLER
 // =====================================================
 
-app.use(
-  (req, res) => {
-    return res.status(404).json({
-      success: false,
-      message:
-        `Route not found: ${req.method} ${req.originalUrl}`,
-    });
-  }
-);
+app.use((req, res) => {
+  return res.status(404).json({
+    success: false,
+    message: `Route not found: ${req.method} ${req.originalUrl}`,
+  });
+});
 
 // =====================================================
 // EXPORT
 // =====================================================
 
-module.exports = app;app
+module.exports = app;

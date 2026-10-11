@@ -1,3 +1,4 @@
+﻿
 const mongoose = require("mongoose");
 
 const otpSchema = new mongoose.Schema(
@@ -7,9 +8,7 @@ const otpSchema = new mongoose.Schema(
       required: true,
       trim: true,
       lowercase: true,
-      index: true,
     },
-    // SHA-256 hash only; never store the plain OTP.
     otpHash: {
       type: String,
       required: true,
@@ -19,12 +18,10 @@ const otpSchema = new mongoose.Schema(
       type: String,
       enum: ["registration", "forgot-password", "login"],
       required: true,
-      index: true,
     },
     expiresAt: {
       type: Date,
       required: true,
-      index: { expires: 0 },
     },
     attempts: {
       type: Number,
@@ -38,6 +35,6 @@ const otpSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-otpSchema.index({ identifier: 1, purpose: 1, createdAt: -1 });
+otpSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
 
-module.exports = mongoose.models.OTP || mongoose.model("OTP", otpSchema);
+module.exports = mongoose.model("OTP", otpSchema);

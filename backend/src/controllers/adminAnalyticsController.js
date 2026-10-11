@@ -347,13 +347,6 @@ const getRestaurantAnalytics = async (
                 )
                 .lean();
 
-        const allTimeOrders =
-            await Order.find({
-                status: "DELIVERED",
-            })
-                .select("restaurant total deliveredAt")
-                .lean();
-
         // ==========================================
         // WEEK ORDERS
         // ==========================================
@@ -396,13 +389,6 @@ const getRestaurantAnalytics = async (
                             restaurantId
                     );
 
-                const restaurantAllTimeOrders =
-                    allTimeOrders.filter(
-                        (order) =>
-                            order.restaurant?.toString() ===
-                            restaurantId
-                    );
-
                 return {
                     restaurant: {
                         id: restaurant._id,
@@ -420,11 +406,6 @@ const getRestaurantAnalytics = async (
                                   restaurant.owner.phone,
                           }
                         : null,
-
-                    allTime:
-                        calculateAnalytics(
-                            restaurantAllTimeOrders
-                        ),
 
                     thisWeek:
                         calculateAnalytics(
@@ -641,35 +622,6 @@ const getSingleRestaurantAnalytics =
             }
 
             // ==========================================
-            // DAILY BREAKDOWN (CURRENT MONTH)
-            // ==========================================
-
-            const days = [];
-
-            for (let day = 1; day <= daysInMonth; day++) {
-                const dayStart = indiaDateToUTC(
-                    month.year,
-                    month.month,
-                    day
-                );
-                const dayEnd = indiaDateToUTC(
-                    day === daysInMonth ? month.year : month.year,
-                    day === daysInMonth ? month.month + 1 : month.month,
-                    day === daysInMonth ? 1 : day + 1
-                );
-
-                const dayOrders = orders.filter((order) => {
-                    const deliveredAt = new Date(order.deliveredAt);
-                    return deliveredAt >= dayStart && deliveredAt < dayEnd;
-                });
-
-                days.push({
-                    date: `${month.year}-${String(month.month).padStart(2, "0")}-${String(day).padStart(2, "0")}`,
-                    ...calculateAnalytics(dayOrders),
-                });
-            }
-
-            // ==========================================
             // RESPONSE
             // ==========================================
 
@@ -699,8 +651,6 @@ const getSingleRestaurantAnalytics =
                 monthly,
 
                 weeks,
-
-                days,
             });
 
         } catch (error) {

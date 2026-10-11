@@ -1,40 +1,34 @@
-const admin = require("firebase-admin");
-const fs = require("fs");
+
+const { initializeApp, getApps, cert } = require("firebase-admin/app");
+const { getMessaging } = require("firebase-admin/messaging");
 const path = require("path");
+const fs = require("fs");
 
-// FoodE can run without FCM credentials. Push notifications are enabled
-// automatically when FIREBASE_SERVICE_ACCOUNT_PATH points to a valid JSON
-// service-account file, or when GOOGLE_APPLICATION_CREDENTIALS is configured.
+const serviceAccountPath = path.resolve(
+    __dirname,
+    "../../config/firebase-service-account.json"
+);
 
-if (!admin.apps.length) {
-  let initialized = false;
-
-  try {
-    const configuredPath =
-      process.env.FIREBASE_SERVICE_ACCOUNT_PATH ||
-      process.env.GOOGLE_APPLICATION_CREDENTIALS ||
-      path.join(__dirname, "firebase-service-account.json");
-
-    const resolvedPath = path.isAbsolute(configuredPath)
-      ? configuredPath
-      : path.resolve(process.cwd(), configuredPath);
-
-    if (fs.existsSync(resolvedPath)) {
-      const serviceAccount = require(resolvedPath);
-      admin.initializeApp({
-        credential: admin.credential.cert(serviceAccount),
-      });
-      initialized = true;
-    }
-  } catch (error) {
-    console.error("FoodE Firebase initialization warning:", error.message);
-  }
-
-  if (!initialized) {
-    console.log(
-      "FoodE: Firebase Admin credentials not configured. FCM push notifications are disabled."
+if (!fs.existsSync(serviceAccountPath)) {
+    throw new Error(
+        `Firebase service account not found: ${serviceAccountPath}`
     );
-  }
 }
 
-module.exports = admin;
+const serviceAccount = JSON.parse(
+    fs.readFileSync(serviceAccountPath, "utf8")
+);
+
+const app =
+    getApps().length > 0
+        ? getApps()[0]
+        : initializeApp({
+              credential: cert(serviceAccount),
+          });
+
+console.log("Firebase Admin initialized successfully");
+
+module.exports = {
+    app,
+    messaging: getMessaging(app),
+};

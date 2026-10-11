@@ -22,7 +22,6 @@ const notificationSchema = new mongoose.Schema(
       enum: [
         // Customer
         "ORDER_PLACED",
-        "ORDER_CONFIRMED",
         "ORDER_DELIVERED",
         "PROMOTION",
 

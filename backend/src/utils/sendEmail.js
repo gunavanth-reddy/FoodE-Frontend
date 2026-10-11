@@ -1,62 +1,35 @@
-const nodemailer = require("nodemailer");
+﻿const nodemailer = require("nodemailer");
 
-let transporter;
+const sendEmail = async ({ to, subject, text, html }) => {
+  const {
+    SMTP_HOST,
+    SMTP_PORT,
+    SMTP_USER,
+    SMTP_PASS,
+    EMAIL_FROM,
+  } = process.env;
 
-function getEmailConfig() {
-  // Preferred FoodE-specific variables. Legacy SMTP variables remain as a fallback.
-  const user = process.env.FOODE_EMAIL || process.env.SMTP_USER;
-  const pass = process.env.FOODE_EMAIL_APP_PASSWORD || process.env.SMTP_PASS;
-  const host = process.env.SMTP_HOST || "smtp.gmail.com";
-  const port = Number(process.env.SMTP_PORT || 465);
-  const secure = String(process.env.SMTP_SECURE ?? (port === 465)).toLowerCase() === "true";
-
-  if (!user || !pass) {
-    throw new Error(
-      "Email credentials are missing. Set FOODE_EMAIL and FOODE_EMAIL_APP_PASSWORD in backend/.env."
-    );
+  if (!SMTP_HOST || !SMTP_PORT || !SMTP_USER || !SMTP_PASS) {
+    throw new Error("SMTP environment variables are missing");
   }
 
-  return { user, pass, host, port, secure };
-}
-
-function getTransporter() {
-  if (transporter) return transporter;
-
-  const { user, pass, host, port, secure } = getEmailConfig();
-  transporter = nodemailer.createTransport({
-    host,
-    port,
-    secure,
-    auth: { user, pass },
-    connectionTimeout: 15000,
-    greetingTimeout: 15000,
-    socketTimeout: 20000,
+  const transporter = nodemailer.createTransport({
+    host: SMTP_HOST,
+    port: Number(SMTP_PORT),
+    secure: Number(SMTP_PORT) === 465,
+    auth: {
+      user: SMTP_USER,
+      pass: SMTP_PASS,
+    },
   });
 
-  return transporter;
-}
-
-async function sendEmail({ to, subject, text, html }) {
-  if (!to || !subject || (!text && !html)) {
-    throw new Error("Email recipient, subject, and message are required.");
-  }
-
-  const { user } = getEmailConfig();
-  const from = process.env.FOODE_FROM_EMAIL || `FoodE <${user}>`;
-
-  return getTransporter().sendMail({
-    from,
+  return transporter.sendMail({
+    from: EMAIL_FROM || SMTP_USER,
     to,
     subject,
     text,
     html,
   });
-}
+};
 
-async function verifyEmailTransport() {
-  // Ensure configuration is validated before attempting SMTP authentication.
-  getEmailConfig();
-  return getTransporter().verify();
-}
-
-module.exports = { sendEmail, verifyEmailTransport };
+module.exports = { sendEmail };

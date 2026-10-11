@@ -1,0 +1,180 @@
+warning: in the working copy of 'backend/src/models/OTP.js', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'backend/src/utils/otp.js', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'backend/src/utils/sendEmail.js', LF will be replaced by CRLF the next time Git touches it
+[1mdiff --git a/FoodE-Backend-fix b/FoodE-Backend-fix[m
+[1mdeleted file mode 160000[m
+[1mindex 04b705d..0000000[m
+[1m--- a/FoodE-Backend-fix[m
+[1m+++ /dev/null[m
+[36m@@ -1 +0,0 @@[m
+[31m-Subproject commit 04b705d57d3445b1f031dcfcfd255711162819d6[m
+[1mdiff --git a/backend/.env.example b/backend/.env.example[m
+[1mdeleted file mode 100644[m
+[1mindex 2b0f382..0000000[m
+[1m--- a/backend/.env.example[m
+[1m+++ /dev/null[m
+[36m@@ -1,29 +0,0 @@[m
+[31m-PORT=5000[m
+[31m-MONGODB_URI=mongodb://127.0.0.1:27017/foode[m
+[31m-JWT_SECRET=replace-with-a-long-random-secret-at-least-32-characters[m
+[31m-[m
+[31m-# FoodE email configuration (Gmail SMTP example)[m
+[31m-# FOODE_EMAIL must be the Gmail account that generated the App Password.[m
+[31m-# Never use your regular Gmail password. Keep the real .env private.[m
+[31m-FOODE_EMAIL=your-sender@gmail.com[m
+[31m-FOODE_EMAIL_APP_PASSWORD=your-16-character-google-app-password[m
+[31m-SMTP_HOST=smtp.gmail.com[m
+[31m-SMTP_PORT=465[m
+[31m-SMTP_SECURE=true[m
+[31m-# Optional: send test messages to a separate inbox. Defaults to FOODE_EMAIL.[m
+[31m-# SMTP_TEST_TO=your-test-inbox@example.com[m
+[31m-# Optional display sender. Defaults to FoodE <FOODE_EMAIL>.[m
+[31m-# FOODE_FROM_EMAIL=FoodE <your-sender@gmail.com>[m
+[31m-[m
+[31m-# Optional auth rate limits. These are app-level limits, not email-provider quotas.[m
+[31m-OTP_SEND_RATE_LIMIT_MAX=1000[m
+[31m-OTP_VERIFY_RATE_LIMIT_MAX=2000[m
+[31m-AUTH_RATE_LIMIT_MAX=1000[m
+[31m-[m
+[31m-# Cloudinary (required for restaurant/food image uploads)[m
+[31m-CLOUDINARY_CLOUD_NAME=[m
+[31m-CLOUDINARY_API_KEY=[m
+[31m-CLOUDINARY_API_SECRET=[m
+[31m-[m
+[31m-# Optional Firebase Admin / FCM[m
+[31m-FIREBASE_SERVICE_ACCOUNT_PATH=./config/firebase-service-account.json[m
+[1mdiff --git a/backend/.gitignore b/backend/.gitignore[m
+[1mindex cb72eb3..857c27c 100644[m
+[1m--- a/backend/.gitignore[m
+[1m+++ b/backend/.gitignore[m
+[36m@@ -1,5 +1,3 @@[m
+ node_modules/[m
+ .env[m
+[31m-.env.*[m
+[31m-!.env.example[m
+[31m-config/firebase-service-account.json[m
+[32m+[m[32mfirebase-service-account.json[m
+\ No newline at end of file[m
+[1mdiff --git a/backend/BACKEND_READY.md b/backend/BACKEND_READY.md[m
+[1mdeleted file mode 100644[m
+[1mindex d60a6bd..0000000[m
+[1m--- a/backend/BACKEND_READY.md[m
+[1m+++ /dev/null[m
+[36m@@ -1,56 +0,0 @@[m
+[31m-# FoodE backend — email OTP integration[m
+[31m-[m
+[31m-This backend includes SRM AP email OTP verification for registration, mobile-number/password login, and forgot-password OTP routes.[m
+[31m-[m
+[31m-## 1. Keep secrets in your local `.env`[m
+[31m-[m
+[31m-The ZIP intentionally excludes `.env` and `node_modules`. Keep your own local `.env` and configure the following values:[m
+[31m-[m
+[31m-```env[m
+[31m-FOODE_EMAIL=your-sender@gmail.com[m
+[31m-FOODE_EMAIL_APP_PASSWORD=your-16-character-google-app-password[m
+[31m-SMTP_HOST=smtp.gmail.com[m
+[31m-SMTP_PORT=465[m
+[31m-SMTP_SECURE=true[m
+[31m-```[m
+[31m-[m
+[31m-`FOODE_EMAIL` must be the same Google account that generated the App Password. Use an App Password, not your regular Gmail password. The email service prefers these `FOODE_*` variables; `SMTP_USER` and `SMTP_PASS` are supported only as a legacy fallback. Do not share `.env` or commit it.[m
+[31m-[m
+[31m-## 2. Install dependencies[m
+[31m-[m
+[31m-From the backend directory:[m
+[31m-[m
+[31m-```powershell[m
+[31m-npm install[m
+[31m-```[m
+[31m-[m
+[31m-`nodemailer` and `express-rate-limit` are included in `package.json` and `package-lock.json`.[m
+[31m-[m
+[31m-## 3. Test SMTP[m
+[31m-[m
+[31m-```powershell[m
+[31m-node scripts/testEmail.js[m
+[31m-```[m
+[31m-[m
+[31m-The test sends a message to `SMTP_TEST_TO` if configured; otherwise it sends to `FOODE_EMAIL` (or legacy `SMTP_USER`). A successful test confirms SMTP authentication and one test send only.[m
+[31m-[m
+[31m-## 4. Auth routes[m
+[31m-[m
+[31m-- `POST /api/auth/send-email-otp` — send registration OTP to `@srmap.edu.in`.[m
+[31m-- `POST /api/auth/resend-email-otp` — resend registration OTP with a cooldown.[m
+[31m-- `POST /api/auth/verify-email` — verify registration OTP.[m
+[31m-- `POST /api/auth/register` — create a customer only if email verification is valid; fields: `name`, `email`, `phone`, `password`.[m
+[31m-- `POST /api/auth/login` — mobile number + password.[m
+[31m-- `POST /api/auth/forgot-password` — send reset OTP to a registered, verified SRM AP email.[m
+[31m-- `POST /api/auth/verify-reset-otp` — verify reset OTP.[m
+[31m-- `POST /api/auth/reset-password` — body: `email`, `otp`, `newPassword`.[m
+[31m-[m
+[31m-OTPs are hashed in MongoDB, expire after five minutes, and have a five-attempt limit. Passwords are bcrypt-hashed. Public registration always assigns the `user` role.[m
+[31m-[m
+[31m-## 5. Important launch notes[m
+[31m-[m
+[31m-- Email delivery depends on valid SMTP credentials and the provider's quota. Gmail SMTP does not guarantee 1,000 messages per day or 1,000 simultaneous deliveries. Confirm provider limits before public launch.[m
+[31m-- The frontend should call `/send-email-otp`, then `/verify-email`, then `/register` using the same verified email.[m
+[31m-- Forgot-password UI should collect the registered `@srmap.edu.in` email, OTP, and new password.[m
+[31m-- Test against a development database before production.[m
+[31m-- The `.env` file and `node_modules` are intentionally not included in this ZIP.[m
+[1mdiff --git a/backend/authRoutes-otp-backup.js b/backend/authRoutes-otp-backup.js[m
+[1mdeleted file mode 100644[m
+[1mindex dc2e222..0000000[m
+[1m--- a/backend/authRoutes-otp-backup.js[m
+[1m+++ /dev/null[m
+[36m@@ -1,59 +0,0 @@[m
+[31m-const express = require("express");[m
+[31m-const { rateLimit } = require("express-rate-limit");[m
+[31m-const router = express.Router();[m
+[31m-[m
+[31m-const {[m
+[31m-  registerUser,[m
+[31m-  loginUser,[m
+[31m-  getProfile,[m
+[31m-  saveFCMToken,[m
+[31m-  sendRegistrationEmailOTP,[m
+[31m-  resendEmailOTP,[m
+[31m-  verifyEmailOTP,[m
+[31m-  forgotPassword,[m
+[31m-  verifyResetOTP,[m
+[31m-  resetPassword,[m
+[31m-} = require("../controllers/authController");[m
+[31m-[m
+[31m-const protect = require("../middleware/authMiddleware");[m
+[31m-[m
+[31m-const otpSendLimiter = rateLimit({[m
+[31m-  windowMs: 15 * 60 * 1000,[m
+[31m-  limit: Number(process.env.OTP_SEND_RATE_LIMIT_MAX || 1000),[m
+[31m-  standardHeaders: "draft-8",[m
+[31m-  legacyHeaders: false,[m
+[31m-});[m
+[31m-[m
+[31m-const otpVerifyLimiter = rateLimit({[m
+[31m-  windowMs: 15 * 60 * 1000,[m
+[31m-  limit: Number(process.env.OTP_VERIFY_RATE_LIMIT_MAX || 2000),[m
+[31m-  standardHeaders: "draft-8",[m
+[31m-  legacyHeaders: false,[m
+[31m-});[m
+[31m-[m
+[31m-const authLimiter = rateLimit({[m
+[31m-  windowMs: 15 * 60 * 1000,[m
+[31m-  limit: Number(process.env.AUTH_RATE_LIMIT_MAX || 1000),[m
+[31m-  standardHeaders: "draft-8",[m
+[31m-  legacyHeaders: false,[m
+[31m-});[m
+[31m-[m
+[31m-// Registration email OTP[m
+[31m-router.post("/send-email-otp", otpSendLimiter, sendRegistrationEmailOTP);[m
+[31m-router.post("/resend-email-otp", otpSendLimiter, resendEmailOTP);[m
+[31m-router.post("/verify-email", otpVerifyLimiter, verifyEmailOTP);[m
+[31m-[m
+[31m-// Account registration and login[m
+[31m-router.post("/register", authLimiter, registerUser);[m
+[31m-router.post("/login", authLimiter, loginUser);[m
+[31m-[m
+[31m-// Password reset[m
+[31m-router.post("/forgot-password", otpSendLimiter, forgotPassword);[m
+[31m-router.post("/verify-reset-otp", otpVerifyLimiter, verifyResetOTP);[m
+[31m-router.post("/reset-password", authLimiter, resetPassword);[m
+[31m-[m
+[

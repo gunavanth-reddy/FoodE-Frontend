@@ -123,13 +123,6 @@ const deliverySlotSchema = new mongoose.Schema(
       required: true,
     },
 
-    date: {
-      type: String,
-      required: true,
-      trim: true,
-      match: [/^\d{4}-\d{2}-\d{2}$/, "Date must be YYYY-MM-DD"],
-    },
-
     startTime: {
       type: String,
       required: true,
@@ -140,12 +133,6 @@ const deliverySlotSchema = new mongoose.Schema(
       type: String,
       required: true,
       trim: true,
-    },
-
-    durationMinutes: {
-      type: Number,
-      required: true,
-      min: 10,
     },
   },
   {
@@ -279,7 +266,6 @@ const orderSchema = new mongoose.Schema(
         "PLACED",
         "CONFIRMED",
         "DELIVERED",
-        "CANCELLED",
       ],
       default: "PLACED",
       index: true,

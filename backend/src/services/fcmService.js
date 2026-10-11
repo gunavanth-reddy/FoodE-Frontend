@@ -1,4 +1,4 @@
-const admin = require("../../config/firebaseAdmin");
+const { messaging } = require("../config/firebaseAdmin");
 
 // =====================================================
 // SEND FCM NOTIFICATION TO ONE DEVICE
@@ -11,13 +11,6 @@ const sendNotificationToDevice = async ({
     data = {},
 }) => {
     try {
-
-        if (!admin.apps.length) {
-            return {
-                success: false,
-                message: "Firebase Admin is not configured",
-            };
-        }
 
         if (!fcmToken) {
             console.log(
@@ -72,10 +65,7 @@ const sendNotificationToDevice = async ({
         // SEND NOTIFICATION
         // =================================================
 
-        const response =
-            await admin
-                .messaging()
-                .send(message);
+        const response = await messaging.send(message);
 
         console.log(
             "FCM notification sent:",
