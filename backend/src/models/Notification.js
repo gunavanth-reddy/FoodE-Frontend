@@ -24,6 +24,7 @@ const notificationSchema = new mongoose.Schema(
         "ORDER_PLACED",
         "ORDER_DELIVERED",
         "PROMOTION",
+        "ADMIN_BROADCAST",
 
         // Restaurant Owner
         "NEW_ORDER",

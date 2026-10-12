@@ -9,6 +9,7 @@ const {
     deleteNotification,
     deleteAllNotifications,
     createPromotion,
+    createBroadcast,
     createPlatformEvent,
     sendTestNotification,
 } = require("../controllers/notificationController");
@@ -95,6 +96,19 @@ router.post(
     protect,
     authorize("admin"),
     createPromotion
+);
+
+
+// =====================================================
+// ADMIN — BROADCAST TO CUSTOMERS
+// POST /api/notifications/broadcast
+// =====================================================
+
+router.post(
+    "/broadcast",
+    protect,
+    authorize("admin"),
+    createBroadcast
 );
 
 

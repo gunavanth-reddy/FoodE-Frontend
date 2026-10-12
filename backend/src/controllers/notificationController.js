@@ -632,6 +632,108 @@ const createPlatformEvent = async (
 
 
 // =====================================================
+// ADMIN — BROADCAST TO ACTIVE CUSTOMERS
+// =====================================================
+
+const createBroadcast = async (req, res) => {
+    try {
+        const title = typeof req.body.title === "string" ? req.body.title.trim() : "";
+        const message = typeof req.body.message === "string" ? req.body.message.trim() : "";
+
+        if (!title || !message) {
+            return res.status(400).json({
+                success: false,
+                message: "Title and message are required",
+            });
+        }
+
+        if (title.length > 120 || message.length > 2000) {
+            return res.status(400).json({
+                success: false,
+                message: "Title must be at most 120 characters and message at most 2000 characters",
+            });
+        }
+
+        const customers = await User.find({
+            role: "user",
+            isActive: true,
+        }).select("_id fcmToken");
+
+        if (customers.length === 0) {
+            return res.status(200).json({
+                success: true,
+                message: "No active customers found",
+                audience: "customers",
+                recipients: 0,
+                saved: 0,
+                pushSent: 0,
+                pushFailed: 0,
+                withoutToken: 0,
+            });
+        }
+
+        // Persist an in-app notification for every active customer,
+        // including customers who have not registered an FCM token.
+        const savedNotifications = await Notification.insertMany(
+            customers.map((customer) => ({
+                user: customer._id,
+                type: "ADMIN_BROADCAST",
+                title,
+                message,
+            }))
+        );
+
+        const customersWithTokens = customers.filter((customer) => customer.fcmToken);
+        const withoutToken = customers.length - customersWithTokens.length;
+        let pushSent = 0;
+        let pushFailed = 0;
+
+        // Send to devices independently so one invalid token does not stop the broadcast.
+        const results = await Promise.all(
+            customersWithTokens.map(async (customer) => {
+                try {
+                    return await sendNotificationToDevice({
+                        fcmToken: customer.fcmToken,
+                        title,
+                        body: message,
+                        data: { type: "ADMIN_BROADCAST" },
+                    });
+                } catch (error) {
+                    console.error("Admin broadcast FCM error:", error.message);
+                    return { success: false };
+                }
+            })
+        );
+
+        for (const result of results) {
+            if (result && result.success) {
+                pushSent += 1;
+            } else {
+                pushFailed += 1;
+            }
+        }
+
+        return res.status(201).json({
+            success: true,
+            message: "Broadcast processed",
+            audience: "customers",
+            recipients: customers.length,
+            saved: savedNotifications.length,
+            pushSent,
+            pushFailed,
+            withoutToken,
+        });
+    } catch (error) {
+        console.error("Create Admin Broadcast Error:", error);
+        return res.status(500).json({
+            success: false,
+            message: "Server error while creating broadcast",
+        });
+    }
+};
+
+
+// =====================================================
 // TEST FCM NOTIFICATION
 // =====================================================
 
@@ -766,6 +868,8 @@ module.exports = {
     deleteAllNotifications,
 
     createPromotion,
+
+    createBroadcast,
 
     createPlatformEvent,
 

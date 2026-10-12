@@ -1,429 +1,405 @@
-const User = require("../models/User");
-const OTP = require("../models/OTP");
+
+const crypto = require("crypto");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
-const { sendEmail } = require("../utils/sendEmail");
-const { generateOTP, hashOTP, getOTPExpiry, otpMatches } = require("../utils/otp");
 
-const SRMAP_EMAIL_REGEX = /^[^\s@]+@srmap\.edu\.in$/i;
-const OTP_MAX_ATTEMPTS = 5;
-const OTP_TTL_MS = 5 * 60 * 1000;
+const User = require("../models/User");
+const StudentVerification = require("../models/StudentVerification");
+const { verifyERPStudent } = require("../services/erpService");
 
-const normalizePhone = (phone) => String(phone || "").trim();
-const normalizeEmail = (email) => String(email || "").trim().toLowerCase();
-const validatePhone = (phone) => /^\d{10}$/.test(phone);
-const validateSRMAPEmail = (email) => SRMAP_EMAIL_REGEX.test(email);
+const normalizePhone = (value) => String(value || "").trim();
+const validPhone = (phone) => /^[0-9]{10}$/.test(phone);
 
-function otpEmailHtml(otp, heading, description) {
-  return `<!doctype html><html><body style="font-family:Arial,sans-serif;color:#222;line-height:1.5">
-    <div style="max-width:520px;margin:24px auto;padding:24px;border:1px solid #eee;border-radius:16px">
-      <h2 style="color:#f47721;margin-top:0">FoodE</h2><h3>${heading}</h3><p>${description}</p>
-      <div style="font-size:30px;font-weight:700;letter-spacing:8px;padding:18px;text-align:center;background:#fff4eb;border-radius:10px;color:#d95f0b">${otp}</div>
-      <p>This code expires in 5 minutes. Do not share it with anyone.</p><p style="font-size:12px;color:#777">If you did not request this code, you can ignore this email.</p>
-    </div></body></html>`;
-}
+const hashToken = (token) =>
+  crypto.createHash("sha256").update(token).digest("hex");
 
-async function createAndSendOTP({ email, purpose, subject, heading, description }) {
-  const otp = generateOTP();
-  const expiresAt = getOTPExpiry();
+const publicUser = (user) => ({
+  id: String(user._id),
+  name: user.name,
+  phone: user.phone,
+  role: user.role,
+  isActive: user.isActive,
+  isPhoneVerified: Boolean(user.isPhoneVerified),
+  profileImage: user.profileImage,
+  studentVerification: user.studentVerification,
+});
 
-  // Replace any previous active code for this email and purpose.
-  await OTP.deleteMany({ identifier: email, purpose });
-  await OTP.create({
-    identifier: email,
-    otpHash: hashOTP(otp),
-    purpose,
-    expiresAt,
-    attempts: 0,
-    verified: false,
-  });
-
+// Verify the student's SRM AP portal credentials during signup only.
+const verifySRMAPStudent = async (req, res) => {
   try {
-    await sendEmail({
-      to: email,
-      subject,
-      text: `${heading}\n\nYour FoodE verification code is ${otp}. It expires in 5 minutes. Do not share this code.`,
-      html: otpEmailHtml(otp, heading, description),
-    });
-  } catch (error) {
-    await OTP.deleteMany({ identifier: email, purpose });
-    console.error("FoodE email delivery failed:", error.message);
-    const mailError = new Error("We couldn't send the email right now. Please try again later.");
-    mailError.statusCode = 503;
-    throw mailError;
-  }
-}
-
-async function validateOTPRecord({ email, purpose, otp, requireVerified = false }) {
-  const record = await OTP.findOne({
-    identifier: email,
-    purpose,
-    expiresAt: { $gt: new Date() },
-  }).select("+otpHash").sort({ createdAt: -1 });
-
-  if (!record) {
-    return { error: "OTP has expired or was not requested. Please request a new code." };
-  }
-  if (record.attempts >= OTP_MAX_ATTEMPTS) {
-    return { error: "Too many incorrect attempts. Please request a new OTP." };
-  }
-  if (requireVerified && !record.verified) {
-    return { error: "Please verify the OTP first." };
-  }
-
-  if (!otpMatches(otp, record.otpHash)) {
-    record.attempts += 1;
-    await record.save();
-    return { error: "Invalid OTP." };
-  }
-
-  return { record };
-}
-
-// =====================================================
-// SEND REGISTRATION EMAIL OTP
-// =====================================================
-const sendRegistrationEmailOTP = async (req, res) => {
-  try {
-    const email = normalizeEmail(req.body.email);
-    if (!validateSRMAPEmail(email)) {
-      return res.status(400).json({ success: false, message: "Enter an email that ends with @srmap.edu.in" });
-    }
-
-    const existing = await User.findOne({ email }).select("_id");
-    if (existing) {
-      return res.status(409).json({ success: false, message: "This email is already registered. Please log in instead." });
-    }
-
-    const recentOTP = await OTP.findOne({ identifier: email, purpose: "registration" }).sort({ createdAt: -1 });
-    if (recentOTP && Date.now() - recentOTP.createdAt.getTime() < 60 * 1000) {
-      return res.status(429).json({ success: false, message: "Please wait 60 seconds before requesting another OTP." });
-    }
-
-    await createAndSendOTP({
-      email,
-      purpose: "registration",
-      subject: "Your FoodE registration OTP",
-      heading: "Verify your SRM AP email",
-      description: "Use this one-time password to verify your SRM AP email address and continue creating your FoodE account.",
-    });
-
-    return res.status(200).json({ success: true, message: "Verification OTP sent to your SRM AP email address." });
-  } catch (error) {
-    console.error("Send Registration OTP Error:", error.message);
-    return res.status(error.statusCode || 500).json({
-      success: false,
-      message: error.statusCode ? error.message : "Server error while sending verification email.",
-    });
-  }
-};
-
-// =====================================================
-// RESEND REGISTRATION EMAIL OTP
-// =====================================================
-const resendEmailOTP = async (req, res) => sendRegistrationEmailOTP(req, res);
-
-// =====================================================
-// VERIFY REGISTRATION EMAIL OTP
-// =====================================================
-const verifyEmailOTP = async (req, res) => {
-  try {
-    const email = normalizeEmail(req.body.email);
-    const otp = String(req.body.otp || "").trim();
-
-    if (!validateSRMAPEmail(email)) {
-      return res.status(400).json({ success: false, message: "Enter an email that ends with @srmap.edu.in" });
-    }
-    if (!/^\d{6}$/.test(otp)) {
-      return res.status(400).json({ success: false, message: "Enter the valid 6-digit OTP." });
-    }
-
-    const result = await validateOTPRecord({ email, purpose: "registration", otp });
-    if (result.error) {
-      return res.status(400).json({ success: false, message: result.error });
-    }
-
-    result.record.verified = true;
-    await result.record.save();
-
-    return res.status(200).json({ success: true, message: "Email verified successfully. You can now create your account." });
-  } catch (error) {
-    console.error("Verify Registration OTP Error:", error);
-    return res.status(500).json({ success: false, message: "Server error while verifying email." });
-  }
-};
-
-// =====================================================
-// REGISTER CUSTOMER (requires a verified SRM AP email)
-// =====================================================
-const registerUser = async (req, res) => {
-  try {
-    const name = String(req.body.name || "").trim();
-    const email = normalizeEmail(req.body.email);
-    const phone = normalizePhone(req.body.phone);
+    const portalRegisterNo = String(
+      req.body.registerNo || req.body.username || ""
+    ).trim();
     const password = String(req.body.password || "");
 
-    if (name.length < 2) {
-      return res.status(400).json({ success: false, message: "Name must be at least 2 characters." });
-    }
-    if (!validateSRMAPEmail(email)) {
-      return res.status(400).json({ success: false, message: "Enter an email that ends with @srmap.edu.in" });
-    }
-    if (!validatePhone(phone)) {
-      return res.status(400).json({ success: false, message: "Enter a valid 10-digit mobile number." });
-    }
-    if (password.length < 8) {
-      return res.status(400).json({ success: false, message: "Password must be at least 8 characters." });
+    if (!portalRegisterNo || !password) {
+      return res.status(400).json({
+        success: false,
+        message: "Student registration number and portal password are required.",
+      });
     }
 
-    const verifiedOTP = await OTP.findOne({
-      identifier: email,
-      purpose: "registration",
-      verified: true,
-      expiresAt: { $gt: new Date() },
-    }).sort({ createdAt: -1 });
-
-    if (!verifiedOTP) {
-      return res.status(403).json({ success: false, message: "Verify your @srmap.edu.in email before creating an account." });
-    }
-
-    const existingPhone = await User.findOne({ phone }).select("_id");
-    if (existingPhone) {
-      return res.status(409).json({ success: false, message: "Mobile number is already registered." });
-    }
-    const existingEmail = await User.findOne({ email }).select("_id");
-    if (existingEmail) {
-      return res.status(409).json({ success: false, message: "This email is already registered. Please log in instead." });
-    }
-
-    const hashedPassword = await bcrypt.hash(password, 12);
-    const newUser = await User.create({
-      name,
-      email,
-      isEmailVerified: true,
-      emailVerifiedAt: new Date(),
-      phone,
-      password: hashedPassword,
-      role: "user", // Never accept a public role from the client.
-      isActive: true,
-      isPhoneVerified: false,
+    const result = await verifyERPStudent({
+      registerNo: portalRegisterNo,
+      password,
     });
 
-    await OTP.deleteMany({ identifier: email, purpose: "registration" });
+    if (!result || result.success !== true) {
+      return res.status(401).json({
+        success: false,
+        message: result?.message || "ERP verification failed.",
+      });
+    }
 
-    return res.status(201).json({
+    const student = result.student || {};
+    const registerNo = String(student.registerNo || "")
+      .trim()
+      .toUpperCase();
+
+    if (!registerNo) {
+      return res.status(502).json({
+        success: false,
+        message: "ERP did not return a student registration number.",
+      });
+    }
+
+    const existing = await User.exists({
+      "studentVerification.registerNo": registerNo,
+    });
+
+    if (existing) {
+      return res.status(409).json({
+        success: false,
+        message: "This student is already registered with FoodE.",
+      });
+    }
+
+    const verificationToken = crypto.randomBytes(32).toString("hex");
+
+    await StudentVerification.create({
+      tokenHash: hashToken(verificationToken),
+      registerNo,
+      studentName: String(student.studentName || "").trim(),
+      institution: String(student.institution || "SRM AP").trim(),
+      program: String(student.program || "").trim(),
+      section: String(student.section || "").trim(),
+      semester: String(student.semester || "").trim(),
+      specialization: String(student.specialization || "").trim(),
+      dob: String(student.dob || "").trim(),
+      gender: String(student.gender || "").trim(),
+      email: String(student.email || "").trim(),
+      expiresAt: new Date(Date.now() + 10 * 60 * 1000),
+    });
+
+    return res.status(200).json({
       success: true,
-      message: "Account created successfully. You can now log in with your mobile number and password.",
-      user: {
-        id: String(newUser._id),
-        name: newUser.name,
-        email: newUser.email,
-        phone: newUser.phone,
-        role: newUser.role,
-        isEmailVerified: newUser.isEmailVerified,
-        isPhoneVerified: newUser.isPhoneVerified,
+      message: "SRM AP student verified successfully.",
+      verificationToken,
+      student: {
+        registerNo,
+        studentName: student.studentName || "",
+        institution: student.institution || "SRM AP",
+        program: student.program || "",
       },
     });
   } catch (error) {
-    console.error("Register Error:", error);
-    if (error.code === 11000) {
-      const field = Object.keys(error.keyPattern || {})[0];
-      return res.status(409).json({ success: false, message: field === "email" ? "This email is already registered." : "Mobile number is already registered." });
-    }
-    if (error.name === "ValidationError") {
-      return res.status(400).json({ success: false, message: Object.values(error.errors)[0]?.message || "Invalid registration details." });
-    }
-    return res.status(500).json({ success: false, message: "Server error during registration." });
+    console.error("ERP Verification Error:", error.message);
+
+    return res.status(502).json({
+      success: false,
+      message: "Unable to verify ERP details right now.",
+    });
   }
 };
 
-// =====================================================
-// LOGIN (mobile number + password)
-// =====================================================
+// Create FoodE account only after ERP verification.
+const registerUser = async (req, res) => {
+  try {
+    const name = String(req.body.name || "").trim();
+    const phone = normalizePhone(req.body.phone);
+    const password = String(req.body.password || "");
+    const verificationToken = String(
+      req.body.verificationToken || ""
+    ).trim();
+
+    if (name.length < 2) {
+      return res.status(400).json({
+        success: false,
+        message: "Name must contain at least 2 characters.",
+      });
+    }
+
+    if (!validPhone(phone)) {
+      return res.status(400).json({
+        success: false,
+        message: "Enter a valid 10-digit mobile number.",
+      });
+    }
+
+    if (password.length < 8) {
+      return res.status(400).json({
+        success: false,
+        message: "Password must contain at least 8 characters.",
+      });
+    }
+
+    if (!/^[a-f0-9]{64}$/i.test(verificationToken)) {
+      return res.status(403).json({
+        success: false,
+        message: "Verify your SRM AP ERP account first.",
+      });
+    }
+
+    const phoneExists = await User.exists({ phone });
+
+    if (phoneExists) {
+      return res.status(409).json({
+        success: false,
+        message: "Mobile number is already registered.",
+      });
+    }
+
+    // Atomically claim the token to prevent reuse.
+    const verification = await StudentVerification.findOneAndUpdate(
+      {
+        tokenHash: hashToken(verificationToken),
+        consumedAt: null,
+        expiresAt: { $gt: new Date() },
+      },
+      { $set: { consumedAt: new Date() } },
+      { new: true }
+    );
+
+    if (!verification) {
+      return res.status(403).json({
+        success: false,
+        message: "Verification expired or already used. Verify ERP again.",
+      });
+    }
+
+    const studentExists = await User.exists({
+      "studentVerification.registerNo": verification.registerNo,
+    });
+
+    if (studentExists) {
+      return res.status(409).json({
+        success: false,
+        message: "This student already has a FoodE account.",
+      });
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 12);
+
+    const user = await User.create({
+      name,
+      phone,
+      password: hashedPassword,
+      role: "user",
+      isActive: true,
+      isPhoneVerified: false,
+      studentVerification: {
+        registerNo: verification.registerNo,
+        studentName: verification.studentName,
+        institution: verification.institution,
+        program: verification.program,
+        section: verification.section,
+        semester: verification.semester,
+        specialization: verification.specialization,
+        dob: verification.dob,
+        gender: verification.gender,
+        email: verification.email,
+        isVerified: true,
+        verifiedAt: new Date(),
+      },
+    });
+
+    return res.status(201).json({
+      success: true,
+      message: "Account created. Log in with mobile number and password.",
+      user: publicUser(user),
+    });
+  } catch (error) {
+    console.error("Register Error:", error);
+
+    if (error.code === 11000) {
+      return res.status(409).json({
+        success: false,
+        message: "Mobile number or student ID already registered.",
+      });
+    }
+
+    if (error.name === "ValidationError") {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid registration details.",
+      });
+    }
+
+    return res.status(500).json({
+      success: false,
+      message: "Server error during registration.",
+    });
+  }
+};
+
+// Login: mobile number + FoodE password only.
 const loginUser = async (req, res) => {
   try {
     const phone = normalizePhone(req.body.phone);
     const password = String(req.body.password || "");
 
-    if (!validatePhone(phone)) {
-      return res.status(400).json({ success: false, message: "Enter a valid 10-digit mobile number." });
-    }
-    if (!password) {
-      return res.status(400).json({ success: false, message: "Password is required." });
+    if (!validPhone(phone) || !password) {
+      return res.status(400).json({
+        success: false,
+        message: "Enter a valid mobile number and password.",
+      });
     }
 
     const user = await User.findOne({ phone }).select("+password");
-    if (!user) {
-      return res.status(401).json({ success: false, message: "Invalid mobile number or password." });
+
+    if (!user || !(await bcrypt.compare(password, user.password))) {
+      return res.status(401).json({
+        success: false,
+        message: "Invalid mobile number or password.",
+      });
     }
+
     if (user.isActive === false) {
-      return res.status(403).json({ success: false, message: "Your account has been deactivated." });
+      return res.status(403).json({
+        success: false,
+        message: "Your account has been deactivated.",
+      });
     }
 
-    const matches = await bcrypt.compare(password, user.password);
-    if (!matches) {
-      return res.status(401).json({ success: false, message: "Invalid mobile number or password." });
+    if (!process.env.JWT_SECRET) {
+      throw new Error("JWT_SECRET is missing");
     }
-    if (!process.env.JWT_SECRET) throw new Error("JWT_SECRET is missing in .env");
 
-    const token = jwt.sign({ id: user._id, role: user.role }, process.env.JWT_SECRET, { expiresIn: "7d" });
+    const token = jwt.sign(
+      { id: user._id, role: user.role },
+      process.env.JWT_SECRET,
+      { expiresIn: "7d" }
+    );
+
     return res.status(200).json({
       success: true,
       message: "Login successful.",
       token,
-      user: {
-        id: String(user._id),
-        name: user.name,
-        email: user.email,
-        phone: user.phone,
-        role: user.role,
-        isActive: user.isActive,
-        isEmailVerified: Boolean(user.isEmailVerified),
-        isPhoneVerified: user.isPhoneVerified,
-        profileImage: user.profileImage,
-      },
+      user: publicUser(user),
     });
   } catch (error) {
     console.error("Login Error:", error);
-    return res.status(500).json({ success: false, message: "Server error during login." });
+
+    return res.status(500).json({
+      success: false,
+      message: "Server error during login.",
+    });
   }
 };
 
-// =====================================================
-// FORGOT PASSWORD: send OTP to registered verified email
-// =====================================================
-const forgotPassword = async (req, res) => {
+const getProfile = async (req, res) => {
   try {
-    const email = normalizeEmail(req.body.email);
-    if (!validateSRMAPEmail(email)) {
-      return res.status(400).json({ success: false, message: "Enter an email that ends with @srmap.edu.in" });
-    }
-
-    // Use a generic response to avoid revealing whether an account exists.
-    const user = await User.findOne({ email, isEmailVerified: true, isActive: { $ne: false } }).select("_id");
-    if (user) {
-      const recentOTP = await OTP.findOne({ identifier: email, purpose: "forgot-password" }).sort({ createdAt: -1 });
-      if (recentOTP && Date.now() - recentOTP.createdAt.getTime() < 60 * 1000) {
-        return res.status(429).json({ success: false, message: "Please wait 60 seconds before requesting another OTP." });
-      }
-      await createAndSendOTP({
-        email,
-        purpose: "forgot-password",
-        subject: "Your FoodE password reset OTP",
-        heading: "Reset your FoodE password",
-        description: "Use this one-time password to reset your FoodE account password.",
+    if (!req.user?._id) {
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized.",
       });
     }
 
-    return res.status(200).json({ success: true, message: "If an account exists for that SRM AP email, a password-reset OTP has been sent." });
-  } catch (error) {
-    console.error("Forgot Password Error:", error.message);
-    return res.status(error.statusCode || 500).json({ success: false, message: error.statusCode ? error.message : "Server error while requesting password reset." });
-  }
-};
+    const user = await User.findById(req.user._id);
 
-// =====================================================
-// VERIFY RESET OTP (does not reset password yet)
-// =====================================================
-const verifyResetOTP = async (req, res) => {
-  try {
-    const email = normalizeEmail(req.body.email);
-    const otp = String(req.body.otp || "").trim();
-    if (!validateSRMAPEmail(email)) return res.status(400).json({ success: false, message: "Enter an email that ends with @srmap.edu.in" });
-    if (!/^\d{6}$/.test(otp)) return res.status(400).json({ success: false, message: "Enter the valid 6-digit OTP." });
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found.",
+      });
+    }
 
-    const result = await validateOTPRecord({ email, purpose: "forgot-password", otp });
-    if (result.error) return res.status(400).json({ success: false, message: result.error });
+    if (user.isActive === false) {
+      return res.status(403).json({
+        success: false,
+        message: "Your account has been deactivated.",
+      });
+    }
 
-    const userExists = await User.exists({ email, isEmailVerified: true, isActive: { $ne: false } });
-    if (!userExists) return res.status(400).json({ success: false, message: "Unable to verify this password-reset request." });
-
-    result.record.verified = true;
-    await result.record.save();
-    return res.status(200).json({ success: true, message: "OTP verified. You can now reset your password." });
-  } catch (error) {
-    console.error("Verify Reset OTP Error:", error);
-    return res.status(500).json({ success: false, message: "Server error while verifying reset OTP." });
-  }
-};
-
-// =====================================================
-// RESET PASSWORD
-// =====================================================
-const resetPassword = async (req, res) => {
-  try {
-    const email = normalizeEmail(req.body.email);
-    const otp = String(req.body.otp || "").trim();
-    const newPassword = String(req.body.newPassword || "");
-
-    if (!validateSRMAPEmail(email)) return res.status(400).json({ success: false, message: "Enter an email that ends with @srmap.edu.in" });
-    if (!/^\d{6}$/.test(otp)) return res.status(400).json({ success: false, message: "Enter the valid 6-digit OTP." });
-    if (newPassword.length < 8) return res.status(400).json({ success: false, message: "Password must be at least 8 characters." });
-
-    const result = await validateOTPRecord({ email, purpose: "forgot-password", otp, requireVerified: true });
-    if (result.error) return res.status(400).json({ success: false, message: result.error });
-
-    const user = await User.findOne({ email, isEmailVerified: true, isActive: { $ne: false } }).select("+password");
-    if (!user) return res.status(400).json({ success: false, message: "Unable to reset password for this account." });
-
-    user.password = await bcrypt.hash(newPassword, 12);
-    await user.save();
-    await OTP.deleteMany({ identifier: email, purpose: "forgot-password" });
-
-    return res.status(200).json({ success: true, message: "Password reset successfully. Please log in with your new password." });
-  } catch (error) {
-    console.error("Reset Password Error:", error);
-    return res.status(500).json({ success: false, message: "Server error while resetting password." });
-  }
-};
-
-// =====================================================
-// GET PROFILE
-// =====================================================
-const getProfile = async (req, res) => {
-  try {
-    if (!req.user || !req.user._id) return res.status(401).json({ success: false, message: "Unauthorized." });
-    const user = await User.findById(req.user._id).select("-password -resetPasswordOTP -resetPasswordOTPExpiry");
-    if (!user) return res.status(404).json({ success: false, message: "User not found." });
-    if (user.isActive === false) return res.status(403).json({ success: false, message: "Your account has been deactivated." });
-    return res.status(200).json({ success: true, user });
+    return res.status(200).json({
+      success: true,
+      user: publicUser(user),
+    });
   } catch (error) {
     console.error("Get Profile Error:", error);
-    return res.status(500).json({ success: false, message: "Server error while fetching profile." });
+
+    return res.status(500).json({
+      success: false,
+      message: "Server error while fetching profile.",
+    });
   }
 };
 
-// =====================================================
-// SAVE FCM NOTIFICATION TOKEN
-// =====================================================
 const saveFCMToken = async (req, res) => {
   try {
-    if (!req.user || !req.user._id) return res.status(401).json({ success: false, message: "Unauthorized." });
+    if (!req.user?._id) {
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized.",
+      });
+    }
+
     const fcmToken = String(req.body.fcmToken || "").trim();
-    if (!fcmToken) return res.status(400).json({ success: false, message: "FCM token is required." });
+
+    if (!fcmToken) {
+      return res.status(400).json({
+        success: false,
+        message: "FCM token is required.",
+      });
+    }
 
     const user = await User.findById(req.user._id);
-    if (!user) return res.status(404).json({ success: false, message: "User not found." });
-    if (user.isActive === false) return res.status(403).json({ success: false, message: "Your account has been deactivated." });
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found.",
+      });
+    }
+
+    if (user.isActive === false) {
+      return res.status(403).json({
+        success: false,
+        message: "Your account has been deactivated.",
+      });
+    }
 
     user.fcmToken = fcmToken;
     await user.save();
-    return res.status(200).json({ success: true, message: "FCM token saved successfully." });
+
+    return res.status(200).json({
+      success: true,
+      message: "FCM token saved successfully.",
+    });
   } catch (error) {
     console.error("Save FCM Token Error:", error);
-    return res.status(500).json({ success: false, message: "Server error while saving FCM token." });
+
+    return res.status(500).json({
+      success: false,
+      message: "Server error while saving FCM token.",
+    });
   }
 };
 
+// No OTP-based password recovery.
+const forgotPassword = async (_req, res) => {
+  return res.status(200).json({
+    success: true,
+    message: "To recover your FoodE account, contact FoodE support.",
+  });
+};
+
 module.exports = {
+  verifySRMAPStudent,
   registerUser,
   loginUser,
   getProfile,
   saveFCMToken,
-  sendRegistrationEmailOTP,
-  resendEmailOTP,
-  verifyEmailOTP,
   forgotPassword,
-  verifyResetOTP,
-  resetPassword,
 };

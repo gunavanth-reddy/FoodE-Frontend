@@ -20,6 +20,7 @@ const orderRoutes = require("./routes/orderRoutes");
 const reviewRoutes = require("./routes/reviewRoutes");
 const notificationRoutes = require("./routes/notificationRoutes");
 const adminAnalyticsRoutes = require("./routes/adminAnalyticsRoutes");
+const adminRoutes = require("./routes/adminRoutes");
 
 // =====================================================
 // APP
@@ -51,6 +52,7 @@ app.use("/api/delivery-slots", deliverySlotRoutes);
 app.use("/api/orders", orderRoutes);
 app.use("/api/reviews", reviewRoutes);
 app.use("/api/notifications", notificationRoutes);
+app.use("/api/admin", adminRoutes);
 app.use("/api/admin/analytics", adminAnalyticsRoutes);
 
 // =====================================================
