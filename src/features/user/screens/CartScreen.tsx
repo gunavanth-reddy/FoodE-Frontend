@@ -1,6 +1,6 @@
 import {SafeAreaView} from 'react-native-safe-area-context';
 import React, {useEffect, useState} from 'react';
-import {Bicycle, ForkKnife} from 'phosphor-react-native';
+import {ArrowLeft, Bicycle, ForkKnife} from 'phosphor-react-native';
 
 import {
   ActivityIndicator,
@@ -8,8 +8,10 @@ import {
   FlatList,
   Pressable,
   RefreshControl,
+  StatusBar,
   StyleSheet,
   Text,
+  TouchableOpacity,
   View,
 } from 'react-native';
 
@@ -261,6 +263,7 @@ const CartScreen: React.FC = () => {
     return (
       <SafeAreaView
         style={styles.container} edges={['top', 'left', 'right']}>
+        <StatusBar backgroundColor="#FF7A00" barStyle="light-content" hidden={false} translucent={false} />
 
         <View
           style={styles.centerContainer}>
@@ -293,14 +296,24 @@ const CartScreen: React.FC = () => {
     return (
       <SafeAreaView
         style={styles.container} edges={['top', 'left', 'right']}>
+        <StatusBar backgroundColor="#FF7A00" barStyle="light-content" hidden={false} translucent={false} />
 
         <View
           style={styles.emptyHeader}>
 
-          <Text
-            style={styles.emptyTitle}>
-            My Cart
-          </Text>
+          <View style={{flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 8}}>
+            {navigation.canGoBack() && (
+              <TouchableOpacity
+                onPress={() => navigation.goBack()}
+                style={styles.headerBackButton}>
+                <ArrowLeft size={22} color="#1E232C" weight="bold" />
+              </TouchableOpacity>
+            )}
+            <Text
+              style={styles.emptyTitle}>
+              My Cart
+            </Text>
+          </View>
 
           <Text
             style={styles.emptySubtitle}>
@@ -323,6 +336,7 @@ const CartScreen: React.FC = () => {
   return (
     <SafeAreaView
       style={styles.container} edges={['top', 'left', 'right']}>
+      <StatusBar backgroundColor="#FF7A00" barStyle="light-content" hidden={false} translucent={false} />
 
       <FlatList
         data={items}
@@ -366,26 +380,36 @@ const CartScreen: React.FC = () => {
             <View
               style={styles.header}>
 
-              <View>
+              <View style={{flexDirection: 'row', alignItems: 'center', gap: 12}}>
+                {navigation.canGoBack() && (
+                  <TouchableOpacity
+                    onPress={() => navigation.goBack()}
+                    style={styles.headerBackButton}>
+                    <ArrowLeft size={22} color="#1E232C" weight="bold" />
+                  </TouchableOpacity>
+                )}
 
-                <Text
-                  style={
-                    styles.heading
-                  }>
-                  My Cart
-                </Text>
+                <View>
 
-                <Text
-                  style={
-                    styles.subheading
-                  }>
-                  {items.length}{' '}
-                  {items.length === 1
-                    ? 'item'
-                    : 'items'}{' '}
-                  in your cart
-                </Text>
+                  <Text
+                    style={
+                      styles.heading
+                    }>
+                    My Cart
+                  </Text>
 
+                  <Text
+                    style={
+                      styles.subheading
+                    }>
+                    {items.length}{' '}
+                    {items.length === 1
+                      ? 'item'
+                      : 'items'}{' '}
+                    in your cart
+                  </Text>
+
+                </View>
               </View>
 
               <View
@@ -759,8 +783,22 @@ const styles =
 
     emptyHeader: {
       paddingHorizontal: 20,
-      paddingTop: 22,
+      paddingTop: 18,
       paddingBottom: 4,
+    },
+
+    headerBackButton: {
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      backgroundColor: '#FFFFFF',
+      alignItems: 'center',
+      justifyContent: 'center',
+      shadowColor: '#000',
+      shadowOffset: {width: 0, height: 2},
+      shadowOpacity: 0.08,
+      shadowRadius: 4,
+      elevation: 3,
     },
 
     emptyTitle: {

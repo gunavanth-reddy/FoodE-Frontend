@@ -4,6 +4,7 @@ import {
   ActivityIndicator,
   Alert,
   FlatList,
+  StatusBar,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -13,6 +14,7 @@ import {
 import {SafeAreaView} from 'react-native-safe-area-context';
 
 import {
+  ArrowLeft,
   Storefront,
   Heart,
   Compass,
@@ -125,10 +127,15 @@ const FavoritesScreen = () => {
   // ===================================================
 
   const handleFoodPress = (food: Food) => {
-    console.log(
-      'Selected favorite food:',
-      food.name,
-    );
+    const restaurant = (food as any).restaurant;
+    if (restaurant && typeof restaurant === 'object') {
+      navigation.navigate('RestaurantDetails', {restaurant});
+      return;
+    }
+    const restaurantId = (food as any).restaurantId || (food as any).restaurantID;
+    if (restaurantId) {
+      navigation.navigate('RestaurantDetails', {restaurantId});
+    }
   };
 
   // ===================================================
@@ -234,6 +241,7 @@ const FavoritesScreen = () => {
       <SafeAreaView
         style={styles.container}
         edges={['top', 'left', 'right']}>
+        <StatusBar backgroundColor="#FF7A00" barStyle="light-content" hidden={false} translucent={false} />
         <View style={styles.loadingScreen}>
           <View style={styles.loadingIcon}>
             <Heart size={30} color="#FF7A00" weight="fill" />
@@ -260,6 +268,7 @@ const FavoritesScreen = () => {
     <SafeAreaView
       style={styles.container}
       edges={['top', 'left', 'right']}>
+      <StatusBar backgroundColor="#FF7A00" barStyle="light-content" hidden={false} translucent={false} />
 
       <FlatList<Restaurant | Food>
         data={currentData}
@@ -279,6 +288,17 @@ const FavoritesScreen = () => {
           <>
             <View style={styles.header}>
               <View style={styles.headerTop}>
+                {navigation.canGoBack() && (
+                  <TouchableOpacity
+                    accessibilityRole="button"
+                    accessibilityLabel="Go back"
+                    activeOpacity={0.75}
+                    onPress={() => navigation.goBack()}
+                    style={styles.backButton}>
+                    <ArrowLeft size={22} color="#1E232C" weight="bold" />
+                  </TouchableOpacity>
+                )}
+
                 <View
                   style={styles.headerTextContainer}>
                   <Text style={styles.eyebrow}>
@@ -513,6 +533,21 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+  },
+
+  backButton: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: 2},
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 3,
   },
 
   headerTextContainer: {

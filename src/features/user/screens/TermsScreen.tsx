@@ -1,15 +1,19 @@
 import React from 'react';
 import {SafeAreaView} from 'react-native-safe-area-context';
-import {ScrollView,
+import {useNavigation} from '@react-navigation/native';
+import {
+  ScrollView,
   StatusBar,
   StyleSheet,
   Text,
+  TouchableOpacity,
   View,
   Platform,
   useWindowDimensions,
 } from 'react-native';
 
 import {
+  ArrowLeft,
   Scroll,
   Info,
 } from 'phosphor-react-native';
@@ -17,6 +21,7 @@ import {
 const ORANGE = '#FF7A00';
 
 const TermsScreen: React.FC = () => {
+  const navigation = useNavigation<any>();
   const {width} = useWindowDimensions();
 
   const horizontalPadding = Math.min(
@@ -31,10 +36,7 @@ const TermsScreen: React.FC = () => {
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
-      <StatusBar
-        barStyle="dark-content"
-        backgroundColor="#F7F8FA"
-      />
+      <StatusBar backgroundColor="#FF7A00" barStyle="light-content" hidden={false} translucent={false} />
 
       <ScrollView
         style={styles.scrollView}
@@ -51,6 +53,15 @@ const TermsScreen: React.FC = () => {
         {/* Header */}
         <View style={styles.header}>
           <View style={styles.titleRow}>
+            {navigation.canGoBack() && (
+              <TouchableOpacity
+                onPress={() => navigation.goBack()}
+                style={styles.backButton}
+                activeOpacity={0.7}>
+                <ArrowLeft size={22} color="#1E232C" weight="bold" />
+              </TouchableOpacity>
+            )}
+
             <View style={styles.titleIcon}>
               <Scroll
                 size={22}
@@ -249,11 +260,23 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F7F8FA',
+  },
 
-    paddingTop:
-      Platform.OS === 'android'
-        ? StatusBar.currentHeight ?? 0
-        : 0,
+  backButton: {
+    width: 42,
+    height: 42,
+    borderRadius: 14,
+    backgroundColor: '#FFFFFF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 10,
+    borderWidth: 1,
+    borderColor: '#E8ECF4',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: 2},
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
   },
 
   scrollView: {

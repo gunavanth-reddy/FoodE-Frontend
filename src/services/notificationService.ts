@@ -16,12 +16,12 @@ import notifee, {
 } from '@notifee/react-native';
 
 // =====================================================
-// FCM
+// FCM CONFIGURATION
 // =====================================================
 
 const messaging = getMessaging();
 
-const API_BASE_URL = 'https://foode-backend-vn67.onrender.com/api';
+const API_BASE_URL = 'https://foode.site/api';
 
 const NOTIFICATION_CHANNEL_ID = 'foode_default';
 
@@ -40,9 +40,7 @@ export const createNotificationChannel = async (): Promise<void> => {
       vibration: true,
     });
 
-    console.log(
-      'FoodE: Notification channel created',
-    );
+    console.log('FoodE: Notification channel created');
   } catch (error) {
     console.error(
       'FoodE: Notification channel error:',
@@ -52,7 +50,7 @@ export const createNotificationChannel = async (): Promise<void> => {
 };
 
 // =====================================================
-// DISPLAY NOTIFICATION
+// DISPLAY NOTIFICATION WITH AUTOMATIC TIMESTAMP
 // =====================================================
 
 export const displayNotification = async (
@@ -65,23 +63,28 @@ export const displayNotification = async (
 
     await notifee.displayNotification({
       title: title || 'FoodE',
-      body:
-        body || 'You have a new notification',
+      body: body || 'You have a new notification',
       data,
+
       android: {
         channelId: NOTIFICATION_CHANNEL_ID,
         importance: AndroidImportance.HIGH,
+
+        // Display the notification timestamp on Android.
+        showTimestamp: true,
+        timestamp: Date.now(),
+
         pressAction: {
           id: 'default',
         },
+
         smallIcon: 'ic_launcher',
         sound: 'default',
         vibrationPattern: [300, 500],
+
         style: {
           type: AndroidStyle.BIGTEXT,
-          text:
-            body ||
-            'You have a new notification',
+          text: body || 'You have a new notification',
         },
       },
     });
@@ -94,7 +97,7 @@ export const displayNotification = async (
 };
 
 // =====================================================
-// SAVE FCM TOKEN
+// SAVE FCM TOKEN TO BACKEND
 // =====================================================
 
 const saveFCMTokenToBackend = async (
@@ -127,31 +130,25 @@ const saveFCMTokenToBackend = async (
       return false;
     }
 
-    console.log(
-      'FoodE: FCM token saved successfully',
-    );
+    console.log('FoodE: FCM token saved successfully');
 
     return true;
   } catch (error) {
-    console.error(
-      'FoodE: FCM backend error:',
-      error,
-    );
+    console.error('FoodE: FCM backend error:', error);
 
     return false;
   }
 };
 
 // =====================================================
-// REQUEST PERMISSION + GET TOKEN
+// REQUEST NOTIFICATION PERMISSION AND GET TOKEN
 // =====================================================
 
 export const requestNotificationPermission = async (
   authToken: string,
 ): Promise<string | null> => {
   try {
-    const authStatus =
-      await requestPermission(messaging);
+    const authStatus = await requestPermission(messaging);
 
     const enabled =
       authStatus === AuthorizationStatus.AUTHORIZED ||
@@ -177,10 +174,7 @@ export const requestNotificationPermission = async (
       return null;
     }
 
-    console.log(
-      'FoodE FCM Token:',
-      fcmToken,
-    );
+    console.log('FoodE FCM Token:', fcmToken);
 
     if (authToken) {
       await saveFCMTokenToBackend(
@@ -201,27 +195,57 @@ export const requestNotificationPermission = async (
 };
 
 // =====================================================
-// FOREGROUND FCM MESSAGE
+// FOREGROUND FCM MESSAGE HANDLER
 // =====================================================
 
 export const registerForegroundMessageHandler = (
   callback?: (message: any) => void,
 ) => {
-  return onMessage(
+  return onMessage(messaging, async remoteMessage => {
+    console.log(
+      'FoodE: Foreground notification received:',
+      remoteMessage,
+    );
+
+    const title =
+      remoteMessage.notification?.title || 'FoodE';
+
+    const body =
+      remoteMessage.notification?.body ||
+      'You have a new notification';
+
+    const data: Record<string, string> = {};
+
+    if (remoteMessage.data) {
+      Object.entries(remoteMessage.data).forEach(
+        ([key, value]) => {
+          data[key] = String(value);
+        },
+      );
+    }
+
+    // Foreground messages are displayed through Notifee,
+    // which applies the Android timestamp configuration.
+    await displayNotification(title, body, data);
+
+    callback?.(remoteMessage);
+  });
+};
+
+// =====================================================
+// NOTIFICATION TAP HANDLING
+// =====================================================
+
+export const registerNotificationTapHandlers = (
+  callback?: (data: Record<string, string>) => void,
+) => {
+  const unsubscribeOpenedApp = onNotificationOpenedApp(
     messaging,
-    async remoteMessage => {
+    remoteMessage => {
       console.log(
-        'FoodE: Foreground notification received:',
+        'FoodE: Notification opened:',
         remoteMessage,
       );
-
-      const title =
-        remoteMessage.notification?.title ||
-        'FoodE';
-
-      const body =
-        remoteMessage.notification?.body ||
-        'You have a new notification';
 
       const data: Record<string, string> = {};
 
@@ -233,46 +257,9 @@ export const registerForegroundMessageHandler = (
         );
       }
 
-      await displayNotification(
-        title,
-        body,
-        data,
-      );
-
-      callback?.(remoteMessage);
+      callback?.(data);
     },
   );
-};
-
-// =====================================================
-// NOTIFICATION TAP HANDLING
-// =====================================================
-
-export const registerNotificationTapHandlers = (
-  callback?: (data: Record<string, string>) => void,
-) => {
-  const unsubscribeOpenedApp =
-    onNotificationOpenedApp(
-      messaging,
-      remoteMessage => {
-        console.log(
-          'FoodE: Notification opened:',
-          remoteMessage,
-        );
-
-        const data: Record<string, string> = {};
-
-        if (remoteMessage.data) {
-          Object.entries(remoteMessage.data).forEach(
-            ([key, value]) => {
-              data[key] = String(value);
-            },
-          );
-        }
-
-        callback?.(data);
-      },
-    );
 
   return unsubscribeOpenedApp;
 };
@@ -326,29 +313,27 @@ export const registerNotifeeNotificationHandler = (
     data: Record<string, string>,
   ) => void,
 ) => {
-  return notifee.onForegroundEvent(
-    ({type, detail}) => {
-      if (
-        type === EventType.PRESS &&
-        detail.notification?.data
-      ) {
-        const data: Record<string, string> = {};
+  return notifee.onForegroundEvent(({type, detail}) => {
+    if (
+      type === EventType.PRESS &&
+      detail.notification?.data
+    ) {
+      const data: Record<string, string> = {};
 
-        Object.entries(
-          detail.notification.data,
-        ).forEach(([key, value]) => {
-          data[key] = String(value);
-        });
+      Object.entries(
+        detail.notification.data,
+      ).forEach(([key, value]) => {
+        data[key] = String(value);
+      });
 
-        console.log(
-          'FoodE: Local notification pressed:',
-          data,
-        );
+      console.log(
+        'FoodE: Local notification pressed:',
+        data,
+      );
 
-        callback?.(data);
-      }
-    },
-  );
+      callback?.(data);
+    }
+  });
 };
 
 // =====================================================
@@ -380,7 +365,7 @@ export const registerFCMTokenRefresh = (
 };
 
 // =====================================================
-// TYPES — BACKEND NOTIFICATION
+// BACKEND NOTIFICATION TYPE
 // =====================================================
 
 export interface BackendNotification {

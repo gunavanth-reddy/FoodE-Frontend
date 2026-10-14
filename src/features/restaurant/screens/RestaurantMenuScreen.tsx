@@ -792,10 +792,7 @@ const RestaurantMenuScreen = ({
       <SafeAreaView
         style={styles.loadingContainer}
         edges={['top', 'left', 'right']}>
-        <StatusBar
-          barStyle="dark-content"
-          backgroundColor="#F8F8FA"
-        />
+        <StatusBar hidden={true} />
 
         <ActivityIndicator
           size="large"
@@ -821,10 +818,7 @@ const RestaurantMenuScreen = ({
       style={styles.container}
       edges={['top', 'left', 'right']}>
 
-      <StatusBar
-        barStyle="dark-content"
-        backgroundColor="#F8F8FA"
-      />
+      <StatusBar hidden={true} />
 
       <ScrollView
         showsVerticalScrollIndicator={

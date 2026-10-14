@@ -21,6 +21,7 @@ import {
 import {SafeAreaView} from 'react-native-safe-area-context';
 
 import {
+  ArrowLeft,
   Storefront,
   CalendarBlank,
   Star,
@@ -854,16 +855,11 @@ const OrdersScreen: React.FC = () => {
     <SafeAreaView
       style={styles.container}
       edges={[
-        'top',
         'left',
         'right',
       ]}>
 
-      <StatusBar
-        barStyle="dark-content"
-        backgroundColor="#F7F8FA"
-        translucent={false}
-      />
+      <StatusBar backgroundColor="#FF7A00" barStyle="light-content" hidden={false} translucent={false} />
 
       {/* =================================================
           HEADER
@@ -879,25 +875,40 @@ const OrdersScreen: React.FC = () => {
             paddingTop:
               isShortScreen
                 ? 12
-                : 18,
+                : 16,
 
             paddingBottom:
               isShortScreen
-                ? 14
-                : 18,
+                ? 12
+                : 16,
           },
         ]}>
 
-        <View
-          style={
-            styles.headerIcon
-          }>
-          <Receipt
-            size={23}
-            color={ORANGE}
-            weight="duotone"
-          />
-        </View>
+        {navigation.canGoBack() ? (
+          <TouchableOpacity
+            accessibilityRole="button"
+            accessibilityLabel="Go back"
+            activeOpacity={0.75}
+            onPress={() => navigation.goBack()}
+            style={styles.backButton}>
+            <ArrowLeft
+              size={22}
+              color="#1E232C"
+              weight="bold"
+            />
+          </TouchableOpacity>
+        ) : (
+          <View
+            style={
+              styles.headerIcon
+            }>
+            <Receipt
+              size={23}
+              color={ORANGE}
+              weight="duotone"
+            />
+          </View>
+        )}
 
         <View
           style={
@@ -1094,6 +1105,23 @@ const styles = StyleSheet.create({
       width: 0,
       height: 3,
     },
+  },
+
+  backButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 14,
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 13,
+    borderWidth: 1,
+    borderColor: '#E8ECF4',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: 2},
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
   },
 
   headerIcon: {

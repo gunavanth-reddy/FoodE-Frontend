@@ -1,16 +1,18 @@
 import React from 'react';
 import {SafeAreaView} from 'react-native-safe-area-context';
-import {ScrollView,
+import {useNavigation} from '@react-navigation/native';
+import {
+  ScrollView,
   StatusBar,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
   useWindowDimensions,
-  Platform,
 } from 'react-native';
 
 import {
+  ArrowLeft,
   Globe,
   Check,
   Info,
@@ -19,16 +21,14 @@ import {
 const ORANGE = '#FF7A00';
 
 const LanguageScreen: React.FC = () => {
+  const navigation = useNavigation<any>();
   const {width} = useWindowDimensions();
 
   const horizontalPadding = width < 360 ? 18 : 24;
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
-      <StatusBar
-        backgroundColor="#FFFFFF"
-        barStyle="dark-content"
-      />
+      <StatusBar backgroundColor="#FF7A00" barStyle="light-content" hidden={false} translucent={false} />
 
       <ScrollView
         showsVerticalScrollIndicator={false}
@@ -36,12 +36,19 @@ const LanguageScreen: React.FC = () => {
           styles.scrollContent,
           {
             paddingHorizontal: horizontalPadding,
-            paddingTop:
-              Platform.OS === 'android'
-                ? (StatusBar.currentHeight || 0) + 12
-                : 16,
+            paddingTop: 16,
           },
         ]}>
+
+        {/* Back Button */}
+        {navigation.canGoBack() && (
+          <TouchableOpacity
+            onPress={() => navigation.goBack()}
+            style={styles.backButton}
+            activeOpacity={0.7}>
+            <ArrowLeft size={22} color="#1E232C" weight="bold" />
+          </TouchableOpacity>
+        )}
 
         {/* Header */}
         <View style={styles.header}>
@@ -130,6 +137,24 @@ const styles = StyleSheet.create({
   scrollContent: {
     flexGrow: 1,
     paddingBottom: 28,
+  },
+
+  backButton: {
+    width: 42,
+    height: 42,
+    borderRadius: 14,
+    backgroundColor: '#FFFFFF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#E8ECF4',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: 2},
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    alignSelf: 'flex-start',
   },
 
   header: {

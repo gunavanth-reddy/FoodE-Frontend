@@ -15,7 +15,9 @@ import {
   View,
 } from 'react-native';
 
+import {useNavigation} from '@react-navigation/native';
 import {
+  ArrowLeft,
   User,
   Check,
   CheckCircle,
@@ -47,6 +49,7 @@ const COLORS = {
 /* ================= SCREEN ================= */
 
 const PersonalInfoScreen = () => {
+  const navigation = useNavigation<any>();
   const {user} = useAuth();
 
   const [name, setName] = useState(user?.name || '');
@@ -77,16 +80,12 @@ const PersonalInfoScreen = () => {
   };
 
   return (
-    <SafeAreaView style={{flex: 1}} edges={["top", "left", "right"]}>
+    <SafeAreaView style={{flex: 1}} edges={['top', 'left', 'right']}>
       <KeyboardAvoidingView
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       
-      <StatusBar
-        barStyle="dark-content"
-        backgroundColor={COLORS.background}
-        translucent={false}
-      />
+      <StatusBar backgroundColor="#FF7A00" barStyle="light-content" hidden={false} translucent={false} />
 
       <ScrollView
         style={styles.scrollView}
@@ -97,21 +96,34 @@ const PersonalInfoScreen = () => {
 
         {/* Header */}
         <View style={styles.header}>
-          <View style={styles.headerIcon}>
-            <User
-              size={24}
-              color={COLORS.primary}
-              weight="regular"
-            />
+          <View style={{flexDirection: 'row', alignItems: 'center', gap: 12}}>
+            {navigation.canGoBack() ? (
+              <TouchableOpacity
+                activeOpacity={0.75}
+                onPress={() => navigation.goBack()}
+                style={styles.backButton}>
+                <ArrowLeft size={22} color="#1E232C" weight="bold" />
+              </TouchableOpacity>
+            ) : (
+              <View style={styles.headerIcon}>
+                <User
+                  size={24}
+                  color={COLORS.primary}
+                  weight="regular"
+                />
+              </View>
+            )}
+
+            <View style={{flex: 1}}>
+              <Text style={styles.title}>
+                Personal Information
+              </Text>
+
+              <Text style={styles.subtitle}>
+                Manage your personal details
+              </Text>
+            </View>
           </View>
-
-          <Text style={styles.title}>
-            Personal Information
-          </Text>
-
-          <Text style={styles.subtitle}>
-            Manage your personal details
-          </Text>
         </View>
 
         {/* Profile Card */}
@@ -344,17 +356,30 @@ const styles = StyleSheet.create({
   },
 
   header: {
-    marginBottom: 24,
+    marginBottom: 20,
+  },
+
+  backButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: COLORS.white,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: 2},
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 3,
   },
 
   headerIcon: {
-    width: 46,
-    height: 46,
+    width: 44,
+    height: 44,
     borderRadius: 15,
     backgroundColor: COLORS.primaryLight,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 14,
   },
 
   title: {

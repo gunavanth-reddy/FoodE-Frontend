@@ -88,11 +88,14 @@ const styles = StyleSheet.create({
   },
 
   content: {
+    width: '100%',
+    maxWidth: 520,
+    paddingHorizontal: 20,
     alignItems: 'center',
   },
 
   logo: {
-    fontSize: 52,
+    fontSize: 48,
     fontWeight: '800',
     color: '#FFFFFF',
     letterSpacing: 1,
@@ -101,6 +104,7 @@ const styles = StyleSheet.create({
   tagline: {
     marginTop: 8,
     fontSize: 15,
+    textAlign: 'center',
     color: '#FFFFFF',
     opacity: 0.9,
   },

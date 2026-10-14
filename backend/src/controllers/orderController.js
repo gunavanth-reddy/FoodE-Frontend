@@ -1,5 +1,5 @@
 // =====================================================
-// ORDER CONTROLLER
+// ORDER CONTROLLER — FoodE
 // =====================================================
 
 const Order = require("../models/Order");
@@ -16,7 +16,7 @@ const {
 } = require("../services/notificationService");
 
 // =====================================================
-// HELPERS
+// TIME HELPERS
 // =====================================================
 
 const timeToMinutes = (time) => {
@@ -28,13 +28,8 @@ const timeToMinutes = (time) => {
   }
 
   const [hours, minutes] = time.split(":").map(Number);
-
   return hours * 60 + minutes;
 };
-
-// =====================================================
-// CURRENT INDIA TIME
-// =====================================================
 
 const getCurrentIndiaMinutes = () => {
   const formatter = new Intl.DateTimeFormat("en-IN", {
@@ -57,10 +52,6 @@ const getCurrentIndiaMinutes = () => {
   return hour * 60 + minute;
 };
 
-// =====================================================
-// CHECK DELIVERY SLOT CUTOFF
-// =====================================================
-
 const isSlotClosedForBooking = (slot) => {
   if (!slot || !slot.startTime) {
     return true;
@@ -72,26 +63,24 @@ const isSlotClosedForBooking = (slot) => {
     return true;
   }
 
-  // Fixed 10-minute cutoff
-  const cutoffMinutes =
-    startMinutes - 10;
+  // Preserve the existing 10-minute booking cutoff.
+  const cutoffMinutes = startMinutes - 10;
+  const currentMinutes = getCurrentIndiaMinutes();
 
-  const currentMinutes =
-    getCurrentIndiaMinutes();
-
-  // Normal same-day cutoff
   if (cutoffMinutes >= 0) {
     return currentMinutes >= cutoffMinutes;
   }
 
-  // Midnight-safe handling
-  const normalizedCutoff =
-    cutoffMinutes + 24 * 60;
+  const normalizedCutoff = cutoffMinutes + 24 * 60;
 
   return (
     currentMinutes >= normalizedCutoff &&
     currentMinutes < startMinutes
   );
+};
+
+const findOwnerRestaurant = async (userId) => {
+  return Restaurant.findOne({ owner: userId });
 };
 
 // =====================================================
@@ -107,10 +96,6 @@ const createOrder = async (req, res) => {
       customerNote = "",
     } = req.body;
 
-    // ==========================================
-    // ADDRESS
-    // ==========================================
-
     if (
       !deliveryAddress ||
       !deliveryAddress.name ||
@@ -120,105 +105,61 @@ const createOrder = async (req, res) => {
     ) {
       return res.status(400).json({
         success: false,
-        message:
-          "Complete delivery address is required",
+        message: "Complete delivery address is required",
       });
     }
 
-    // ==========================================
-    // DELIVERY SLOT
-    // ==========================================
-
-    if (
-      !deliverySlot ||
-      !deliverySlot.slotId
-    ) {
+    if (!deliverySlot || !deliverySlot.slotId) {
       return res.status(400).json({
         success: false,
         message: "Delivery slot is required",
       });
     }
 
-    // ==========================================
-    // PAYMENT
-    // ==========================================
-
-    if (
-      !["COD", "ONLINE"].includes(
-        paymentMethod
-      )
-    ) {
+    if (!["COD", "ONLINE"].includes(paymentMethod)) {
       return res.status(400).json({
         success: false,
         message: "Invalid payment method",
       });
     }
 
-    // ==========================================
-    // CART
-    // ==========================================
-
     const cart = await Cart.findOne({
       user: req.user._id,
     });
 
-    if (
-      !cart ||
-      !Array.isArray(cart.items) ||
-      cart.items.length === 0
-    ) {
+    if (!cart || !Array.isArray(cart.items) || cart.items.length === 0) {
       return res.status(400).json({
         success: false,
         message: "Your cart is empty",
       });
     }
 
-    // ==========================================
-    // RESTAURANT
-    // ==========================================
-
-    const restaurant =
-      await Restaurant.findOne({
-        _id: cart.restaurant,
-        isActive: true,
-      });
+    const restaurant = await Restaurant.findOne({
+      _id: cart.restaurant,
+      isActive: true,
+    });
 
     if (!restaurant) {
       return res.status(400).json({
         success: false,
-        message:
-          "Restaurant is not available",
+        message: "Restaurant is not available",
       });
     }
 
-    // ==========================================
-    // DELIVERY SLOT
-    // ==========================================
-
-    const selectedSlot =
-      await DeliverySlot.findOne({
-        _id: deliverySlot.slotId,
-        restaurant: restaurant._id,
-        isActive: true,
-      });
+    const selectedSlot = await DeliverySlot.findOne({
+      _id: deliverySlot.slotId,
+      restaurant: restaurant._id,
+      isActive: true,
+    });
 
     if (!selectedSlot) {
       return res.status(400).json({
         success: false,
-        message:
-          "Selected delivery slot is not available",
+        message: "Selected delivery slot is not available",
       });
     }
 
-    // ==========================================
-    // CHECK CUTOFF
-    // ==========================================
-
-    if (
-      isSlotClosedForBooking(
-        selectedSlot
-      )
-    ) {
+    if (isSlotClosedForBooking(selectedSlot)) {
       return res.status(400).json({
         success: false,
         message:
@@ -226,14 +167,9 @@ const createOrder = async (req, res) => {
       });
     }
 
-    // ==========================================
-    // VERIFY CLIENT SLOT TIMES
-    // ==========================================
-
     if (
       deliverySlot.startTime &&
-      deliverySlot.startTime !==
-        selectedSlot.startTime
+      deliverySlot.startTime !== selectedSlot.startTime
     ) {
       return res.status(400).json({
         success: false,
@@ -243,8 +179,7 @@ const createOrder = async (req, res) => {
 
     if (
       deliverySlot.endTime &&
-      deliverySlot.endTime !==
-        selectedSlot.endTime
+      deliverySlot.endTime !== selectedSlot.endTime
     ) {
       return res.status(400).json({
         success: false,
@@ -252,88 +187,53 @@ const createOrder = async (req, res) => {
       });
     }
 
-    // ==========================================
-    // ORDER ITEMS
-    // ==========================================
-
+    // Validate and calculate order items.
     const orderItems = [];
 
     for (const cartItem of cart.items) {
-      const food =
-        await Food.findById(
-          cartItem.food
-        );
+      const food = await Food.findById(cartItem.food);
 
       if (!food) {
         return res.status(400).json({
           success: false,
-          message:
-            "One or more food items no longer exist",
+          message: "One or more food items no longer exist",
         });
       }
 
       if (!food.isAvailable) {
         return res.status(400).json({
           success: false,
-          message:
-            `${food.name} is currently unavailable`,
+          message: `${food.name} is currently unavailable`,
         });
       }
 
       if (
         !food.restaurant ||
-        food.restaurant.toString() !==
-          restaurant._id.toString()
+        food.restaurant.toString() !== restaurant._id.toString()
       ) {
         return res.status(400).json({
           success: false,
-          message:
-            "Invalid restaurant food item",
+          message: "Invalid restaurant food item",
         });
       }
 
-      // ========================================
-      // QUANTITY
-      // ========================================
+      const quantity = Number(cartItem.quantity || 0);
 
-      const quantity = Number(
-        cartItem.quantity || 0
-      );
-
-      if (
-        !Number.isInteger(quantity) ||
-        quantity < 1
-      ) {
+      if (!Number.isInteger(quantity) || quantity < 1) {
         return res.status(400).json({
           success: false,
-          message:
-            `Invalid quantity for ${food.name}`,
+          message: `Invalid quantity for ${food.name}`,
         });
       }
 
-      // ========================================
-      // ORIGINAL PRICE
-      // ========================================
+      const originalPrice = Number(food.price);
 
-      const originalPrice =
-        Number(food.price);
-
-      if (
-        !Number.isFinite(
-          originalPrice
-        ) ||
-        originalPrice < 0
-      ) {
+      if (!Number.isFinite(originalPrice) || originalPrice < 0) {
         return res.status(400).json({
           success: false,
-          message:
-            `Invalid price for ${food.name}`,
+          message: `Invalid price for ${food.name}`,
         });
       }
-
-      // ========================================
-      // DISCOUNTED PRICE
-      // ========================================
 
       const discountedPrice =
         food.discountedPrice !== null &&
@@ -344,38 +244,21 @@ const createOrder = async (req, res) => {
       if (
         discountedPrice !== null &&
         (
-          !Number.isFinite(
-            discountedPrice
-          ) ||
+          !Number.isFinite(discountedPrice) ||
           discountedPrice < 0 ||
           discountedPrice > originalPrice
         )
       ) {
         return res.status(400).json({
           success: false,
-          message:
-            `Invalid discounted price for ${food.name}`,
+          message: `Invalid discounted price for ${food.name}`,
         });
       }
 
-      // ========================================
-      // EFFECTIVE PRICE
-      // ========================================
-
       const finalPrice =
-        discountedPrice !== null
-          ? discountedPrice
-          : originalPrice;
+        discountedPrice !== null ? discountedPrice : originalPrice;
 
-      // ========================================
-      // ITEM TOTAL
-      // ========================================
-
-      const itemTotal = Number(
-        (
-          finalPrice * quantity
-        ).toFixed(2)
-      );
+      const itemTotal = Number((finalPrice * quantity).toFixed(2));
 
       orderItems.push({
         food: food._id,
@@ -387,232 +270,118 @@ const createOrder = async (req, res) => {
       });
     }
 
-    // ==========================================
-    // VALIDATE ITEMS
-    // ==========================================
-
     if (orderItems.length === 0) {
       return res.status(400).json({
         success: false,
-        message:
-          "No valid food items found",
+        message: "No valid food items found",
       });
     }
 
-    // ==========================================
-    // PRICE CALCULATION
-    // ==========================================
-
     const subtotal = Number(
       orderItems
-        .reduce(
-          (sum, item) =>
-            sum +
-            Number(item.total || 0),
-          0
-        )
+        .reduce((sum, item) => sum + Number(item.total || 0), 0)
         .toFixed(2)
     );
 
-    // Restaurant delivery fee
-    const deliveryFee = Number(
-      restaurant.deliveryFee || 0
-    );
-
+    const deliveryFee = Number(restaurant.deliveryFee || 0);
     const discount = 0;
 
     const total = Number(
-      (
-        subtotal +
-        deliveryFee -
-        discount
-      ).toFixed(2)
+      (subtotal + deliveryFee - discount).toFixed(2)
     );
 
-    // ==========================================
-    // CREATE ORDER
-    // ==========================================
+    const order = await Order.create({
+      user: req.user._id,
+      restaurant: restaurant._id,
+      items: orderItems,
 
-    const order =
-      await Order.create({
-        user: req.user._id,
+      deliveryAddress: {
+        name: deliveryAddress.name,
+        phone: deliveryAddress.phone,
+        addressLine: deliveryAddress.addressLine,
+        city: deliveryAddress.city,
+        state: deliveryAddress.state || "",
+        pincode: deliveryAddress.pincode || "",
+      },
 
-        restaurant:
-          restaurant._id,
+      deliverySlot: {
+        slotId: selectedSlot._id,
+        startTime: selectedSlot.startTime,
+        endTime: selectedSlot.endTime,
+      },
 
-        items: orderItems,
+      subtotal,
+      deliveryFee,
+      discount,
+      total,
+      paymentMethod,
+      paymentStatus: "PENDING",
+      status: "PLACED",
+      customerNote: customerNote || "",
+    });
 
-        deliveryAddress: {
-          name:
-            deliveryAddress.name,
-
-          phone:
-            deliveryAddress.phone,
-
-          addressLine:
-            deliveryAddress.addressLine,
-
-          city:
-            deliveryAddress.city,
-
-          state:
-            deliveryAddress.state || "",
-
-          pincode:
-            deliveryAddress.pincode || "",
-        },
-
-        deliverySlot: {
-          slotId:
-            selectedSlot._id,
-
-          startTime:
-            selectedSlot.startTime,
-
-          endTime:
-            selectedSlot.endTime,
-        },
-
-        subtotal,
-
-        deliveryFee,
-
-        discount,
-
-        total,
-
-        paymentMethod,
-
-        paymentStatus: "PENDING",
-
-        status: "PLACED",
-
-        customerNote:
-          customerNote || "",
-      });
-
-    // ==========================================
-    // CLEAR CART
-    // ==========================================
-
+    // Clear the cart after creating the order.
     cart.items = [];
-
     cart.subtotal = 0;
-
     cart.deliveryFee = 0;
-
     cart.total = 0;
 
     await cart.save();
 
-    // ==========================================
-    // POPULATE ORDER
-    // ==========================================
+    const populatedOrder = await Order.findById(order._id)
+      .populate("restaurant", "name logo phone")
+      .populate("items.food", "name image price discountedPrice")
+      .populate("deliverySlot.slotId");
 
-    const populatedOrder =
-      await Order.findById(
-        order._id
-      )
-        .populate(
-          "restaurant",
-          "name logo phone"
-        )
-        .populate(
-          "items.food",
-          "name image price discountedPrice"
-        )
-        .populate(
-          "deliverySlot.slotId"
-        );
-
-    // ==========================================
-    // CUSTOMER NOTIFICATION — ORDER PLACED
-    // ==========================================
-
+    // Customer: order placed.
     try {
-      if (
-        typeof notifyOrderPlaced ===
-        "function"
-      ) {
+      if (typeof notifyOrderPlaced === "function") {
         await notifyOrderPlaced({
-          userId:
-            populatedOrder.user ||
-            req.user._id,
-
-          orderId:
-            populatedOrder._id,
-
-          restaurantId:
-            restaurant._id,
-
-          orderNumber:
-            populatedOrder.orderNumber ||
-            populatedOrder._id,
+          userId: order.user,
+          orderId: order._id,
+          restaurantId: restaurant._id,
+          orderNumber: order.orderNumber || String(order._id),
         });
+      } else {
+        console.error(
+          "FoodE: notifyOrderPlaced is not exported correctly"
+        );
       }
     } catch (error) {
-      console.log(
-        "Order placed notification error:",
-        error.message
-      );
+      console.error("FoodE: Order placed notification failed:", error);
     }
 
-    // ==========================================
-    // RESTAURANT NOTIFICATION — NEW ORDER
-    // ==========================================
-
+    // Restaurant owner: new order.
     try {
-      if (
-        typeof notifyNewOrder ===
-        "function"
-      ) {
+      if (typeof notifyNewOrder === "function") {
         await notifyNewOrder({
-          ownerId:
-            restaurant.owner,
-
-          orderId:
-            populatedOrder._id,
-
-          restaurantId:
-            restaurant._id,
-
-          orderNumber:
-            populatedOrder.orderNumber ||
-            populatedOrder._id,
+          ownerId: restaurant.owner,
+          orderId: order._id,
+          restaurantId: restaurant._id,
+          orderNumber: order.orderNumber || String(order._id),
         });
+      } else {
+        console.error(
+          "FoodE: notifyNewOrder is not exported correctly"
+        );
       }
     } catch (error) {
-      console.log(
-        "New order notification error:",
-        error.message
-      );
+      console.error("FoodE: New order notification failed:", error);
     }
-
-    // ==========================================
-    // RESPONSE
-    // ==========================================
 
     return res.status(201).json({
       success: true,
-      message:
-        "Order placed successfully",
-      order:
-        populatedOrder,
+      message: "Order placed successfully",
+      order: populatedOrder,
     });
-
   } catch (error) {
-    console.error(
-      "Create Order Error:",
-      error
-    );
+    console.error("FoodE: Create order error:", error);
 
     return res.status(500).json({
       success: false,
-      message:
-        "Server error while creating order",
+      message: "Server error while creating order",
       error:
-        process.env.NODE_ENV ===
-        "development"
+        process.env.NODE_ENV === "development"
           ? error.message
           : undefined,
     });
@@ -620,78 +389,47 @@ const createOrder = async (req, res) => {
 };
 
 // =====================================================
-// GET MY ORDERS
+// GET CUSTOMER ORDERS
 // =====================================================
 
-const getMyOrders = async (
-  req,
-  res
-) => {
+const getMyOrders = async (req, res) => {
   try {
-    const orders =
-      await Order.find({
-        user: req.user._id,
-      })
-        .populate(
-          "restaurant",
-          "name logo phone"
-        )
-        .populate(
-          "items.food",
-          "name image price discountedPrice"
-        )
-        .populate(
-          "deliverySlot.slotId"
-        )
-        .sort({
-          createdAt: -1,
-        });
+    const orders = await Order.find({
+      user: req.user._id,
+    })
+      .populate("restaurant", "name logo phone")
+      .populate("items.food", "name image price discountedPrice")
+      .populate("deliverySlot.slotId")
+      .sort({ createdAt: -1 });
 
     return res.status(200).json({
       success: true,
       count: orders.length,
       orders,
     });
-
   } catch (error) {
-    console.error(
-      "Get My Orders Error:",
-      error
-    );
+    console.error("FoodE: Get my orders error:", error);
 
     return res.status(500).json({
       success: false,
-      message:
-        "Server error while fetching orders",
+      message: "Server error while fetching orders",
     });
   }
 };
 
 // =====================================================
-// GET SINGLE ORDER
+// GET SINGLE CUSTOMER ORDER
 // =====================================================
 
-const getOrderById = async (
-  req,
-  res
-) => {
+const getOrderById = async (req, res) => {
   try {
-    const order =
-      await Order.findOne({
-        _id: req.params.id,
-        user: req.user._id,
-      })
-        .populate(
-          "restaurant",
-          "name logo phone address"
-        )
-        .populate(
-          "items.food",
-          "name image price discountedPrice"
-        )
-        .populate(
-          "deliverySlot.slotId"
-        );
+    const order = await Order.findOne({
+      _id: req.params.id,
+      user: req.user._id,
+    })
+      .populate("restaurant", "name logo phone address")
+      .populate("items.food", "name image price discountedPrice")
+      .populate("deliverySlot.slotId");
 
     if (!order) {
       return res.status(404).json({
@@ -704,390 +442,202 @@ const getOrderById = async (
       success: true,
       order,
     });
-
   } catch (error) {
-    console.error(
-      "Get Order Error:",
-      error
-    );
+    console.error("FoodE: Get order error:", error);
 
     return res.status(500).json({
       success: false,
-      message:
-        "Server error while fetching order",
+      message: "Server error while fetching order",
     });
   }
 };
 
 // =====================================================
-// FIND OWNER RESTAURANT
+// GET RESTAURANT OWNER ORDERS
 // =====================================================
 
-// Owner can access orders even if
-// restaurant is currently inactive.
+const getRestaurantOrders = async (req, res) => {
+  try {
+    const restaurant = await findOwnerRestaurant(req.user._id);
 
-const findOwnerRestaurant = async (
-  userId
-) => {
-  return Restaurant.findOne({
-    owner: userId,
-  });
+    if (!restaurant) {
+      return res.status(404).json({
+        success: false,
+        message: "Restaurant not found for this owner",
+      });
+    }
+
+    const orders = await Order.find({
+      restaurant: restaurant._id,
+    })
+      .populate("user", "name phone")
+      .populate("items.food", "name image price discountedPrice")
+      .populate("deliverySlot.slotId")
+      .sort({ createdAt: -1 });
+
+    return res.status(200).json({
+      success: true,
+      count: orders.length,
+      orders,
+    });
+  } catch (error) {
+    console.error("FoodE: Get restaurant orders error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Server error while fetching restaurant orders",
+    });
+  }
 };
 
 // =====================================================
-// GET RESTAURANT ORDERS
+// UPDATE ORDER STATUS + CUSTOMER PUSH NOTIFICATION
 // =====================================================
 
-const getRestaurantOrders =
-  async (
-    req,
-    res
-  ) => {
-    try {
+const updateOrderStatus = async (req, res) => {
+  try {
+    const { status } = req.body;
 
-      const restaurant =
-        await findOwnerRestaurant(
-          req.user._id
-        );
-
-      if (!restaurant) {
-        return res.status(404).json({
-          success: false,
-          message:
-            "Restaurant not found for this owner",
-        });
-      }
-
-      const orders =
-        await Order.find({
-          restaurant:
-            restaurant._id,
-        })
-          .populate(
-            "user",
-            "name phone"
-          )
-          .populate(
-            "items.food",
-            "name image price discountedPrice"
-          )
-          .populate(
-            "deliverySlot.slotId"
-          )
-          .sort({
-            createdAt: -1,
-          });
-
-      return res.status(200).json({
-        success: true,
-        count:
-          orders.length,
-        orders,
-      });
-
-    } catch (error) {
-      console.error(
-        "Get Restaurant Orders Error:",
-        error
-      );
-
-      return res.status(500).json({
+    if (!["CONFIRMED", "DELIVERED"].includes(status)) {
+      return res.status(400).json({
         success: false,
-        message:
-          "Server error while fetching restaurant orders",
+        message: "Invalid order status",
       });
     }
-  };
 
-// =====================================================
-// UPDATE ORDER STATUS — RESTAURANT OWNER
-// =====================================================
-//
-// FLOW:
-//
-// PLACED
-//    ↓
-// CONFIRMED
-//    ↓
-// DELIVERED
-//
-// =====================================================
+    const restaurant = await findOwnerRestaurant(req.user._id);
 
-const updateOrderStatus =
-  async (
-    req,
-    res
-  ) => {
+    if (!restaurant) {
+      return res.status(404).json({
+        success: false,
+        message: "Restaurant not found for this owner",
+      });
+    }
+
+    const order = await Order.findOne({
+      _id: req.params.id,
+      restaurant: restaurant._id,
+    });
+
+    if (!order) {
+      return res.status(404).json({
+        success: false,
+        message: "Order not found",
+      });
+    }
+
+    const validTransitions = {
+      PLACED: ["CONFIRMED"],
+      CONFIRMED: ["DELIVERED"],
+      DELIVERED: [],
+    };
+
+    const allowedNextStatuses = validTransitions[order.status] || [];
+
+    if (!allowedNextStatuses.includes(status)) {
+      return res.status(400).json({
+        success: false,
+        message: `Cannot change order status from ${order.status} to ${status}`,
+      });
+    }
+
+    order.status = status;
+
+    if (status === "CONFIRMED") {
+      order.confirmedAt = new Date();
+    }
+
+    if (status === "DELIVERED") {
+      order.deliveredAt = new Date();
+
+      if (order.paymentMethod === "COD") {
+        order.paymentStatus = "PAID";
+      }
+    }
+
+    await order.save();
+
+    // Send the notification after the order status is saved.
     try {
+      const customerId = order.user?._id || order.user;
 
-      const {
-        status,
-      } = req.body;
-
-      // ==========================================
-      // ALLOWED STATUSES
-      // ==========================================
-
-      const allowedStatuses = [
-        "CONFIRMED",
-        "DELIVERED",
-      ];
-
-      if (
-        !allowedStatuses.includes(
-          status
-        )
-      ) {
-        return res.status(400).json({
-          success: false,
-          message:
-            "Invalid order status",
-        });
-      }
-
-      // ==========================================
-      // OWNER RESTAURANT
-      // ==========================================
-
-      const restaurant =
-        await findOwnerRestaurant(
-          req.user._id
+      if (!customerId) {
+        throw new Error(
+          `Customer ID is missing for order ${order._id}`
         );
-
-      if (!restaurant) {
-        return res.status(404).json({
-          success: false,
-          message:
-            "Restaurant not found for this owner",
-        });
       }
 
-      // ==========================================
-      // FIND ORDER
-      // ==========================================
-
-      const order =
-        await Order.findOne({
-          _id: req.params.id,
-          restaurant:
-            restaurant._id,
-        });
-
-      if (!order) {
-        return res.status(404).json({
-          success: false,
-          message:
-            "Order not found",
-        });
-      }
-
-      // ==========================================
-      // VALID TRANSITIONS
-      // ==========================================
-
-      const validTransitions = {
-        PLACED: [
-          "CONFIRMED",
-        ],
-
-        CONFIRMED: [
-          "DELIVERED",
-        ],
-
-        DELIVERED: [],
+      const notificationPayload = {
+        userId: customerId,
+        orderId: order._id,
+        restaurantId: restaurant._id,
+        orderNumber: order.orderNumber || String(order._id),
       };
 
-      const currentTransitions =
-        validTransitions[
-          order.status
-        ] || [];
+      if (status === "CONFIRMED") {
+        if (typeof notifyOrderConfirmed !== "function") {
+          throw new Error(
+            "notifyOrderConfirmed is not exported correctly"
+          );
+        }
 
-      if (
-        !currentTransitions.includes(
-          status
-        )
-      ) {
-        return res.status(400).json({
-          success: false,
-          message:
-            `Cannot change order status from ${order.status} to ${status}`,
+        console.log("FoodE: Sending ORDER_CONFIRMED notification", {
+          orderId: String(order._id),
+          customerId: String(customerId),
         });
+
+        const result = await notifyOrderConfirmed(notificationPayload);
+
+        console.log("FoodE: ORDER_CONFIRMED notification result:", result);
       }
 
-      // ==========================================
-      // UPDATE STATUS
-      // ==========================================
-
-      order.status = status;
-
-      // ==========================================
-      // CONFIRMED
-      // ==========================================
-
-      if (
-        status === "CONFIRMED"
-      ) {
-        order.confirmedAt =
-          new Date();
-      }
-
-      // ==========================================
-      // DELIVERED
-      // ==========================================
-
-      if (
-        status === "DELIVERED"
-      ) {
-        order.deliveredAt =
-          new Date();
-
-        // COD becomes paid
-        // after delivery.
-
-        if (
-          order.paymentMethod ===
-          "COD"
-        ) {
-          order.paymentStatus =
-            "PAID";
-        }
-      }
-
-      // ==========================================
-      // SAVE ORDER
-      // ==========================================
-
-      await order.save();
-
-      // ==========================================
-      // ORDER CONFIRMED NOTIFICATION
-      // ==========================================
-
-      if (
-        status === "CONFIRMED"
-      ) {
-        try {
-
-          if (
-            typeof notifyOrderConfirmed ===
-            "function"
-          ) {
-            await notifyOrderConfirmed({
-              userId:
-                order.user,
-
-              orderId:
-                order._id,
-
-              restaurantId:
-                restaurant._id,
-
-              orderNumber:
-                order.orderNumber ||
-                order._id,
-            });
-          }
-
-        } catch (
-          notificationError
-        ) {
-          console.log(
-            "Order confirmed notification error:",
-            notificationError.message
+      if (status === "DELIVERED") {
+        if (typeof notifyOrderDelivered !== "function") {
+          throw new Error(
+            "notifyOrderDelivered is not exported correctly"
           );
         }
+
+        console.log("FoodE: Sending ORDER_DELIVERED notification", {
+          orderId: String(order._id),
+          customerId: String(customerId),
+        });
+
+        const result = await notifyOrderDelivered(notificationPayload);
+
+        console.log("FoodE: ORDER_DELIVERED notification result:", result);
       }
-
-      // ==========================================
-      // ORDER DELIVERED NOTIFICATION
-      // ==========================================
-
-      if (
-        status === "DELIVERED"
-      ) {
-        try {
-
-          if (
-            typeof notifyOrderDelivered ===
-            "function"
-          ) {
-            await notifyOrderDelivered({
-              userId:
-                order.user,
-
-              orderId:
-                order._id,
-
-              restaurantId:
-                restaurant._id,
-
-              orderNumber:
-                order.orderNumber ||
-                order._id,
-            });
-          }
-
-        } catch (
-          notificationError
-        ) {
-          console.log(
-            "Order delivered notification error:",
-            notificationError.message
-          );
-        }
-      }
-
-      // ==========================================
-      // UPDATED ORDER
-      // ==========================================
-
-      const updatedOrder =
-        await Order.findById(
-          order._id
-        )
-          .populate(
-            "restaurant",
-            "name logo phone"
-          )
-          .populate(
-            "items.food",
-            "name image price discountedPrice"
-          )
-          .populate(
-            "deliverySlot.slotId"
-          );
-
-      // ==========================================
-      // RESPONSE
-      // ==========================================
-
-      return res.status(200).json({
-        success: true,
-        message:
-          "Order status updated successfully",
-        order:
-          updatedOrder,
-      });
-
-    } catch (error) {
-
+    } catch (notificationError) {
+      // The order remains updated even if the push notification fails.
       console.error(
-        "Update Order Status Error:",
-        error
+        "FoodE: Order status notification failed:",
+        notificationError
       );
-
-      return res.status(500).json({
-        success: false,
-        message:
-          "Server error while updating order status",
-        error:
-          process.env.NODE_ENV ===
-          "development"
-            ? error.message
-            : undefined,
-      });
     }
-  };
+
+    const updatedOrder = await Order.findById(order._id)
+      .populate("restaurant", "name logo phone")
+      .populate("items.food", "name image price discountedPrice")
+      .populate("deliverySlot.slotId");
+
+    return res.status(200).json({
+      success: true,
+      message: "Order status updated successfully",
+      order: updatedOrder,
+    });
+  } catch (error) {
+    console.error("FoodE: Update order status error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Server error while updating order status",
+      error:
+        process.env.NODE_ENV === "development"
+          ? error.message
+          : undefined,
+    });
+  }
+};
 
 // =====================================================
 // EXPORTS

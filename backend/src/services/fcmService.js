@@ -11,7 +11,6 @@ const sendNotificationToDevice = async ({
     data = {},
 }) => {
     try {
-
         if (!fcmToken) {
             console.log(
                 "FCM notification skipped: No FCM token"
@@ -23,30 +22,27 @@ const sendNotificationToDevice = async ({
             };
         }
 
-        // =================================================
-        // CONVERT ALL DATA VALUES TO STRINGS
-        // =================================================
-
+        // Convert all data values to strings.
         const stringData = {};
 
-        Object.entries(data).forEach(
-            ([key, value]) => {
+        Object.entries(data).forEach(([key, value]) => {
+            if (value !== undefined && value !== null) {
                 stringData[key] = String(value);
             }
-        );
+        });
 
-        // =================================================
-        // FCM MESSAGE
-        // =================================================
+        // Use the server's current timestamp.
+        const timestamp = Date.now();
 
+        stringData.timestamp = String(timestamp);
+
+        // FCM message.
         const message = {
             token: fcmToken,
 
             notification: {
                 title: title || "FoodE",
-                body:
-                    body ||
-                    "You have a new notification",
+                body: body || "You have a new notification",
             },
 
             data: stringData,
@@ -57,28 +53,26 @@ const sendNotificationToDevice = async ({
                 notification: {
                     channelId: "foode_default",
                     sound: "default",
+                    defaultSound: true,
+                    visibility: "private",
                 },
             },
         };
 
-        // =================================================
-        // SEND NOTIFICATION
-        // =================================================
-
+        // Send notification.
         const response = await messaging.send(message);
 
-        console.log(
-            "FCM notification sent:",
-            response
-        );
+        console.log("FCM notification sent:", {
+            messageId: response,
+            timestamp: new Date(timestamp).toISOString(),
+        });
 
         return {
             success: true,
             messageId: response,
+            timestamp,
         };
-
     } catch (error) {
-
         console.error(
             "FCM notification error:",
             error
@@ -91,7 +85,6 @@ const sendNotificationToDevice = async ({
         };
     }
 };
-
 
 // =====================================================
 // EXPORT

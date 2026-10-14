@@ -140,7 +140,7 @@ const EditProfileScreen: React.FC = () => {
   // ===================================================
 
   return (
-    <SafeAreaView style={{flex: 1}} edges={["top", "left", "right"]}>
+    <SafeAreaView style={{flex: 1}} edges={['top', 'left', 'right']}>
       <KeyboardAvoidingView
       style={styles.screen}
       behavior={
@@ -149,10 +149,7 @@ const EditProfileScreen: React.FC = () => {
           : undefined
       }>
 
-      <StatusBar
-        barStyle="dark-content"
-        backgroundColor={COLORS.background}
-      />
+      <StatusBar backgroundColor="#FF7A00" barStyle="light-content" hidden={false} translucent={false} />
 
       <ScrollView
         contentContainerStyle={styles.scrollContent}

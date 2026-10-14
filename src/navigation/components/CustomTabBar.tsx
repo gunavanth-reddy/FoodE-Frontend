@@ -6,6 +6,7 @@ import {
   Text,
   View,
   StyleSheet,
+  useWindowDimensions,
 } from 'react-native';
 import {BottomTabBarProps} from '@react-navigation/bottom-tabs';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
@@ -18,9 +19,10 @@ import {
 } from 'phosphor-react-native';
 
 import {useAuth} from '../../context/AuthContext';
+import {useCart} from '../../context/CartContext';
 
-const ORANGE = '#F47721';
-const INACTIVE = '#7A8490';
+const PRIMARY_ORANGE = '#FF6B00';
+const INACTIVE_COLOR = '#8A92A0';
 
 const tabs = [
   {name: 'Home', label: 'Home', Icon: House},
@@ -35,24 +37,43 @@ const CustomTabBar: React.FC<BottomTabBarProps> = ({
   navigation,
 }) => {
   const {isLoggedIn} = useAuth();
+  const {items} = useCart();
   const insets = useSafeAreaInsets();
+  const {width} = useWindowDimensions();
+
+  const totalCartCount = (items || []).reduce(
+    (total, item) => total + (item.quantity || 1),
+    0,
+  );
 
   const pressScales = useRef(
     tabs.map(() => new Animated.Value(1)),
   ).current;
 
-  const indicatorPosition = useRef(
-    new Animated.Value(state.index),
+  const tabBounces = useRef(
+    tabs.map(() => new Animated.Value(0)),
   ).current;
 
+  // Trigger bounce on tab switch
   useEffect(() => {
-    Animated.spring(indicatorPosition, {
-      toValue: state.index,
-      speed: 18,
-      bounciness: 4,
-      useNativeDriver: true,
-    }).start();
-  }, [state.index, indicatorPosition]);
+    const currentTab = tabs[state.index];
+    if (currentTab && tabBounces[state.index]) {
+      tabBounces[state.index].setValue(0);
+      Animated.sequence([
+        Animated.timing(tabBounces[state.index], {
+          toValue: -6,
+          duration: 140,
+          useNativeDriver: true,
+        }),
+        Animated.spring(tabBounces[state.index], {
+          toValue: 0,
+          friction: 4,
+          tension: 70,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    }
+  }, [state.index, tabBounces]);
 
   const handleTabPress = (tabName: string) => {
     if (
@@ -89,40 +110,24 @@ const CustomTabBar: React.FC<BottomTabBarProps> = ({
 
   const animatePress = (index: number, pressed: boolean) => {
     Animated.spring(pressScales[index], {
-      toValue: pressed ? 0.9 : 1,
-      speed: 22,
-      bounciness: 5,
+      toValue: pressed ? 0.88 : 1,
+      speed: 24,
+      bounciness: 6,
       useNativeDriver: true,
     }).start();
   };
 
+  const isSmallScreen = width < 360;
+
   return (
     <View
       style={[
-        styles.safeArea,
-        {paddingBottom: insets.bottom},
+        styles.outerContainer,
+        {
+          paddingBottom: Math.max(insets.bottom, 8),
+        },
       ]}>
-      <View style={styles.bar}>
-        <View
-          pointerEvents="none"
-          style={styles.indicatorTrack}>
-          <Animated.View
-            style={[
-              styles.slidingIndicator,
-              {
-                transform: [
-                  {
-                    translateX: indicatorPosition.interpolate({
-                      inputRange: [0, tabs.length - 1],
-                      outputRange: [0, 0],
-                    }),
-                  },
-                ],
-              },
-            ]}
-          />
-        </View>
-
+      <View style={styles.floatingDock}>
         {tabs.map((tab, index) => {
           const routeIndex = state.routes.findIndex(
             route => route.name === tab.name,
@@ -143,26 +148,42 @@ const CustomTabBar: React.FC<BottomTabBarProps> = ({
               onPress={() => handleTabPress(tab.name)}
               onPressIn={() => animatePress(index, true)}
               onPressOut={() => animatePress(index, false)}
-              style={styles.tab}>
+              style={styles.tabItem}>
               <Animated.View
                 style={[
-                  styles.content,
+                  styles.tabContent,
                   isCart && styles.cartContent,
-                  {transform: [{scale: pressScales[index]}]},
+                  {
+                    transform: [
+                      {scale: pressScales[index]},
+                      {translateY: tabBounces[index]},
+                    ],
+                  },
                 ]}>
                 {isCart ? (
                   <View style={styles.cartButton}>
                     <IconComponent
-                      size={25}
+                      size={24}
                       color="#FFFFFF"
                       weight="bold"
                     />
+                    {totalCartCount > 0 && (
+                      <View style={styles.cartBadge}>
+                        <Text style={styles.cartBadgeText}>
+                          {totalCartCount > 99 ? '99+' : totalCartCount}
+                        </Text>
+                      </View>
+                    )}
                   </View>
                 ) : (
-                  <View style={styles.iconHolder}>
+                  <View
+                    style={[
+                      styles.iconHolder,
+                      focused && styles.activeIconHolder,
+                    ]}>
                     <IconComponent
-                      size={22}
-                      color={focused ? ORANGE : INACTIVE}
+                      size={isSmallScreen ? 20 : 22}
+                      color={focused ? PRIMARY_ORANGE : INACTIVE_COLOR}
                       weight={focused ? 'fill' : 'regular'}
                     />
                   </View>
@@ -170,15 +191,16 @@ const CustomTabBar: React.FC<BottomTabBarProps> = ({
 
                 <Text
                   style={[
-                    styles.label,
-                    focused && styles.activeLabel,
+                    styles.tabLabel,
+                    focused && styles.activeTabLabel,
+                    isCart && styles.cartLabel,
                   ]}
                   numberOfLines={1}>
                   {tab.label}
                 </Text>
 
                 {focused && !isCart && (
-                  <View style={styles.activeDot} />
+                  <View style={styles.activePillDot} />
                 )}
               </Animated.View>
             </Pressable>
@@ -192,100 +214,106 @@ const CustomTabBar: React.FC<BottomTabBarProps> = ({
 export default CustomTabBar;
 
 const styles = StyleSheet.create({
-  safeArea: {
+  outerContainer: {
     width: '100%',
     backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    shadowColor: '#171B24',
+    shadowOffset: {width: 0, height: -4},
+    shadowOpacity: 0.08,
+    shadowRadius: 16,
+    elevation: 16,
   },
-
-  bar: {
-    height: 66,
+  floatingDock: {
+    height: 64,
     width: '100%',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-around',
-    paddingHorizontal: 5,
-    backgroundColor: '#FFFFFF',
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: '#F0E6DF',
-    shadowColor: '#24170F',
-    shadowOffset: {width: 0, height: -3},
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 10,
+    paddingHorizontal: 8,
   },
-
-  indicatorTrack: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    height: 3,
-  },
-
-  slidingIndicator: {
-    display: 'none',
-  },
-
-  tab: {
+  tabItem: {
     flex: 1,
     minWidth: 0,
     height: '100%',
     alignItems: 'center',
     justifyContent: 'center',
   },
-
-  content: {
+  tabContent: {
     alignItems: 'center',
     justifyContent: 'center',
   },
-
   iconHolder: {
-    width: 36,
-    height: 30,
-    borderRadius: 15,
+    width: 38,
+    height: 32,
+    borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: 'transparent',
   },
-
-  cartContent: {
-    marginTop: -16,
+  activeIconHolder: {
+    backgroundColor: '#FFF2E6',
   },
-
+  cartContent: {
+    marginTop: -22,
+  },
   cartButton: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: ORANGE,
-    borderWidth: 3,
-    borderColor: '#FFFFFF',
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: PRIMARY_ORANGE,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: ORANGE,
-    shadowOffset: {width: 0, height: 3},
-    shadowOpacity: 0.25,
-    shadowRadius: 6,
-    elevation: 7,
+    borderWidth: 3.5,
+    borderColor: '#FFFFFF',
+    shadowColor: PRIMARY_ORANGE,
+    shadowOffset: {width: 0, height: 4},
+    shadowOpacity: 0.35,
+    shadowRadius: 8,
+    elevation: 9,
+    position: 'relative',
   },
-
-  label: {
-    marginTop: 3,
+  cartBadge: {
+    position: 'absolute',
+    top: -4,
+    right: -4,
+    backgroundColor: '#DC2626',
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
+    borderRadius: 10,
+    minWidth: 19,
+    height: 19,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 3,
+  },
+  cartBadgeText: {
+    color: '#FFFFFF',
     fontSize: 9,
+    fontWeight: '800',
+  },
+  tabLabel: {
+    marginTop: 2,
+    fontSize: 10,
     fontWeight: '600',
-    color: INACTIVE,
+    color: INACTIVE_COLOR,
     textAlign: 'center',
   },
-
-  activeLabel: {
-    color: ORANGE,
+  activeTabLabel: {
+    color: PRIMARY_ORANGE,
+    fontWeight: '800',
+  },
+  cartLabel: {
+    marginTop: 3,
+    color: PRIMARY_ORANGE,
     fontWeight: '700',
   },
-
-  activeDot: {
-    width: 4,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: ORANGE,
+  activePillDot: {
+    width: 5,
+    height: 5,
+    borderRadius: 2.5,
+    backgroundColor: PRIMARY_ORANGE,
     marginTop: 2,
   },
 });

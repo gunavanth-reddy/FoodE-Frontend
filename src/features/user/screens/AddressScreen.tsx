@@ -1,14 +1,18 @@
 import React from 'react';
 import {SafeAreaView} from 'react-native-safe-area-context';
-import {ScrollView,
+import {
+  ScrollView,
   StatusBar,
   StyleSheet,
   Text,
+  TouchableOpacity,
   View,
   useWindowDimensions,
 } from 'react-native';
+import {useNavigation} from '@react-navigation/native';
 
 import {
+  ArrowLeft,
   MapPin,
   CheckCircle,
   NavigationArrow,
@@ -20,17 +24,14 @@ import {
 const ORANGE = '#FF6B00';
 
 const AddressScreen: React.FC = () => {
+  const navigation = useNavigation<any>();
   const {width} = useWindowDimensions();
 
   const horizontalPadding = width < 360 ? 16 : 22;
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
-      <StatusBar
-        barStyle="dark-content"
-        backgroundColor="#F7F8FA"
-        translucent={false}
-      />
+      <StatusBar backgroundColor="#FF7A00" barStyle="light-content" hidden={false} translucent={false} />
 
       <ScrollView
         showsVerticalScrollIndicator={false}
@@ -42,11 +43,23 @@ const AddressScreen: React.FC = () => {
         ]}>
         {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.title}>Saved Addresses</Text>
+          <View style={{flexDirection: 'row', alignItems: 'center', gap: 12}}>
+            {navigation.canGoBack() && (
+              <TouchableOpacity
+                activeOpacity={0.75}
+                onPress={() => navigation.goBack()}
+                style={styles.backButton}>
+                <ArrowLeft size={22} color="#1E232C" weight="bold" />
+              </TouchableOpacity>
+            )}
+            <View>
+              <Text style={styles.title}>Saved Addresses</Text>
 
-          <Text style={styles.subtitle}>
-            Your delivery location for FoodE.
-          </Text>
+              <Text style={styles.subtitle}>
+                Your delivery location for FoodE.
+              </Text>
+            </View>
+          </View>
         </View>
 
         {/* Section Title */}
@@ -191,7 +204,21 @@ const styles = StyleSheet.create({
   },
 
   header: {
-    marginBottom: 28,
+    marginBottom: 24,
+  },
+
+  backButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: 2},
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 3,
   },
 
   title: {

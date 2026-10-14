@@ -1,6 +1,8 @@
 import {SafeAreaView} from 'react-native-safe-area-context';
 import React, {useState} from 'react';
-import {ScrollView,
+import {
+  ScrollView,
+  StatusBar,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -8,7 +10,7 @@ import {ScrollView,
 } from 'react-native';
 
 import {useNavigation} from '@react-navigation/native';
-import {CheckCircle} from 'phosphor-react-native';
+import {ArrowLeft, CheckCircle} from 'phosphor-react-native';
 import {NativeStackNavigationProp} from '@react-navigation/native-stack';
 
 import {RootStackParamList} from '../../../navigation/AppNavigator';
@@ -48,12 +50,35 @@ const PaymentScreen: React.FC = () => {
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
+      <StatusBar backgroundColor="#FF7A00" barStyle="light-content" hidden={false} translucent={false} />
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.content}>
-        <Text style={styles.heading}>
-          Payment
-        </Text>
+        <View style={{flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 16}}>
+          {navigation.canGoBack() && (
+            <TouchableOpacity
+              activeOpacity={0.75}
+              onPress={() => navigation.goBack()}
+              style={{
+                width: 42,
+                height: 42,
+                borderRadius: 21,
+                backgroundColor: '#FFFFFF',
+                alignItems: 'center',
+                justifyContent: 'center',
+                shadowColor: '#000',
+                shadowOffset: {width: 0, height: 2},
+                shadowOpacity: 0.08,
+                shadowRadius: 4,
+                elevation: 3,
+              }}>
+              <ArrowLeft size={22} color="#1E232C" weight="bold" />
+            </TouchableOpacity>
+          )}
+          <Text style={styles.heading}>
+            Payment
+          </Text>
+        </View>
 
         <View style={styles.card}>
           <Text style={styles.title}>
@@ -120,7 +145,7 @@ const PaymentScreen: React.FC = () => {
           activeOpacity={0.9}
           style={styles.payButton}
           onPress={() =>
-            navigation.navigate(
+            (navigation as any).navigate(
               'OrderSuccess',
             )
           }>

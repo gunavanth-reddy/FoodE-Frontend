@@ -4,6 +4,7 @@ import {SafeAreaView} from 'react-native-safe-area-context';
 import {
   Animated,
   ScrollView,
+  StatusBar,
   StyleSheet,
   Text,
   View,
@@ -189,7 +190,7 @@ const OrderSuccessScreen: React.FC = () => {
   const route =
     useRoute<OrderSuccessRouteProp>();
 
-  const {order} = route.params;
+  const order = route.params?.order;
 
   const {
     titleOpacity,
@@ -245,7 +246,7 @@ const OrderSuccessScreen: React.FC = () => {
 
   const itemTotal =
   Number(order?.subtotal || 0) > 0
-    ? Number(order.subtotal)
+    ? Number(order?.subtotal || 0)
     : calculatedItemTotal;
 
   // ===================================================
@@ -306,7 +307,8 @@ const OrderSuccessScreen: React.FC = () => {
   return (
     <SafeAreaView
       style={styles.container}
-     edges={['top', 'left', 'right']}>
+      edges={['top', 'left', 'right']}>
+      <StatusBar backgroundColor="#FF7A00" barStyle="light-content" hidden={false} translucent={false} />
       {/* =========================================
           BACKGROUND
       ========================================= */}

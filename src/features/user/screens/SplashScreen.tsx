@@ -154,11 +154,7 @@ const SplashScreen = ({navigation}: any) => {
 
   return (
     <View style={styles.container}>
-      <StatusBar
-        barStyle="light-content"
-        backgroundColor="#FF6500"
-        translucent={false}
-      />
+      <StatusBar backgroundColor="#FF7A00" barStyle="light-content" hidden={false} translucent={false} />
 
       {/* Full-screen FoodE splash image */}
       <Animated.View

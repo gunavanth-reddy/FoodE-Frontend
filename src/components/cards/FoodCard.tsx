@@ -22,7 +22,7 @@ interface FoodCardProps {
   showFavorite?: boolean;
 }
 
-const BACKEND_ORIGIN = 'https://foode-backend-vn67.onrender.com/api';
+const BACKEND_ORIGIN = 'https://foode.site/api';
 
 const FoodCard: React.FC<FoodCardProps> = ({
   food,

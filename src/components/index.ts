@@ -14,3 +14,4 @@ export {default as Loader} from './loaders/Loader';
 export {default as FoodCard} from './cards/FoodCard';
 
 export {default as RestaurantCard} from './cards/RestaurantCard';
+export {default as ScreenHeader} from './common/ScreenHeader';

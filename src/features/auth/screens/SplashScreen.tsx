@@ -180,11 +180,7 @@ const SplashScreen = ({navigation}: any) => {
 
   return (
     <View style={styles.container}>
-      <StatusBar
-        barStyle="light-content"
-        backgroundColor={ORANGE}
-        translucent={false}
-      />
+      <StatusBar hidden={true} />
 
       {/* Full-screen FoodE brand image */}
       <Animated.View
@@ -274,15 +270,16 @@ const styles = StyleSheet.create({
 
   glow: {
     width: 220,
-    height: 220,
-    borderRadius: 110,
+    maxWidth: '70%',
+    aspectRatio: 1,
+    borderRadius: 999,
     backgroundColor: '#FFF4A3',
   },
 
   brandContainer: {
     position: 'absolute',
-    left: 20,
-    right: 20,
+    left: 16,
+    right: 16,
     bottom: '19%',
     alignItems: 'center',
   },
@@ -309,7 +306,7 @@ const styles = StyleSheet.create({
 
   loadingContainer: {
     position: 'absolute',
-    bottom: 42,
+    bottom: 24,
     alignSelf: 'center',
     alignItems: 'center',
     paddingHorizontal: 18,

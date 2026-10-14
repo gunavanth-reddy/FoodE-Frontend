@@ -1,3 +1,4 @@
+
 import React, {useEffect} from 'react';
 import {StatusBar} from 'react-native';
 import {SafeAreaProvider} from 'react-native-safe-area-context';
@@ -35,118 +36,53 @@ const handleNotificationNavigation = (
     return;
   }
 
-  const type = data.type;
-
   console.log(
     'FoodE: Handling notification navigation:',
     data,
   );
 
-  // ===================================================
-  // WAIT FOR NAVIGATION TO BE READY
-  // ===================================================
-
   if (!navigationRef.isReady()) {
     console.log(
       'FoodE: Navigation is not ready yet.',
     );
-
     return;
   }
 
-  // ===================================================
-  // CUSTOMER — ORDER NOTIFICATIONS
-  // ===================================================
+  switch (data.type) {
+    case 'ORDER_PLACED':
+    case 'ORDER_CONFIRMED':
+    case 'ORDER_DELIVERED':
+      navigationRef.navigate('Orders');
+      break;
 
-  if (
-    type === 'ORDER_PLACED' ||
-    type === 'ORDER_CONFIRMED' ||
-    type === 'ORDER_DELIVERED'
-  ) {
-    navigationRef.navigate('Orders');
-    return;
+    case 'PROMOTION':
+    case 'PLATFORM_EVENT':
+    case 'TEST_NOTIFICATION':
+      navigationRef.navigate('Notifications');
+      break;
+
+    case 'NEW_ORDER':
+      navigationRef.navigate('RestaurantOwner', {
+        screen: 'RestaurantOrders',
+      });
+      break;
+
+    case 'NEW_REVIEW':
+      navigationRef.navigate('RestaurantOwner', {
+        screen: 'RestaurantReviews',
+      });
+      break;
+
+    case 'RESTAURANT_APPROVED':
+    case 'RESTAURANT_REJECTED':
+      navigationRef.navigate('RestaurantOwner', {
+        screen: 'RestaurantDashboard',
+      });
+      break;
+
+    default:
+      navigationRef.navigate('Notifications');
   }
-
-  // ===================================================
-  // CUSTOMER — PROMOTION
-  // ===================================================
-
-  if (type === 'PROMOTION') {
-    navigationRef.navigate('Notifications');
-    return;
-  }
-
-  // ===================================================
-  // RESTAURANT OWNER — NEW ORDER
-  // ===================================================
-
-  if (type === 'NEW_ORDER') {
-    navigationRef.navigate('RestaurantOwner', {
-      screen: 'RestaurantOrders',
-    });
-
-    return;
-  }
-
-  // ===================================================
-  // RESTAURANT OWNER — NEW REVIEW
-  // ===================================================
-
-  if (type === 'NEW_REVIEW') {
-    navigationRef.navigate('RestaurantOwner', {
-      screen: 'RestaurantReviews',
-    });
-
-    return;
-  }
-
-  // ===================================================
-  // RESTAURANT OWNER — APPROVED
-  // ===================================================
-
-  if (type === 'RESTAURANT_APPROVED') {
-    navigationRef.navigate('RestaurantOwner', {
-      screen: 'RestaurantDashboard',
-    });
-
-    return;
-  }
-
-  // ===================================================
-  // RESTAURANT OWNER — REJECTED
-  // ===================================================
-
-  if (type === 'RESTAURANT_REJECTED') {
-    navigationRef.navigate('RestaurantOwner', {
-      screen: 'RestaurantDashboard',
-    });
-
-    return;
-  }
-
-  // ===================================================
-  // PLATFORM EVENT
-  // ===================================================
-
-  if (type === 'PLATFORM_EVENT') {
-    navigationRef.navigate('Notifications');
-    return;
-  }
-
-  // ===================================================
-  // TEST NOTIFICATION
-  // ===================================================
-
-  if (type === 'TEST_NOTIFICATION') {
-    navigationRef.navigate('Notifications');
-    return;
-  }
-
-  // ===================================================
-  // FALLBACK
-  // ===================================================
-
-  navigationRef.navigate('Notifications');
 };
 
 // =====================================================
@@ -156,31 +92,37 @@ const handleNotificationNavigation = (
 const NotificationSetup: React.FC = () => {
   const {token} = useAuth();
 
-  // ===================================================
-  // FOREGROUND NOTIFICATION
-  // ===================================================
+  // ---------------------------------------------------
+  // FOREGROUND NOTIFICATIONS
+  // registerForegroundMessageHandler already displays
+  // incoming foreground notifications using Notifee.
+// ---------------------------------------------------
 
   useEffect(() => {
     const unsubscribe =
       registerForegroundMessageHandler(message => {
         console.log(
           'FoodE: Foreground notification received:',
-          message,
+          {
+            title: message.notification?.title,
+            body: message.notification?.body,
+            data: message.data,
+          },
         );
       });
 
     return unsubscribe;
   }, []);
 
-  // ===================================================
+  // ---------------------------------------------------
   // NOTIFICATION TAP HANDLERS
-  // ===================================================
+  // ---------------------------------------------------
 
   useEffect(() => {
     const unsubscribeFCM =
       registerNotificationTapHandlers(data => {
         console.log(
-          'FoodE: FCM notification tap:',
+          'FoodE: FCM notification tapped:',
           data,
         );
 
@@ -190,23 +132,30 @@ const NotificationSetup: React.FC = () => {
     const unsubscribeNotifee =
       registerNotifeeNotificationHandler(data => {
         console.log(
-          'FoodE: Local notification tap:',
+          'FoodE: Notifee notification tapped:',
           data,
         );
 
         handleNotificationNavigation(data);
       });
 
-    getNotificationThatOpenedApp().then(data => {
-      if (data) {
-        console.log(
-          'FoodE: App opened from notification:',
-          data,
-        );
+    getNotificationThatOpenedApp()
+      .then(data => {
+        if (data) {
+          console.log(
+            'FoodE: App opened from notification:',
+            data,
+          );
 
-        handleNotificationNavigation(data);
-      }
-    });
+          handleNotificationNavigation(data);
+        }
+      })
+      .catch(error => {
+        console.error(
+          'FoodE: Initial notification error:',
+          error,
+        );
+      });
 
     return () => {
       unsubscribeFCM();
@@ -214,15 +163,19 @@ const NotificationSetup: React.FC = () => {
     };
   }, []);
 
-  // ===================================================
-  // FCM PERMISSION + TOKEN
-  // ===================================================
+  // ---------------------------------------------------
+  // FCM PERMISSION AND TOKEN REGISTRATION
+  // ---------------------------------------------------
 
   useEffect(() => {
     if (!token) {
+      console.log(
+        'FoodE: Waiting for authentication before registering FCM.',
+      );
       return;
     }
 
+    let cancelled = false;
     let unsubscribeTokenRefresh:
       (() => void) | undefined;
 
@@ -231,34 +184,41 @@ const NotificationSetup: React.FC = () => {
         const fcmToken =
           await requestNotificationPermission(token);
 
+        if (cancelled) {
+          return;
+        }
+
         if (fcmToken) {
           console.log(
-            'FoodE FCM Token:',
-            fcmToken,
+            'FoodE: FCM token obtained and registration attempted.',
+          );
+        } else {
+          console.warn(
+            'FoodE: No FCM token returned. Check permissions and backend token registration.',
           );
         }
 
         unsubscribeTokenRefresh =
           registerFCMTokenRefresh(
             token,
-            (newToken: string) => {
+            (_newToken: string) => {
               console.log(
-                'FoodE FCM Token Updated:',
-                newToken,
+                'FoodE: FCM token refreshed and registration attempted.',
               );
             },
           );
       } catch (error) {
         console.error(
-          'FoodE Notification Setup Error:',
+          'FoodE: Notification setup failed:',
           error,
         );
       }
     };
 
-    setupNotifications();
+    void setupNotifications();
 
     return () => {
+      cancelled = true;
       unsubscribeTokenRefresh?.();
     };
   }, [token]);
@@ -275,23 +235,20 @@ export default function App() {
     <SafeAreaProvider>
       <ThemeProvider>
         <AuthProvider>
-
           <NotificationSetup />
 
           <CartProvider>
             <FavoritesProvider>
-
               <StatusBar
+                hidden={false}
                 translucent={false}
                 backgroundColor="#FF7A00"
                 barStyle="light-content"
               />
 
               <AppNavigator />
-
             </FavoritesProvider>
           </CartProvider>
-
         </AuthProvider>
       </ThemeProvider>
     </SafeAreaProvider>

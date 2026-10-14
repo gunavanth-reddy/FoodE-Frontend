@@ -1,12 +1,12 @@
 import React from 'react';
-import Ionicons from '@react-native-vector-icons/ionicons/static';
+import {CaretRight} from 'phosphor-react-native';
 import {COLORS} from '../../styles';
 
 const Chevron = () => (
-  <Ionicons
-    name="chevron-right"
-    size={22}
+  <CaretRight
+    size={20}
     color={COLORS.textSecondary}
+    weight="bold"
   />
 );
 

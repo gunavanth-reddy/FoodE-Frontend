@@ -1,6 +1,6 @@
 import React from 'react';
 import {StyleSheet, Text, View} from 'react-native';
-import Ionicons from '@react-native-vector-icons/ionicons/static';
+import {Star} from 'phosphor-react-native';
 
 interface RatingBadgeProps {
   rating: number;
@@ -9,9 +9,8 @@ interface RatingBadgeProps {
 const RatingBadge: React.FC<RatingBadgeProps> = ({rating}) => {
   return (
     <View style={styles.container}>
-      <Ionicons
-        iconStyle="solid"
-        name="star"
+      <Star
+        weight="fill"
         size={11}
         color="#FFFFFF"
       />

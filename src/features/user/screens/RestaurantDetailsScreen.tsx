@@ -1,3 +1,4 @@
+
 import {SafeAreaView} from 'react-native-safe-area-context';
 import React, {
   useCallback,
@@ -18,32 +19,26 @@ import {
 } from 'react-native';
 
 import {
+  ArrowLeft,
   ForkKnife,
+  Heart,
+  MapPin,
   MagnifyingGlass,
+  Star,
   Warning,
 } from 'phosphor-react-native';
 
 import type {NativeStackScreenProps} from '@react-navigation/native-stack';
-
 import type {RootStackParamList} from '../../../navigation/AppNavigator';
 
-import RestaurantHeader from '../components/restaurant/RestaurantHeader';
 import RestaurantSearchBar from '../components/restaurant/RestaurantSearchBar';
 import MenuCategory from '../components/restaurant/MenuCategory';
 import MenuItemCard from '../components/restaurant/MenuItemCard';
 import CartBar from '../components/cart/CartBar';
 
-import {
-  getRestaurantFoods,
-} from '../../restaurant/services/foodService';
-
-import type {
-  Food,
-} from '../../restaurant/services/foodService';
-
-// =====================================================
-// TYPES
-// =====================================================
+import {getRestaurantFoods} from '../../restaurant/services/foodService';
+import type {Food} from '../../restaurant/services/foodService';
+import {useCart} from '../../../context/CartContext';
 
 type Props = NativeStackScreenProps<
   RootStackParamList,
@@ -64,77 +59,68 @@ type MenuItem = {
   isPopular: boolean;
 };
 
-// =====================================================
-// COLORS
-// =====================================================
-
 const COLORS = {
-  background: '#F7F8FA',
-  surface: '#FFFFFF',
-  cream: '#FFF8F1',
-  orange: '#FF7A00',
+  orange: '#FF5A00',
   orangeLight: '#FFF1E4',
   orangeDark: '#C85C00',
+  cream: '#FFFCF6',
+  background: '#F5F7FA',
+  surface: '#FFFFFF',
   text: '#171B24',
   muted: '#858B95',
   error: '#D92D20',
+  brown: '#492008',
 };
 
-// =====================================================
-// SCREEN
-// =====================================================
-
-const RestaurantDetailsScreen: React.FC<Props> = ({route}) => {
+const RestaurantDetailsScreen: React.FC<Props> = ({
+  route,
+  navigation,
+}) => {
   const {restaurant} = route.params;
-
-  // ===================================================
-  // RESTAURANT ID
-  // ===================================================
+  const {addItem} = useCart();
 
   const restaurantData = restaurant as typeof restaurant & {
     _id?: string;
     id?: string;
-    coverImage?: string | null;
-    image?: string | null;
-    imageUrl?: string | null;
-    logo?: string | null;
+    name?: string;
+    cuisine?: string;
+    foodType?: string;
+    rating?: number;
+    totalReviews?: number;
+    reviews?: any[];
+    isOpen?: boolean;
+    address?: string;
+    location?: string | {address?: string; name?: string};
+    city?: string;
   };
 
   const restaurantId = String(
     restaurantData._id || restaurantData.id || '',
   );
 
-  // ===================================================
-  // NORMALIZE RESTAURANT IMAGE
-  // ===================================================
+  const restaurantName = restaurantData.name || 'Restaurant';
 
-  const restaurantForDisplay = useMemo(() => {
-    const imageCandidates = [
-      restaurantData.coverImage,
-      restaurantData.image,
-      restaurantData.imageUrl,
-      restaurantData.logo,
-    ];
+  const cuisine =
+    restaurantData.cuisine ||
+    restaurantData.foodType ||
+    'Freshly prepared food';
 
-    const imageUrl =
-      imageCandidates.find(
-        (value): value is string =>
-          typeof value === 'string' &&
-          value.trim().length > 0,
-      )?.trim() || '';
+  const rating = Number(restaurantData.rating) || 0;
 
-    return {
-      ...restaurantData,
-      coverImage: imageUrl,
-      image: imageUrl,
-    } as typeof restaurant;
-  }, [
-    restaurantData,
-  ]);
+  const reviewCount =
+    Number(restaurantData.totalReviews) ||
+    (Array.isArray(restaurantData.reviews)
+      ? restaurantData.reviews.length
+      : 0);
 
-  // ===================================================
-  // STATES
-  // ===================================================
+  const locationText =
+    typeof restaurantData.location === 'string'
+      ? restaurantData.location
+      : restaurantData.location?.address ||
+        restaurantData.location?.name ||
+        restaurantData.address ||
+        restaurantData.city ||
+        'Location unavailable';
 
   const [foods, setFoods] = useState<Food[]>([]);
   const [loading, setLoading] = useState(true);
@@ -145,11 +131,9 @@ const RestaurantDetailsScreen: React.FC<Props> = ({route}) => {
     useState('Popular');
 
   const [searchQuery, setSearchQuery] = useState('');
+  const [isFavorite, setIsFavorite] = useState(false);
 
-  // ===================================================
-  // LOAD RESTAURANT FOODS
-  // ===================================================
-
+  // Load restaurant menu
   const loadFoods = useCallback(async () => {
     if (!restaurantId) {
       setError('Restaurant ID is missing.');
@@ -164,10 +148,7 @@ const RestaurantDetailsScreen: React.FC<Props> = ({route}) => {
 
       setFoods(Array.isArray(response) ? response : []);
     } catch (loadError: unknown) {
-      console.error(
-        'FoodE restaurant menu error:',
-        loadError,
-      );
+      console.error('FoodE restaurant menu error:', loadError);
 
       setError(
         loadError instanceof Error
@@ -179,18 +160,11 @@ const RestaurantDetailsScreen: React.FC<Props> = ({route}) => {
     }
   }, [restaurantId]);
 
-  // ===================================================
-  // INITIAL LOAD
-  // ===================================================
-
   useEffect(() => {
     void loadFoods();
   }, [loadFoods]);
 
-  // ===================================================
-  // REFRESH
-  // ===================================================
-
+  // Refresh menu
   const handleRefresh = useCallback(async () => {
     if (!restaurantId) {
       return;
@@ -204,10 +178,7 @@ const RestaurantDetailsScreen: React.FC<Props> = ({route}) => {
 
       setFoods(Array.isArray(response) ? response : []);
     } catch (refreshError: unknown) {
-      console.error(
-        'FoodE menu refresh error:',
-        refreshError,
-      );
+      console.error('FoodE menu refresh error:', refreshError);
 
       setError(
         refreshError instanceof Error
@@ -219,61 +190,41 @@ const RestaurantDetailsScreen: React.FC<Props> = ({route}) => {
     }
   }, [restaurantId]);
 
-  // ===================================================
-  // CATEGORY NAME
-  // ===================================================
+  // Category name
+  const getCategoryName = useCallback((food: Food): string => {
+    const category = (food as any).category;
 
-  const getCategoryName = useCallback(
-    (food: Food): string => {
-      const category = (food as any).category;
+    if (typeof category === 'object' && category !== null) {
+      return category.name || 'Other';
+    }
 
-      if (
-        typeof category === 'object' &&
-        category !== null
-      ) {
-        return category.name || 'Other';
-      }
+    return typeof category === 'string' ? category : 'Other';
+  }, []);
 
-      return typeof category === 'string'
-        ? category
-        : 'Other';
-    },
-    [],
-  );
-
-  // ===================================================
-  // FORMAT MENU ITEMS
-  // ===================================================
-
+  // Format menu items
   const menuItems = useMemo<MenuItem[]>(() => {
     return foods.map(food => {
       const item = food as any;
-
-      const price = Number(item.price) || 0;
-      const rating = Number(item.rating) || 0;
+      const itemRating = Number(item.rating) || 0;
 
       return {
         id: String(item._id || item.id || ''),
         name: item.name || 'Food Item',
         description: item.description || '',
         image: item.image || null,
-        price,
+        price: Number(item.price) || 0,
         discountedPrice:
           item.discountedPrice != null
             ? Number(item.discountedPrice)
             : null,
         category: getCategoryName(food),
         isAvailable: item.isAvailable !== false,
-        rating,
+        rating: itemRating,
         totalReviews: Number(item.totalReviews) || 0,
-        isPopular: rating >= 4.5,
+        isPopular: itemRating >= 4.5,
       };
     });
   }, [foods, getCategoryName]);
-
-  // ===================================================
-  // MENU CATEGORIES
-  // ===================================================
 
   const categories = useMemo(() => {
     const uniqueCategories = Array.from(
@@ -292,10 +243,7 @@ const RestaurantDetailsScreen: React.FC<Props> = ({route}) => {
     ];
   }, [menuItems]);
 
-  // ===================================================
-  // FILTER MENU
-  // ===================================================
-
+  // Filter menu
   const filteredMenu = useMemo(() => {
     let items =
       selectedCategory === 'Popular'
@@ -304,11 +252,7 @@ const RestaurantDetailsScreen: React.FC<Props> = ({route}) => {
             item => item.category === selectedCategory,
           );
 
-    // Show all foods if none are rated as popular.
-    if (
-      selectedCategory === 'Popular' &&
-      items.length === 0
-    ) {
+    if (selectedCategory === 'Popular' && items.length === 0) {
       items = menuItems;
     }
 
@@ -326,25 +270,20 @@ const RestaurantDetailsScreen: React.FC<Props> = ({route}) => {
     return items;
   }, [menuItems, selectedCategory, searchQuery]);
 
-  // ===================================================
-  // RETRY
-  // ===================================================
-
   const handleRetry = useCallback(() => {
     setLoading(true);
     void loadFoods();
   }, [loadFoods]);
 
-  // ===================================================
-  // LOADING SCREEN
-  // ===================================================
-
+  // Loading screen
   if (loading) {
     return (
-      <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
+      <SafeAreaView
+        style={styles.safeArea}
+        edges={['top', 'left', 'right']}>
         <StatusBar
-          barStyle="dark-content"
-          backgroundColor={COLORS.cream}
+          backgroundColor={COLORS.orange}
+          barStyle="light-content"
         />
 
         <View style={styles.centerContainer}>
@@ -361,28 +300,29 @@ const RestaurantDetailsScreen: React.FC<Props> = ({route}) => {
     );
   }
 
-  // ===================================================
-  // ERROR SCREEN
-  // ===================================================
-
+  // Error screen
   if (error) {
     return (
-      <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
+      <SafeAreaView
+        style={styles.safeArea}
+        edges={['top', 'left', 'right']}>
         <StatusBar
-          barStyle="dark-content"
-          backgroundColor={COLORS.cream}
+          backgroundColor={COLORS.orange}
+          barStyle="light-content"
         />
 
         <View style={styles.centerContainer}>
-          <Warning size={42} color={COLORS.orange} weight="duotone" />
+          <Warning
+            size={42}
+            color={COLORS.orange}
+            weight="duotone"
+          />
 
           <Text style={styles.errorTitle}>
             Couldn't load this menu
           </Text>
 
-          <Text style={styles.errorText}>
-            {error}
-          </Text>
+          <Text style={styles.errorText}>{error}</Text>
 
           <Pressable
             accessibilityRole="button"
@@ -400,16 +340,13 @@ const RestaurantDetailsScreen: React.FC<Props> = ({route}) => {
     );
   }
 
-  // ===================================================
-  // MAIN SCREEN
-  // ===================================================
-
   return (
-    <SafeAreaView style={styles.safeArea} edges={['left', 'right']}>
+    <SafeAreaView
+      style={styles.safeArea}
+      edges={['top', 'left', 'right']}>
       <StatusBar
+        backgroundColor={COLORS.orange}
         barStyle="light-content"
-        backgroundColor="transparent"
-        translucent
       />
 
       <View style={styles.container}>
@@ -421,7 +358,6 @@ const RestaurantDetailsScreen: React.FC<Props> = ({route}) => {
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
           contentContainerStyle={styles.listContent}
-
           refreshControl={
             <RefreshControl
               refreshing={refreshing}
@@ -430,41 +366,164 @@ const RestaurantDetailsScreen: React.FC<Props> = ({route}) => {
               tintColor={COLORS.orange}
             />
           }
-
-          // ===========================================
-          // FOOD ITEM
-          // ===========================================
-
           renderItem={({item}) => (
             <View style={styles.foodCardWrap}>
               <MenuItemCard
                 item={item as any}
-                onPress={food =>
-                  console.log('Food pressed:', food.name)
-                }
+                onPress={async () => {
+                  const foodToAdd = foods.find(
+                    food =>
+                      String(
+                        (food as any)._id ||
+                          (food as any).id,
+                      ) === String(item.id),
+                  );
+
+                  if (!foodToAdd || !item.isAvailable) {
+                    return;
+                  }
+
+                  try {
+                    await addItem(
+                      {
+                        ...foodToAdd,
+                        restaurantName,
+                        restaurant:
+                          (foodToAdd as any).restaurant ||
+                          restaurantData,
+                      } as Food,
+                      1,
+                    );
+                  } catch (addError) {
+                    console.error(
+                      'FoodE add-to-cart error:',
+                      addError,
+                    );
+                  }
+                }}
               />
             </View>
           )}
-
-          // ===========================================
-          // SCREEN HEADER
-          // ===========================================
-
           ListHeaderComponent={
             <View>
-              {/* RESTAURANT COVER + BACK BUTTON */}
-
+              {/* Plain orange background, no restaurant image */}
               <View style={styles.heroArea}>
-                <RestaurantHeader
-                  restaurant={restaurantForDisplay}
-                />
+                <View style={styles.orangeBackground}>
+                  <View style={styles.decorativeCircle} />
+                  <View style={styles.decorativeCircleSmall} />
+                  <View style={styles.decorativeDot} />
+
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel="Go back"
+                    onPress={() => navigation.goBack()}
+                    style={({pressed}) => [
+                      styles.headerButton,
+                      styles.backButton,
+                      pressed && styles.pressed,
+                    ]}>
+                    <ArrowLeft
+                      size={25}
+                      color={COLORS.text}
+                      weight="bold"
+                    />
+                  </Pressable>
+
+                  <View style={styles.brandMark}>
+                    <ForkKnife
+                      size={23}
+                      color={COLORS.orange}
+                      weight="bold"
+                    />
+                  </View>
+
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={
+                      isFavorite
+                        ? 'Remove from favorites'
+                        : 'Add to favorites'
+                    }
+                    onPress={() =>
+                      setIsFavorite(previous => !previous)
+                    }
+                    style={({pressed}) => [
+                      styles.headerButton,
+                      styles.favoriteButton,
+                      pressed && styles.pressed,
+                    ]}>
+                    <Heart
+                      size={25}
+                      color={
+                        isFavorite
+                          ? COLORS.orange
+                          : COLORS.text
+                      }
+                      weight={isFavorite ? 'fill' : 'regular'}
+                    />
+                  </Pressable>
+                </View>
+
+                {/* Restaurant information */}
+                <View style={styles.restaurantInfoCard}>
+                  <Text
+                    style={styles.restaurantName}
+                    numberOfLines={2}>
+                    {restaurantName}
+                  </Text>
+
+                  <Text
+                    style={styles.restaurantCuisine}
+                    numberOfLines={1}>
+                    {cuisine}
+                  </Text>
+
+                  <View style={styles.badgeRow}>
+                    <View style={styles.ratingBadge}>
+                      <Star
+                        size={17}
+                        color="#FFFFFF"
+                        weight="fill"
+                      />
+
+                      <Text style={styles.badgeText}>
+                        {rating.toFixed(1)} · {reviewCount}{' '}
+                        {reviewCount === 1 ? 'review' : 'reviews'}
+                      </Text>
+                    </View>
+
+                    <View style={styles.openBadge}>
+                      {/* Simple View dot avoids Circle import errors */}
+                      <View style={styles.statusDot} />
+
+                      <Text style={styles.badgeText}>
+                        {restaurantData.isOpen === false
+                          ? 'Closed'
+                          : 'Open'}
+                      </Text>
+                    </View>
+                  </View>
+
+                  <View style={styles.locationRow}>
+                    <MapPin
+                      size={20}
+                      color="#FFD1A8"
+                      weight="fill"
+                    />
+
+                    <Text
+                      style={styles.locationText}
+                      numberOfLines={2}>
+                      {locationText}
+                    </Text>
+                  </View>
+                </View>
               </View>
 
-              {/* MENU SECTION */}
-
+              {/* Explore menu */}
               <View style={styles.menuSection}>
                 <View style={styles.sectionHeadingRow}>
-                  <View>
+                  <View style={styles.headingTextContainer}>
                     <Text style={styles.eyebrow}>
                       FRESHLY MADE FOR YOU
                     </Text>
@@ -477,14 +536,10 @@ const RestaurantDetailsScreen: React.FC<Props> = ({route}) => {
                   <View style={styles.itemCountPill}>
                     <Text style={styles.itemCountText}>
                       {menuItems.length}{' '}
-                      {menuItems.length === 1
-                        ? 'item'
-                        : 'items'}
+                      {menuItems.length === 1 ? 'item' : 'items'}
                     </Text>
                   </View>
                 </View>
-
-                {/* SEARCH */}
 
                 <View style={styles.searchWrap}>
                   <RestaurantSearchBar
@@ -492,8 +547,6 @@ const RestaurantDetailsScreen: React.FC<Props> = ({route}) => {
                     onChangeText={setSearchQuery}
                   />
                 </View>
-
-                {/* CATEGORIES */}
 
                 {categories.length > 0 && (
                   <View style={styles.categoryWrap}>
@@ -504,8 +557,6 @@ const RestaurantDetailsScreen: React.FC<Props> = ({route}) => {
                   </View>
                 )}
               </View>
-
-              {/* RESULTS HEADER */}
 
               {menuItems.length > 0 && (
                 <View style={styles.resultsHeading}>
@@ -527,11 +578,6 @@ const RestaurantDetailsScreen: React.FC<Props> = ({route}) => {
               )}
             </View>
           }
-
-          // ===========================================
-          // EMPTY MENU
-          // ===========================================
-
           ListEmptyComponent={
             <View style={styles.emptyContainer}>
               <View style={styles.emptyIllustration}>
@@ -565,8 +611,6 @@ const RestaurantDetailsScreen: React.FC<Props> = ({route}) => {
           }
         />
 
-        {/* CART BAR */}
-
         <CartBar bottomOffset={16} />
       </View>
     </SafeAreaView>
@@ -574,10 +618,6 @@ const RestaurantDetailsScreen: React.FC<Props> = ({route}) => {
 };
 
 export default RestaurantDetailsScreen;
-
-// =====================================================
-// STYLES
-// =====================================================
 
 const styles = StyleSheet.create({
   safeArea: {
@@ -596,29 +636,191 @@ const styles = StyleSheet.create({
 
   heroArea: {
     backgroundColor: COLORS.cream,
-    paddingBottom: 0,
   },
 
+  orangeBackground: {
+    height: 215,
+    backgroundColor: COLORS.orange,
+    position: 'relative',
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+  },
 
+  decorativeCircle: {
+    position: 'absolute',
+    width: 190,
+    height: 190,
+    borderRadius: 95,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.18)',
+    top: -105,
+    right: -50,
+  },
+
+  decorativeCircleSmall: {
+    position: 'absolute',
+    width: 105,
+    height: 105,
+    borderRadius: 53,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.18)',
+    bottom: -50,
+    left: -35,
+  },
+
+  decorativeDot: {
+    position: 'absolute',
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: 'rgba(255,255,255,0.35)',
+    left: '20%',
+    top: '46%',
+  },
+
+  headerButton: {
+    position: 'absolute',
+    top: 25,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    elevation: 3,
+    shadowColor: '#000000',
+    shadowOffset: {width: 0, height: 2},
+    shadowOpacity: 0.1,
+    shadowRadius: 5,
+  },
+
+  backButton: {
+    left: 20,
+  },
+
+  favoriteButton: {
+    right: 20,
+  },
+
+  brandMark: {
+    width: 54,
+    height: 54,
+    borderRadius: 27,
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  restaurantInfoCard: {
+    marginTop: -72,
+    marginHorizontal: 5,
+    paddingHorizontal: 22,
+    paddingTop: 23,
+    paddingBottom: 20,
+    borderTopLeftRadius: 30,
+    borderTopRightRadius: 30,
+    borderBottomLeftRadius: 22,
+    borderBottomRightRadius: 22,
+    backgroundColor: COLORS.brown,
+    elevation: 0,
+  },
+
+  restaurantName: {
+    color: '#FFFFFF',
+    fontSize: 29,
+    fontWeight: '900',
+    letterSpacing: -0.5,
+  },
+
+  restaurantCuisine: {
+    color: '#FFE0C7',
+    fontSize: 16,
+    fontWeight: '600',
+    marginTop: 7,
+  },
+
+  badgeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: 10,
+    marginTop: 20,
+  },
+
+  ratingBadge: {
+    minHeight: 43,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 7,
+    paddingHorizontal: 13,
+    paddingVertical: 10,
+    borderRadius: 17,
+    backgroundColor: COLORS.orange,
+  },
+
+  openBadge: {
+    minHeight: 43,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 7,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 17,
+    backgroundColor: COLORS.orange,
+  },
+
+  statusDot: {
+    width: 9,
+    height: 9,
+    borderRadius: 5,
+    backgroundColor: '#FFFFFF',
+  },
+
+  badgeText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '800',
+  },
+
+  locationRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginTop: 17,
+  },
+
+  locationText: {
+    flex: 1,
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '600',
+    lineHeight: 20,
+  },
 
   menuSection: {
-    paddingTop: 22,
-    paddingBottom: 16,
-    borderTopLeftRadius: 26,
-    borderTopRightRadius: 26,
-    backgroundColor: '#FFFCF8',
+    paddingTop: 24,
+    paddingBottom: 17,
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    backgroundColor: COLORS.cream,
   },
 
   sectionHeadingRow: {
     paddingHorizontal: 20,
-    marginBottom: 14,
+    marginBottom: 17,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    gap: 10,
+  },
+
+  headingTextContainer: {
+    flex: 1,
   },
 
   eyebrow: {
-    marginBottom: 5,
+    marginBottom: 6,
     color: COLORS.orange,
     fontSize: 10,
     fontWeight: '800',
@@ -627,27 +829,27 @@ const styles = StyleSheet.create({
 
   menuTitle: {
     color: COLORS.text,
-    fontSize: 25,
+    fontSize: 26,
     fontWeight: '900',
     letterSpacing: -0.6,
   },
 
   itemCountPill: {
-    paddingHorizontal: 11,
-    paddingVertical: 7,
-    borderRadius: 20,
+    paddingHorizontal: 13,
+    paddingVertical: 9,
+    borderRadius: 22,
     backgroundColor: COLORS.orangeLight,
   },
 
   itemCountText: {
     color: COLORS.orangeDark,
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: '800',
   },
 
   searchWrap: {
-    paddingHorizontal: 14,
-    marginBottom: 10,
+    paddingHorizontal: 15,
+    marginBottom: 12,
   },
 
   categoryWrap: {
@@ -657,7 +859,7 @@ const styles = StyleSheet.create({
   resultsHeading: {
     paddingHorizontal: 20,
     paddingTop: 22,
-    paddingBottom: 6,
+    paddingBottom: 8,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -665,13 +867,13 @@ const styles = StyleSheet.create({
 
   resultsTitle: {
     color: COLORS.text,
-    fontSize: 18,
+    fontSize: 19,
     fontWeight: '800',
   },
 
   resultsCount: {
     color: COLORS.muted,
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: '600',
   },
 
@@ -694,11 +896,8 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
 
-  errorIcon: {
-    marginBottom: 12,
-  },
-
   errorTitle: {
+    marginTop: 15,
     marginBottom: 8,
     color: COLORS.text,
     fontSize: 20,
@@ -750,11 +949,6 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     borderRadius: 38,
     backgroundColor: COLORS.orangeLight,
-  },
-
-  emptyIcon: {
-    alignItems: 'center',
-    justifyContent: 'center',
   },
 
   emptyTitle: {

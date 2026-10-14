@@ -4,6 +4,7 @@ import {
   ActivityIndicator,
   Alert,
   ScrollView,
+  StatusBar,
   StyleSheet,
   Text,
   TextInput,
@@ -16,7 +17,7 @@ import {
 } from '@react-navigation/native-stack';
 
 import {RootStackParamList} from '../../../navigation/AppNavigator';
-import {ForkKnife} from 'phosphor-react-native';
+import {ArrowLeft, ForkKnife} from 'phosphor-react-native';
 
 import {
   createReview,
@@ -431,6 +432,7 @@ const ReviewScreen: React.FC<Props> = ({
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
+      <StatusBar backgroundColor="#FF7A00" barStyle="light-content" hidden={false} translucent={false} />
       <ScrollView
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
@@ -451,9 +453,7 @@ const ReviewScreen: React.FC<Props> = ({
             }
             style={styles.backButton}>
 
-            <Text style={styles.backText}>
-              ‹
-            </Text>
+            <ArrowLeft size={22} color="#1E232C" weight="bold" />
 
           </TouchableOpacity>
 

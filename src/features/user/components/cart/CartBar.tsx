@@ -28,9 +28,14 @@ const CartBar: React.FC<{bottomOffset?: number}> = ({bottomOffset = 88}) => {
   }, [slideIn]);
 
   const {
-    totalItems,
+    items,
     totalAmount,
   } = useCart();
+
+  const totalItems = items.reduce(
+    (acc, item) => acc + (item.quantity || 1),
+    0,
+  );
 
   if (totalItems === 0) {
     return null;

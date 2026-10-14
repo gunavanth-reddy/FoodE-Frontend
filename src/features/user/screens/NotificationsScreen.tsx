@@ -12,7 +12,9 @@ import {
   useWindowDimensions,
 } from 'react-native';
 
+import {useNavigation} from '@react-navigation/native';
 import {
+  ArrowLeft,
   Bell,
   Trash,
 } from 'phosphor-react-native';
@@ -154,6 +156,7 @@ const convertNotification = (
 // =====================================================
 
 const NotificationsScreen: React.FC = () => {
+  const navigation = useNavigation<any>();
   const {width} = useWindowDimensions();
 
   const {token} = useAuth();
@@ -477,20 +480,25 @@ const NotificationsScreen: React.FC = () => {
     return (
       <SafeAreaView
         style={styles.container} edges={['top', 'left', 'right']}>
-        <StatusBar
-          barStyle="dark-content"
-          backgroundColor="#F7F8FA"
-          translucent={false}
-        />
+        <StatusBar backgroundColor="#FF7A00" barStyle="light-content" hidden={false} translucent={false} />
 
         <View style={styles.header}>
-          <View style={styles.headerIcon}>
-            <Bell
-              size={24}
-              color={ORANGE}
-              weight="regular"
-            />
-          </View>
+          {navigation.canGoBack() ? (
+            <TouchableOpacity
+              activeOpacity={0.75}
+              onPress={() => navigation.goBack()}
+              style={styles.backButton}>
+              <ArrowLeft size={22} color="#1E232C" weight="bold" />
+            </TouchableOpacity>
+          ) : (
+            <View style={styles.headerIcon}>
+              <Bell
+                size={24}
+                color={ORANGE}
+                weight="regular"
+              />
+            </View>
+          )}
 
           <View
             style={
@@ -527,30 +535,35 @@ const NotificationsScreen: React.FC = () => {
   return (
     <SafeAreaView
       style={styles.container} edges={['top', 'left', 'right']}>
-      <StatusBar
-        barStyle="dark-content"
-        backgroundColor="#F7F8FA"
-        translucent={false}
-      />
+      <StatusBar backgroundColor="#FF7A00" barStyle="light-content" hidden={false} translucent={false} />
 
       {/* ============================================== */}
       {/* HEADER */}
       {/* ============================================== */}
 
       <View style={styles.header}>
-        <View style={styles.headerIcon}>
-          <Bell
-            size={24}
-            color={ORANGE}
-            weight="regular"
-          />
-
-          {unreadCount > 0 && (
-            <View
-              style={styles.headerDot}
+        {navigation.canGoBack() ? (
+          <TouchableOpacity
+            activeOpacity={0.75}
+            onPress={() => navigation.goBack()}
+            style={styles.backButton}>
+            <ArrowLeft size={22} color="#1E232C" weight="bold" />
+          </TouchableOpacity>
+        ) : (
+          <View style={styles.headerIcon}>
+            <Bell
+              size={24}
+              color={ORANGE}
+              weight="regular"
             />
-          )}
-        </View>
+
+            {unreadCount > 0 && (
+              <View
+                style={styles.headerDot}
+              />
+            )}
+          </View>
+        )}
 
         <View
           style={
@@ -711,6 +724,21 @@ const styles = StyleSheet.create({
     },
     shadowOpacity: 0.04,
     shadowRadius: 8,
+  },
+
+  backButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 13,
+    shadowColor: '#000000',
+    shadowOffset: {width: 0, height: 2},
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 3,
   },
 
   headerIcon: {

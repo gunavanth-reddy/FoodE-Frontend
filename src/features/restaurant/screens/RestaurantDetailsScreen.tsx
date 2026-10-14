@@ -878,11 +878,8 @@ const RestaurantDetailsScreen: React.FC<Props> = ({
         style={
           styles.loadingContainer
         }
-        >
-        <StatusBar
-          barStyle="dark-content"
-          backgroundColor="#FFFFFF"
-        />
+        edges={['top', 'left', 'right']}>
+        <StatusBar hidden={true} />
 
         <ActivityIndicator
           size="large"
@@ -907,10 +904,7 @@ const RestaurantDetailsScreen: React.FC<Props> = ({
     <SafeAreaView
       style={styles.container}
       edges={['top', 'left', 'right']}>
-      <StatusBar
-        barStyle="dark-content"
-        backgroundColor="#FFFFFF"
-      />
+      <StatusBar hidden={true} />
 
       <KeyboardAvoidingView
         style={

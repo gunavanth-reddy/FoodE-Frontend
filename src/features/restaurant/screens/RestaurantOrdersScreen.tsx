@@ -11,13 +11,13 @@ import {
   Alert,
   RefreshControl,
   ScrollView,
-  SafeAreaView,
   StatusBar,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from 'react-native';
+import {SafeAreaView} from 'react-native-safe-area-context';
 
 import {useAuth} from '../../../context/AuthContext';
 
@@ -272,11 +272,8 @@ const RestaurantOrdersScreen: React.FC = () => {
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.loadingContainer}>
-        <StatusBar
-          barStyle="dark-content"
-          backgroundColor="#F8F8FA"
-        />
+      <SafeAreaView style={styles.loadingContainer} edges={['top', 'left', 'right']}>
+        <StatusBar hidden={true} />
 
         <ActivityIndicator
           size="large"
@@ -296,11 +293,9 @@ const RestaurantOrdersScreen: React.FC = () => {
 
   return (
     <SafeAreaView
-      style={styles.container}>
-      <StatusBar
-        barStyle="dark-content"
-        backgroundColor="#F8F8FA"
-      />
+      style={styles.container}
+      edges={['top', 'left', 'right']}>
+      <StatusBar hidden={true} />
 
       <ScrollView
         showsVerticalScrollIndicator={false}

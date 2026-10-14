@@ -379,8 +379,8 @@ const DeliverySlotsScreen: React.FC = () => {
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.loadingContainer}>
-        <StatusBar barStyle="dark-content" backgroundColor="#F8F8FA" />
+      <SafeAreaView style={styles.loadingContainer} edges={['top', 'left', 'right']}>
+        <StatusBar hidden={true} />
         <ActivityIndicator size="large" color="#FF7A00" />
         <Text style={styles.loadingText}>Loading delivery schedule...</Text>
       </SafeAreaView>
@@ -388,8 +388,8 @@ const DeliverySlotsScreen: React.FC = () => {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="#F8F8FA" />
+    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
+      <StatusBar hidden={true} />
 
       <ScrollView
         contentContainerStyle={styles.content}

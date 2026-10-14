@@ -1,20 +1,22 @@
 import React from 'react';
 import {StyleSheet, Text, TouchableOpacity, View} from 'react-native';
-import {CaretRight, Receipt, Star, Storefront, UsersThree} from 'phosphor-react-native';
+import {BellRinging, CaretRight, Receipt, Star, Storefront, UsersThree} from 'phosphor-react-native';
 
 interface AdminQuickActionsProps {
   onUsersPress: () => void;
   onRestaurantsPress: () => void;
   onOrdersPress: () => void;
   onReviewsPress: () => void;
+  onBroadcastPress: () => void;
 }
 
-const AdminQuickActions = ({onUsersPress, onRestaurantsPress, onOrdersPress, onReviewsPress}: AdminQuickActionsProps) => {
+const AdminQuickActions = ({onUsersPress, onRestaurantsPress, onOrdersPress, onReviewsPress, onBroadcastPress}: AdminQuickActionsProps) => {
   const actions = [
     {label: 'Users', icon: <UsersThree size={21} color="#FF7A00" weight="duotone" />, onPress: onUsersPress},
     {label: 'Restaurants', icon: <Storefront size={21} color="#FF7A00" weight="duotone" />, onPress: onRestaurantsPress},
     {label: 'Orders', icon: <Receipt size={21} color="#FF7A00" weight="duotone" />, onPress: onOrdersPress},
     {label: 'Reviews', icon: <Star size={21} color="#FF7A00" weight="duotone" />, onPress: onReviewsPress},
+    {label: 'Broadcast', icon: <BellRinging size={21} color="#FF7A00" weight="duotone" />, onPress: onBroadcastPress},
   ];
 
   return (

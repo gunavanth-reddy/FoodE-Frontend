@@ -23,11 +23,7 @@ const AppScreen: React.FC<AppScreenProps> = ({
 }) => {
   return (
     <>
-      <StatusBar
-        translucent
-        backgroundColor="transparent"
-        barStyle={barStyle}
-      />
+      <StatusBar backgroundColor="#FF7A00" barStyle="light-content" hidden={false} translucent={false} />
 
       <SafeAreaView
         style={[

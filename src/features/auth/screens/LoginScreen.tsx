@@ -9,46 +9,36 @@ import {
   ScrollView,
   StatusBar,
   StyleSheet,
+  useWindowDimensions,
 } from 'react-native';
 
 import {loginUser} from '../../../api/auth';
-
-import {
-  AppInput,
-  AppButton,
-  AppText,
-} from '../../../components';
-
+import {AppInput, AppButton, AppText} from '../../../components';
 import {
   useAuth,
   normalizeUserRole,
 } from '../../../context/AuthContext';
 
 const ORANGE = '#FF5A00';
+const DARK = '#171717';
 
 const LoginScreen = ({navigation}: any) => {
   const {login} = useAuth();
+  const {height: screenHeight, width: screenWidth} =
+    useWindowDimensions();
 
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
+  const [identifierError, setIdentifierError] = useState('');
+  const [passwordError, setPasswordError] = useState('');
 
-  const [identifierError, setIdentifierError] =
-    useState('');
+  const logoScale = useRef(new Animated.Value(0.88)).current;
+  const logoOpacity = useRef(new Animated.Value(0)).current;
 
-  const [passwordError, setPasswordError] =
-    useState('');
-
-  // ==========================================
-  // SIMPLE FOOD E ANIMATION
-  // ==========================================
-
-  const logoScale = useRef(
-    new Animated.Value(0.88),
-  ).current;
-
-  const logoOpacity = useRef(
-    new Animated.Value(0),
-  ).current;
+  const heroHeight = Math.max(
+    225,
+    Math.min(screenHeight * 0.32, 290),
+  );
 
   useEffect(() => {
     const animation = Animated.loop(
@@ -70,13 +60,13 @@ const LoginScreen = ({navigation}: any) => {
         Animated.delay(900),
         Animated.parallel([
           Animated.timing(logoScale, {
-            toValue: 0.94,
+            toValue: 0.96,
             duration: 700,
             easing: Easing.inOut(Easing.ease),
             useNativeDriver: true,
           }),
           Animated.timing(logoOpacity, {
-            toValue: 0.82,
+            toValue: 0.88,
             duration: 700,
             easing: Easing.inOut(Easing.ease),
             useNativeDriver: true,
@@ -88,843 +78,479 @@ const LoginScreen = ({navigation}: any) => {
 
     animation.start();
 
-    return () => {
-      animation.stop();
-    };
+    return () => animation.stop();
   }, [logoOpacity, logoScale]);
-
-  // ==========================================
-  // LOGIN
-  // ==========================================
 
   const handleLogin = async () => {
     const value = identifier.trim();
 
-    // Clear old errors
     setIdentifierError('');
     setPasswordError('');
 
-    // ========================================
-    // REQUIRED FIELDS
-    // ========================================
-
     if (!value) {
-      setIdentifierError(
-        'Phone number is required',
-      );
+      setIdentifierError('Phone number is required');
+      return;
+    }
+
+    if (!/^[0-9]{10}$/.test(value)) {
+      setIdentifierError('Enter a valid 10-digit phone number');
       return;
     }
 
     if (!password.trim()) {
-      setPasswordError(
-        'Password is required',
-      );
+      setPasswordError('Password is required');
       return;
     }
-
-    // ========================================
-    // PHONE VALIDATION
-    // ========================================
-
-    const phoneRegex =
-      /^[0-9]{10}$/;
-
-    if (!phoneRegex.test(value)) {
-      setIdentifierError(
-        'Enter a valid 10-digit phone number',
-      );
-      return;
-    }
-
-    // ========================================
-    // API LOGIN
-    // ========================================
 
     try {
-      const loginData = {
+      const response = await loginUser({
         phone: value,
         password,
-      };
-
-      const response =
-        await loginUser(loginData);
-
-      // ======================================
-      // BACKEND ERROR
-      // ======================================
+      });
 
       if (!response.success) {
         setIdentifierError(
-          response.message ||
-            'Wrong phone number',
+          response.message || 'Unable to log in. Please try again.',
         );
         return;
       }
 
-      // ======================================
-      // CHECK LOGIN RESPONSE
-      // ======================================
-
-      if (
-        !response.user ||
-        !response.token
-      ) {
-        setIdentifierError(
-          'Invalid login response from server',
-        );
+      if (!response.user || !response.token) {
+        setIdentifierError('Invalid login response from server');
         return;
       }
 
-      // ======================================
-      // NORMALIZE USER ROLE
-      // ======================================
-
-      const normalizedRole =
-        normalizeUserRole(
-          response.user.role,
-        );
+      const normalizedRole = normalizeUserRole(response.user.role);
 
       if (!normalizedRole) {
-        setIdentifierError(
-          'Invalid user role',
-        );
-
+        setIdentifierError('Invalid user role');
         return;
       }
-
-      // ======================================
-      // SAVE USER + JWT
-      // ======================================
 
       const normalizedUser = {
         ...response.user,
         role: normalizedRole,
       };
 
-      await login(
-        normalizedUser,
-        response.token,
-      );
+      await login(normalizedUser, response.token);
 
-      // ======================================
-      // ROLE-BASED NAVIGATION
-      // ======================================
-
-      // RESTAURANT OWNER
-      if (
-        normalizedRole ===
-        'restaurant_owner'
-      ) {
-        navigation.replace(
-          'RestaurantOwner',
-        );
-
+      if (normalizedRole === 'restaurant_owner') {
+        navigation.replace('RestaurantOwner');
         return;
       }
 
-      // NORMAL CUSTOMER
-      if (
-        normalizedRole === 'user'
-      ) {
+      if (normalizedRole === 'user') {
         navigation.replace('Main');
-
         return;
       }
 
-      // ADMIN
-      if (
-        normalizedRole === 'admin'
-      ) {
-        navigation.replace(
-          'AdminDashboard',
-        );
-
+      if (normalizedRole === 'admin') {
+        navigation.replace('AdminDashboard');
         return;
       }
 
-      // UNKNOWN ROLE
-      setIdentifierError(
-        'Invalid user role',
-      );
-
+      setIdentifierError('Invalid user role');
     } catch (error: any) {
       console.log(
         'Login Error:',
-        error.response?.data ||
-          error.message,
+        error.response?.data || error.message,
       );
 
-      const status =
-        error.response?.status;
+      const status = error.response?.status;
+      const message = error.response?.data?.message;
 
-      const message =
-        error.response?.data?.message;
-
-      // ======================================
-      // WRONG EMAIL / PHONE
-      // ======================================
-
-      if (
-        status === 404 ||
-        message === 'User not found'
-      ) {
-        setIdentifierError(
-          'Wrong phone number',
-        );
+      if (status === 404 || message === 'User not found') {
+        setIdentifierError('Wrong phone number');
         return;
       }
 
-      // ======================================
-      // WRONG PASSWORD
-      // ======================================
-
-      if (
-        status === 401 ||
-        message === 'Invalid Password'
-      ) {
-        setPasswordError(
-          'Wrong password',
-        );
+      if (status === 401 || message === 'Invalid Password') {
+        setPasswordError('Wrong password');
         return;
       }
 
-      // ======================================
-      // SERVER / NETWORK ERROR
-      // ======================================
-
-      setIdentifierError(
-        'Unable to connect to FoodE server',
-      );
+      setIdentifierError('Unable to connect to FoodE server');
     }
   };
 
   return (
     <View style={styles.screen}>
-
-      {/* ======================================
-          STATUS BAR
-      ====================================== */}
-
       <StatusBar
-        barStyle="light-content"
-        backgroundColor={ORANGE}
+        hidden={false}
         translucent={false}
+        backgroundColor={ORANGE}
+        barStyle="light-content"
       />
 
+      {/* Orange FoodE header */}
+      <View style={[styles.hero, {height: heroHeight}]}>
+        <View style={styles.heroCircleLarge} />
+        <View style={styles.heroCircleSmall} />
+        <View style={styles.heroDot} />
+        <View style={styles.heroLine} />
+
+        <Animated.View
+          style={[
+            styles.brand,
+            {
+              opacity: logoOpacity,
+              transform: [{scale: logoScale}],
+            },
+          ]}>
+          <AppText style={styles.brandText}>FoodE</AppText>
+          <View style={styles.brandLine} />
+          <AppText style={styles.brandTagline}>
+            FOOD. FAST. FRESH.
+          </AppText>
+        </Animated.View>
+      </View>
+
+      {/* Full-height white card */}
       <KeyboardAvoidingView
-        style={styles.keyboardContainer}
-        behavior={
-          Platform.OS === 'ios'
-            ? 'padding'
-            : undefined
-        }
-      >
-
-        {/* ====================================
-            EVERYTHING SCROLLS TOGETHER
-        ==================================== */}
-
+        style={styles.card}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView
+          style={styles.scrollView}
+          contentContainerStyle={[
+            styles.cardContent,
+            {
+              minHeight: Math.max(
+                0,
+                screenHeight - heroHeight + 28,
+              ),
+              paddingHorizontal: screenWidth < 360 ? 18 : 24,
+            },
+          ]}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
           bounces={false}
-          overScrollMode="never"
-          contentContainerStyle={
-            styles.scrollContent
-          }
-        >
+          overScrollMode="never">
+          <View style={styles.handle} />
 
-          {/* ==================================
-              FOOD E HERO
-          ================================== */}
-
-          <View style={styles.hero}>
-
-            {/* Decorative elements */}
-
-            <View
-              style={
-                styles.heroCircleLarge
-              }
-            />
-
-            <View
-              style={
-                styles.heroCircleSmall
-              }
-            />
-
-            <View
-              style={styles.heroDot}
-            />
-
-            <View
-              style={styles.heroLine}
-            />
-
-            {/* Brand */}
-
-            <Animated.View
-              style={[
-                styles.brand,
-                {
-                  opacity: logoOpacity,
-                  transform: [
-                    {scale: logoScale},
-                  ],
-                },
-              ]}
-            >
-
-              <AppText
-                style={styles.brandText}
-              >
-                FoodE
-              </AppText>
-
-              <View
-                style={styles.brandLine}
-              />
-
-              <AppText
-                style={
-                  styles.brandTagline
-                }
-              >
-                FOOD. FAST. FRESH.
-              </AppText>
-
-            </Animated.View>
-
+          {/* Welcome */}
+          <View style={styles.header}>
+            <AppText style={styles.title}>Welcome Back</AppText>
+            <AppText style={styles.subtitle}>
+              Sign in to continue ordering your favorite food.
+            </AppText>
           </View>
 
-          {/* ==================================
-              LOGIN CARD
-          ================================== */}
-
-          <View
-            style={styles.loginCard}
-          >
-
-            {/* Handle */}
-
-            <View
-              style={styles.handle}
+          {/* Phone number */}
+          <View style={styles.field}>
+            <AppInput
+              label="Phone Number"
+              placeholder="Enter your 10-digit phone number"
+              value={identifier}
+              onChangeText={(text: string) => {
+                setIdentifier(
+                  text.replace(/[^0-9]/g, '').slice(0, 10),
+                );
+                setIdentifierError('');
+              }}
+              leftIcon="call-outline"
+              keyboardType="phone-pad"
             />
 
-            {/* =================================
-                HEADER
-            ================================= */}
-
-            <View
-              style={styles.header}
-            >
-
-              <AppText
-                style={styles.title}
-              >
-                Welcome Back
+            {!!identifierError && (
+              <AppText style={styles.errorText}>
+                {identifierError}
               </AppText>
+            )}
+          </View>
 
-              <AppText
-                style={styles.subtitle}
-              >
-                Sign in to continue ordering
-                your favorite food.
-              </AppText>
-
-            </View>
-
-            {/* =================================
-                EMAIL / PHONE
-            ================================= */}
-
-            <View
-              style={styles.field}
-            >
-
-              <AppInput
-                label="Phone Number"
-                placeholder="Enter your 10-digit phone number"
-                value={identifier}
-                onChangeText={text => {
-                  setIdentifier(
-                    text.replace(/[^0-9]/g, ''),
-                  );
-                  setIdentifierError('');
-                }}
-                leftIcon="call-outline"
-                keyboardType="phone-pad"
-              />
-
-              {identifierError ? (
-                <AppText
-                  style={
-                    styles.errorText
-                  }
-                >
-                  {identifierError}
-                </AppText>
-              ) : null}
-
-            </View>
-
-            {/* =================================
-                PASSWORD
-            ================================= */}
-
-            <View
-              style={styles.field}
-            >
-
-              <AppInput
-                label="Password"
-                placeholder="Enter your password"
-                value={password}
-                onChangeText={text => {
-                  setPassword(text);
-                  setPasswordError('');
-                }}
-                leftIcon="lock-closed-outline"
-                secureTextEntry
-                autoCapitalize="none"
-              />
-
-              {passwordError ? (
-                <AppText
-                  style={
-                    styles.errorText
-                  }
-                >
-                  {passwordError}
-                </AppText>
-              ) : null}
-
-            </View>
-
-            {/* =================================
-                FORGOT PASSWORD
-            ================================= */}
-
-            <TouchableOpacity
-              activeOpacity={0.7}
-              style={
-                styles.forgotButton
-              }
-              onPress={() =>
-                navigation.navigate(
-                  'ForgotPassword',
-                )
-              }
-            >
-
-              <AppText
-                style={
-                  styles.forgotText
-                }
-              >
-                Forgot Password?
-              </AppText>
-
-            </TouchableOpacity>
-
-            {/* =================================
-                CONTINUE
-            ================================= */}
-
-            <AppButton
-              title="Continue"
-              onPress={handleLogin}
+          {/* Password */}
+          <View style={styles.field}>
+            <AppInput
+              label="Password"
+              placeholder="Enter your password"
+              value={password}
+              onChangeText={(text: string) => {
+                setPassword(text);
+                setPasswordError('');
+              }}
+              leftIcon="lock-closed-outline"
+              secureTextEntry
+              autoCapitalize="none"
             />
 
-            {/* =================================
-                DIVIDER
-            ================================= */}
-
-            <View
-              style={
-                styles.dividerContainer
-              }
-            >
-
-              <View
-                style={styles.divider}
-              />
-
-              <AppText
-                style={styles.orText}
-              >
-                OR
+            {!!passwordError && (
+              <AppText style={styles.errorText}>
+                {passwordError}
               </AppText>
+            )}
+          </View>
 
-              <View
-                style={styles.divider}
-              />
+          {/* Forgot password */}
+          <TouchableOpacity
+            activeOpacity={0.7}
+            style={styles.forgotButton}
+            onPress={() => navigation.navigate('ForgotPassword')}>
+            <AppText style={styles.forgotText}>
+              Forgot Password?
+            </AppText>
+          </TouchableOpacity>
 
-            </View>
+          {/* Continue */}
+          <AppButton title="Continue" onPress={handleLogin} />
 
-            {/* =================================
-                REGISTER
-            ================================= */}
+          {/* Divider */}
+          <View style={styles.dividerContainer}>
+            <View style={styles.divider} />
+            <AppText style={styles.orText}>OR</AppText>
+            <View style={styles.divider} />
+          </View>
 
-            <TouchableOpacity
-              activeOpacity={0.7}
-              style={
-                styles.registerButton
-              }
-              onPress={() =>
-                navigation.navigate(
-                  'EmailVerification',
-                )
-              }
-            >
+          {/* Create account */}
+          <TouchableOpacity
+            activeOpacity={0.7}
+            style={styles.registerButton}
+            onPress={() => navigation.navigate('Register')}>
+            <AppText style={styles.registerText}>
+              Create Customer Account
+            </AppText>
+          </TouchableOpacity>
 
-              <AppText
-                style={
-                  styles.registerText
-                }
-              >
-                Create Customer Account
-              </AppText>
-
-            </TouchableOpacity>
-
-            {/* =================================
-                RESTAURANT PARTNER
-            ================================= */}
-
-            <View
-              style={
-                styles.partnerContainer
-              }
-            >
-
-              <AppText
-                style={
-                  styles.partnerTitle
-                }
-              >
-                Restaurant Partner?
-              </AppText>
-
-              <TouchableOpacity
-                activeOpacity={0.7}
-              >
-
-                <AppText
-                  style={
-                    styles.partnerLink
-                  }
-                >
-                  Contact FoodE Support
-                </AppText>
-
-              </TouchableOpacity>
-
-            </View>
-
-            {/* =================================
-                VERSION
-            ================================= */}
-
-            <AppText
-              style={styles.version}
-            >
-              Version 1.0.0
+          {/* Bottom footer */}
+          <View style={styles.footer}>
+            <AppText style={styles.partnerTitle}>
+              Restaurant Partner?
             </AppText>
 
+            <TouchableOpacity
+              activeOpacity={0.7}
+              onPress={() => {
+                // Add your existing FoodE support navigation here.
+              }}>
+              <AppText style={styles.partnerLink}>
+                Contact FoodE Support
+              </AppText>
+            </TouchableOpacity>
+
+            <AppText style={styles.version}>
+              Version 1.0.0
+            </AppText>
           </View>
-
         </ScrollView>
-
       </KeyboardAvoidingView>
-
     </View>
   );
 };
 
 export default LoginScreen;
 
-
-// ==================================================
-// STYLES
-// ==================================================
-
 const styles = StyleSheet.create({
-
-  // ================================================
-  // SCREEN
-  // ================================================
-
   screen: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: ORANGE,
   },
-
-  keyboardContainer: {
-    flex: 1,
-  },
-
-  scrollContent: {
-    flexGrow: 1,
-    paddingBottom: 24,
-  },
-
-  // ================================================
-  // HERO
-  // ================================================
 
   hero: {
-    minHeight: 210,
+    width: '100%',
     backgroundColor: ORANGE,
-    overflow: 'hidden',
     alignItems: 'center',
     justifyContent: 'center',
-    position: 'relative',
+    overflow: 'hidden',
   },
-
-  // ================================================
-  // BRAND
-  // ================================================
 
   brand: {
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 8,
+    marginTop: -4,
   },
 
   brandText: {
-    color: '#FFFFFF',
-    fontSize: 58,
+    color: '#FFF0DF',
+    fontSize: 62,
     fontWeight: '900',
     letterSpacing: -2.5,
   },
 
   brandLine: {
-    width: 42,
-    height: 4,
+    width: 72,
+    height: 5,
     borderRadius: 4,
-    backgroundColor: '#FFFFFF',
-    marginTop: 4,
+    backgroundColor: '#FFF0DF',
+    marginTop: 7,
   },
 
   brandTagline: {
-    color: '#FFFFFF',
-    fontSize: 10,
+    color: '#FFF0DF',
+    fontSize: 12,
     fontWeight: '700',
-    letterSpacing: 2.2,
-    marginTop: 8,
+    letterSpacing: 3,
+    marginTop: 10,
   },
-
-  // ================================================
-  // HERO DECORATION
-  // ================================================
 
   heroCircleLarge: {
     position: 'absolute',
-    width: 190,
-    height: 190,
-    borderRadius: 95,
+    width: 210,
+    height: 210,
+    borderRadius: 105,
     borderWidth: 1,
-    borderColor:
-      'rgba(255,255,255,0.12)',
+    borderColor: 'rgba(255,255,255,0.13)',
     right: -80,
-    top: -105,
+    top: -100,
   },
 
   heroCircleSmall: {
     position: 'absolute',
-    width: 75,
-    height: 75,
-    borderRadius: 38,
+    width: 100,
+    height: 100,
+    borderRadius: 50,
     borderWidth: 1,
-    borderColor:
-      'rgba(255,255,255,0.14)',
-    left: -25,
-    bottom: -30,
+    borderColor: 'rgba(255,255,255,0.14)',
+    left: -40,
+    bottom: -25,
   },
 
   heroDot: {
     position: 'absolute',
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    backgroundColor:
-      'rgba(255,255,255,0.25)',
-    left: 65,
-    top: 100,
+    width: 13,
+    height: 13,
+    borderRadius: 7,
+    backgroundColor: 'rgba(255,255,255,0.25)',
+    left: '17%',
+    top: '57%',
   },
 
   heroLine: {
     position: 'absolute',
-    width: 75,
+    width: 120,
     height: 1,
-    backgroundColor:
-      'rgba(255,255,255,0.16)',
-    right: 55,
-    bottom: 65,
-    transform: [
-      {
-        rotate: '-35deg',
-      },
-    ],
+    backgroundColor: 'rgba(255,255,255,0.17)',
+    right: 45,
+    bottom: 55,
+    transform: [{rotate: '-35deg'}],
   },
 
-  // ================================================
-  // LOGIN CARD
-  // ================================================
-
-  loginCard: {
-    backgroundColor: '#FFFFFF',
-
-    borderTopLeftRadius: 34,
-    borderTopRightRadius: 34,
-
-    paddingHorizontal: 20,
-    paddingTop: 13,
-    paddingBottom: 35,
-
+  card: {
+    flex: 1,
+    minHeight: 0,
+    width: '100%',
     marginTop: -28,
+    backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: 36,
+    borderTopRightRadius: 36,
+    overflow: 'hidden',
+    elevation: 0,
+  },
 
-    elevation: 8,
+  scrollView: {
+    flex: 1,
+  },
 
-    shadowColor: '#000000',
-    shadowOffset: {
-      width: 0,
-      height: -4,
-    },
-    shadowOpacity: 0.08,
-    shadowRadius: 14,
+  cardContent: {
+    flexGrow: 1,
+    paddingTop: 18,
+    paddingBottom: Platform.OS === 'ios' ? 18 : 14,
   },
 
   handle: {
-    width: 38,
-    height: 4,
+    width: 70,
+    height: 5,
     borderRadius: 4,
-    backgroundColor: '#E2E2E2',
+    backgroundColor: '#E0E0E0',
     alignSelf: 'center',
-    marginBottom: 18,
-  },
-
-  // ================================================
-  // HEADER
-  // ================================================
-
-  header: {
-    marginBottom: 20,
-  },
-
-  title: {
-    fontSize: 27,
-    fontWeight: '800',
-    color: '#161616',
-    marginBottom: 5,
-  },
-
-  subtitle: {
-    fontSize: 14,
-    lineHeight: 20,
-    color: '#777777',
-  },
-
-  // ================================================
-  // FIELDS
-  // ================================================
-
-  field: {
-    marginBottom: 5,
-  },
-
-  errorText: {
-    color: '#E53935',
-    fontSize: 13,
-    fontWeight: '500',
-    marginTop: 3,
-    marginLeft: 5,
-  },
-
-  // ================================================
-  // FORGOT PASSWORD
-  // ================================================
-
-  forgotButton: {
-    alignSelf: 'flex-end',
-    marginTop: 5,
-    marginBottom: 16,
-  },
-
-  forgotText: {
-    color: ORANGE,
-    fontSize: 14,
-    fontWeight: '700',
-  },
-
-  // ================================================
-  // DIVIDER
-  // ================================================
-
-  dividerContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginVertical: 18,
-  },
-
-  divider: {
-    flex: 1,
-    height: 1,
-    backgroundColor: '#E6E6E6',
-  },
-
-  orText: {
-    color: '#999999',
-    fontSize: 13,
-    fontWeight: '500',
-    marginHorizontal: 12,
-  },
-
-  // ================================================
-  // REGISTER
-  // ================================================
-
-  registerButton: {
-    alignItems: 'center',
     marginBottom: 23,
   },
 
-  registerText: {
+  header: {
+    marginBottom: 24,
+  },
+
+  title: {
+    fontSize: 32,
+    fontWeight: '900',
+    color: DARK,
+    letterSpacing: -0.8,
+  },
+
+  subtitle: {
+    fontSize: 15,
+    lineHeight: 21,
+    color: '#777777',
+    marginTop: 7,
+  },
+
+  field: {
+    marginBottom: 12,
+  },
+
+  errorText: {
+    color: '#D93025',
+    fontSize: 12,
+    marginTop: 5,
+    marginLeft: 5,
+  },
+
+  forgotButton: {
+    alignSelf: 'flex-end',
+    paddingVertical: 3,
+    marginTop: 0,
+    marginBottom: 19,
+  },
+
+  forgotText: {
     color: ORANGE,
     fontSize: 16,
     fontWeight: '800',
   },
 
-  // ================================================
-  // RESTAURANT PARTNER
-  // ================================================
-
-  partnerContainer: {
+  dividerContainer: {
+    flexDirection: 'row',
     alignItems: 'center',
+    marginTop: 23,
+    marginBottom: 18,
+  },
+
+  divider: {
+    flex: 1,
+    height: 1,
+    backgroundColor: '#E4E4E4',
+  },
+
+  orText: {
+    color: '#999999',
+    fontSize: 16,
+    marginHorizontal: 15,
+  },
+
+  registerButton: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 3,
+  },
+
+  registerText: {
+    color: ORANGE,
+    fontSize: 17,
+    fontWeight: '800',
+    textAlign: 'center',
+  },
+
+  footer: {
+    alignItems: 'center',
+    marginTop: 'auto',
+    paddingTop: 24,
   },
 
   partnerTitle: {
-    color: '#777777',
-    fontSize: 14,
-    marginBottom: 5,
+    color: '#818181',
+    fontSize: 15,
+    marginBottom: 8,
   },
 
   partnerLink: {
     color: ORANGE,
-    fontSize: 15,
-    fontWeight: '700',
+    fontSize: 17,
+    fontWeight: '800',
+    textAlign: 'center',
   },
 
-  // ================================================
-  // VERSION
-  // ================================================
-
   version: {
-    color: '#AAAAAA',
-    fontSize: 11,
+    color: '#B0B0B0',
+    fontSize: 13,
+    marginTop: 23,
     textAlign: 'center',
-    marginTop: 22,
   },
 });

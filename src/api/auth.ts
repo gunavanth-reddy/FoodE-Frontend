@@ -4,28 +4,53 @@ import api from './api';
 // Types
 // =========================
 
+export interface StudentVerificationData {
+  username: string;
+  password: string;
+}
+
+export interface VerifiedStudent {
+  studentName?: string;
+  registerNo?: string;
+  institution?: string;
+  program?: string;
+  section?: string;
+}
+
+export interface StudentVerificationResponse {
+  success: boolean;
+  message: string;
+  verificationToken?: string;
+  student?: VerifiedStudent;
+}
+
 export interface RegisterData {
   name: string;
-  email: string;
   phone: string;
   password: string;
+  verificationToken: string;
 }
 
 export interface AuthUser {
   id: string;
   name: string;
-  email?: string;
   phone?: string;
   role: string;
-  isEmailVerified: boolean;
   isPhoneVerified: boolean;
+  profileImage?: string;
+  studentVerification?: {
+    registerNo?: string;
+    institution?: string;
+    program?: string;
+    isVerified?: boolean;
+    verifiedAt?: string | null;
+  };
 }
 
 export interface RegisterResponse {
   success: boolean;
   message: string;
   user?: AuthUser;
-  developmentOTP?: string;
 }
 
 export interface LoginData {
@@ -36,8 +61,8 @@ export interface LoginData {
 export interface LoginResponse {
   success: boolean;
   message: string;
-  token: string;
-  user: AuthUser;
+  token?: string;
+  user?: AuthUser;
 }
 
 export interface ApiResponse {
@@ -47,276 +72,230 @@ export interface ApiResponse {
 }
 
 // =========================
-// Email Validation
+// Helpers
 // =========================
 
-export const isValidSRMAPEmail = (
-  email: string,
-): boolean => {
-  return /^[^\s@]+@srmap\.edu\.in$/i.test(email.trim());
+const getErrorMessage = (
+  error: unknown,
+  fallback: string,
+): string => {
+  const err = error as {
+    response?: {
+      data?: {
+        message?: string;
+      };
+    };
+    message?: string;
+  };
+
+  return (
+    err?.response?.data?.message ||
+    err?.message ||
+    fallback
+  );
 };
 
 // =========================
-// Send Registration OTP
+// Verify SRM AP Student
 // =========================
 
-export const sendEmailOTP = async (
-  email: string,
-): Promise<ApiResponse> => {
-  const normalizedEmail = email.trim().toLowerCase();
+export const verifySRMAPStudent = async (
+  data: StudentVerificationData,
+): Promise<StudentVerificationResponse> => {
+  const username = data.username.trim();
+  const password = data.password;
 
-  if (!isValidSRMAPEmail(normalizedEmail)) {
+  if (!username || !password) {
     throw new Error(
-      'Enter an email that ends with @srmap.edu.in',
+      'Enter your SRM AP ERP username and password.',
     );
   }
 
-  const response = await api.post(
-    '/auth/send-email-otp',
-    {
-      email: normalizedEmail,
-    },
-  );
+  try {
+    const response =
+      await api.post<StudentVerificationResponse>(
+        '/auth/verify-student',
+        { username, password },
+      );
 
-  return response.data;
+    const result = response.data;
+
+    if (
+      result?.success !== true ||
+      !result.verificationToken?.trim()
+    ) {
+      throw new Error(
+        result?.message || 'SRM AP student verification failed.',
+      );
+    }
+
+    return result;
+  } catch (error) {
+    throw new Error(
+      getErrorMessage(
+        error,
+        'Unable to verify your SRM AP student identity.',
+      ),
+    );
+  }
 };
 
 // =========================
-// Register User
-// Call only after email verification
+// Register FoodE User
 // =========================
 
 export const registerUser = async (
   user: RegisterData,
 ): Promise<RegisterResponse> => {
-  const normalizedEmail = user.email.trim().toLowerCase();
+  const name = user.name.trim();
+  const phone = user.phone.trim();
+  const verificationToken = user.verificationToken.trim();
 
-  if (!isValidSRMAPEmail(normalizedEmail)) {
+  if (!verificationToken) {
     throw new Error(
-      'Enter an email that ends with @srmap.edu.in',
+      'Verify your SRM AP student identity before registering.',
     );
   }
 
-  if (!user.name.trim()) {
-    throw new Error('Enter your name');
+  if (name.length < 2) {
+    throw new Error('Enter a valid name.');
   }
 
-  if (!/^\d{10}$/.test(user.phone.trim())) {
-    throw new Error('Enter a valid 10-digit mobile number');
+  if (!/^\d{10}$/.test(phone)) {
+    throw new Error('Enter a valid 10-digit mobile number.');
   }
 
   if (user.password.length < 8) {
     throw new Error(
-      'Password must contain at least 8 characters',
+      'Password must contain at least 8 characters.',
     );
   }
 
-  const response = await api.post(
-    '/auth/register',
-    {
-      name: user.name.trim(),
-      email: normalizedEmail,
-      phone: user.phone.trim(),
-      password: user.password,
-    },
-  );
+  try {
+    const response = await api.post<RegisterResponse>(
+      '/auth/register',
+      {
+        name,
+        phone,
+        password: user.password,
+        verificationToken,
+      },
+    );
 
-  return response.data;
-};
+    if (response.data?.success !== true) {
+      throw new Error(
+        response.data?.message || 'FoodE registration failed.',
+      );
+    }
 
-// =========================
-// Verify Registration Email OTP
-// =========================
-
-export const verifyEmailOTP = async (
-  email: string,
-  otp: string,
-): Promise<ApiResponse> => {
-  const normalizedEmail = email.trim().toLowerCase();
-
-  if (!isValidSRMAPEmail(normalizedEmail)) {
+    return response.data;
+  } catch (error) {
     throw new Error(
-      'Enter an email that ends with @srmap.edu.in',
+      getErrorMessage(error, 'Unable to create your FoodE account.'),
     );
   }
-
-  if (!/^\d{6}$/.test(otp.trim())) {
-    throw new Error('Enter the valid 6-digit OTP');
-  }
-
-  const response = await api.post(
-    '/auth/verify-email',
-    {
-      email: normalizedEmail,
-      otp: otp.trim(),
-    },
-  );
-
-  return response.data;
 };
 
 // =========================
-// Resend Registration OTP
-// =========================
-
-export const resendEmailOTP = async (
-  email: string,
-): Promise<ApiResponse> => {
-  const normalizedEmail = email.trim().toLowerCase();
-
-  if (!isValidSRMAPEmail(normalizedEmail)) {
-    throw new Error(
-      'Enter an email that ends with @srmap.edu.in',
-    );
-  }
-
-  const response = await api.post(
-    '/auth/resend-email-otp',
-    {
-      email: normalizedEmail,
-    },
-  );
-
-  return response.data;
-};
-
-// =========================
-// Login with Mobile Number
+// Login
+// Mobile Number + FoodE Password
 // =========================
 
 export const loginUser = async (
   data: LoginData,
 ): Promise<LoginResponse> => {
-  if (!/^\d{10}$/.test(data.phone.trim())) {
-    throw new Error('Enter a valid 10-digit mobile number');
+  const phone = data.phone.trim();
+
+  if (!/^\d{10}$/.test(phone)) {
+    throw new Error('Enter a valid 10-digit mobile number.');
   }
 
   if (!data.password) {
-    throw new Error('Enter your password');
+    throw new Error('Enter your FoodE password.');
   }
 
-  const response = await api.post(
-    '/auth/login',
-    {
-      phone: data.phone.trim(),
-      password: data.password,
-    },
-  );
+  try {
+    const response = await api.post<LoginResponse>(
+      '/auth/login',
+      {
+        phone,
+        password: data.password,
+      },
+    );
 
-  return response.data;
-};
+    if (
+      response.data?.success !== true ||
+      !response.data.token ||
+      !response.data.user
+    ) {
+      throw new Error(
+        response.data?.message || 'FoodE login failed.',
+      );
+    }
 
-// =========================
-// Forgot Password
-// Request password-reset OTP
-// =========================
-
-export const forgotPassword = async (
-  email: string,
-): Promise<ApiResponse> => {
-  const normalizedEmail = email.trim().toLowerCase();
-
-  if (!isValidSRMAPEmail(normalizedEmail)) {
+    return response.data;
+  } catch (error) {
     throw new Error(
-      'Enter an email that ends with @srmap.edu.in',
+      getErrorMessage(error, 'Unable to log in to FoodE.'),
     );
   }
-
-  const response = await api.post(
-    '/auth/forgot-password',
-    {
-      email: normalizedEmail,
-    },
-  );
-
-  return response.data;
-};
-
-// =========================
-// Verify Password-Reset OTP
-// =========================
-
-export const verifyResetOTP = async (
-  email: string,
-  otp: string,
-): Promise<ApiResponse> => {
-  const normalizedEmail = email.trim().toLowerCase();
-
-  if (!isValidSRMAPEmail(normalizedEmail)) {
-    throw new Error(
-      'Enter an email that ends with @srmap.edu.in',
-    );
-  }
-
-  if (!/^\d{6}$/.test(otp.trim())) {
-    throw new Error('Enter the valid 6-digit OTP');
-  }
-
-  const response = await api.post(
-    '/auth/verify-reset-otp',
-    {
-      email: normalizedEmail,
-      otp: otp.trim(),
-    },
-  );
-
-  return response.data;
-};
-
-// =========================
-// Reset Password
-// =========================
-
-export const resetPassword = async (
-  email: string,
-  otp: string,
-  newPassword: string,
-): Promise<ApiResponse> => {
-  const normalizedEmail = email.trim().toLowerCase();
-
-  if (!isValidSRMAPEmail(normalizedEmail)) {
-    throw new Error(
-      'Enter an email that ends with @srmap.edu.in',
-    );
-  }
-
-  if (!/^\d{6}$/.test(otp.trim())) {
-    throw new Error('Enter the valid 6-digit OTP');
-  }
-
-  if (newPassword.length < 8) {
-    throw new Error(
-      'Password must contain at least 8 characters',
-    );
-  }
-
-  const response = await api.post(
-    '/auth/reset-password',
-    {
-      email: normalizedEmail,
-      otp: otp.trim(),
-      newPassword,
-    },
-  );
-
-  return response.data;
 };
 
 // =========================
 // Get Profile
 // =========================
 
-export const getProfile = async (
-  token: string,
-) => {
-  const response = await api.get(
-    '/auth/profile',
-    {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
+export const getProfile = async (token: string) => {
+  const response = await api.get('/auth/profile', {
+    headers: {
+      Authorization: `Bearer ${token}`,
     },
-  );
+  });
 
   return response.data;
 };
+
+// =========================
+// OTP Verification & Resend
+// =========================
+
+export const verifyEmailOTP = async (
+  email: string,
+  otp: string,
+): Promise<{success: boolean; message: string}> => {
+  const response = await api.post('/auth/verify-email-otp', {
+    email,
+    otp,
+  });
+  return response.data;
+};
+
+export const verifyPhoneOTP = async (
+  phone: string,
+  otp: string,
+): Promise<{success: boolean; message: string}> => {
+  const response = await api.post('/auth/verify-phone-otp', {
+    phone,
+    otp,
+  });
+  return response.data;
+};
+
+export const resendEmailOTP = async (
+  email: string,
+): Promise<{success: boolean; message: string; developmentOTP?: string}> => {
+  const response = await api.post('/auth/resend-email-otp', {
+    email,
+  });
+  return response.data;
+};
+
+export const resendPhoneOTP = async (
+  phone: string,
+): Promise<{success: boolean; message: string; developmentOTP?: string}> => {
+  const response = await api.post('/auth/resend-phone-otp', {
+    phone,
+  });
+  return response.data;
+};
+

@@ -10,13 +10,15 @@ import {
   ActivityIndicator,
   Pressable,
   ScrollView,
+  StatusBar,
   StyleSheet,
   Text,
+  TouchableOpacity,
   View,
 } from 'react-native';
 
 import {useNavigation} from '@react-navigation/native';
-import {Bicycle, Clock, MapPin, Money} from 'phosphor-react-native';
+import {ArrowLeft, Bicycle, Clock, MapPin, Money} from 'phosphor-react-native';
 
 import {
   NativeStackNavigationProp,
@@ -50,7 +52,7 @@ type CheckoutNavigationProp =
 // =====================================================
 
 const API_BASE_URL =
-  'https://foode-backend-vn67.onrender.com/api';
+  'https://foode.site/api';
 
 // =====================================================
 // DELIVERY SLOT
@@ -1398,6 +1400,7 @@ const CheckoutScreen = () => {
   return (
     <SafeAreaView
       style={styles.container} edges={['top', 'left', 'right']}>
+      <StatusBar backgroundColor="#FF7A00" barStyle="light-content" hidden={false} translucent={false} />
       <ScrollView
         showsVerticalScrollIndicator={
           false
@@ -1410,20 +1413,33 @@ const CheckoutScreen = () => {
 
         <View
           style={styles.header}>
-          <Text
-            style={
-              styles.headerTitle
-            }>
-            Checkout
-          </Text>
+          <View style={{flexDirection: 'row', alignItems: 'center', gap: 12}}>
+            {navigation.canGoBack() && (
+              <TouchableOpacity
+                accessibilityRole="button"
+                accessibilityLabel="Go back"
+                activeOpacity={0.75}
+                onPress={() => navigation.goBack()}
+                style={styles.backButton}>
+                <ArrowLeft size={22} color="#1E232C" weight="bold" />
+              </TouchableOpacity>
+            )}
+            <View>
+              <Text
+                style={
+                  styles.headerTitle
+                }>
+                Checkout
+              </Text>
 
-          <Text
-            style={
-              styles.headerSubtitle
-            }>
-            Review your order before
-            placing it
-          </Text>
+              <Text
+                style={
+                  styles.headerSubtitle
+                }>
+                Review your order before placing it
+              </Text>
+            </View>
+          </View>
         </View>
 
         {/* DELIVERY ADDRESS */}
@@ -2090,6 +2106,20 @@ const styles =
       paddingBottom: 18,
       borderBottomWidth: 1,
       borderBottomColor: '#EEEEEE',
+    },
+
+    backButton: {
+      width: 42,
+      height: 42,
+      borderRadius: 21,
+      backgroundColor: '#FFFFFF',
+      alignItems: 'center',
+      justifyContent: 'center',
+      shadowColor: '#000',
+      shadowOffset: {width: 0, height: 2},
+      shadowOpacity: 0.08,
+      shadowRadius: 4,
+      elevation: 3,
     },
 
     headerTitle: {

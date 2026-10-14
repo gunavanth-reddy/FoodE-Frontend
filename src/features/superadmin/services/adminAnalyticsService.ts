@@ -1,4 +1,4 @@
-const API_BASE_URL = 'https://foode-backend-vn67.onrender.com/api';
+const API_BASE_URL = 'https://foode.site/api';
 
 export interface AnalyticsSummary {
   orders: number;

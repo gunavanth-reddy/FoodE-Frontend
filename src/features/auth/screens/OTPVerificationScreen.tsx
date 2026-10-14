@@ -1,5 +1,6 @@
 import React, {useEffect, useState} from 'react';
-import {Alert, KeyboardAvoidingView, Platform, ScrollView, StatusBar, StyleSheet, View} from 'react-native';
+import {Alert, KeyboardAvoidingView, Platform, ScrollView, StatusBar, StyleSheet, TouchableOpacity, View} from 'react-native';
+import {ArrowLeft} from 'phosphor-react-native';
 
 import {
   AppButton,
@@ -182,10 +183,29 @@ const OTPVerificationScreen = ({
 
   return (
     <View style={styles.screen}>
-      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" translucent={false} />
-      <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <StatusBar hidden={true} />
+      <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
         <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
           <View style={styles.content}>
+
+            {navigation.canGoBack() && (
+              <TouchableOpacity
+                onPress={() => navigation.goBack()}
+                style={{
+                  width: 42,
+                  height: 42,
+                  borderRadius: 14,
+                  backgroundColor: '#F8F9FA',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  marginBottom: 16,
+                  borderWidth: 1,
+                  borderColor: '#E8ECF4',
+                }}
+                activeOpacity={0.7}>
+                <ArrowLeft size={22} color="#1E232C" weight="bold" />
+              </TouchableOpacity>
+            )}
 
         {/* =========================
             Title
@@ -322,6 +342,6 @@ export default OTPVerificationScreen;
 const styles = StyleSheet.create({
   screen: {flex: 1, backgroundColor: '#FFFFFF'},
   flex: {flex: 1},
-  scrollContent: {flexGrow: 1, justifyContent: 'center', padding: 24, paddingBottom: 32},
+  scrollContent: {flexGrow: 1, justifyContent: 'center', paddingHorizontal: 20, paddingVertical: 24, paddingBottom: 36},
   content: {width: '100%', maxWidth: 520, alignSelf: 'center'},
 });

@@ -8,10 +8,15 @@ import {
   ScrollView,
   StatusBar,
   StyleSheet,
+  useWindowDimensions,
 } from 'react-native';
 
+import {
+  registerUser,
+  verifySRMAPStudent,
+} from '../../../api/auth';
 
-import {registerUser} from '../../../api/auth';
+import {ArrowLeft} from 'phosphor-react-native';
 
 import {
   AppInput,
@@ -20,93 +25,175 @@ import {
 } from '../../../components';
 
 const ORANGE = '#FF5A00';
+const GREEN = '#16803D';
+const DARK = '#171717';
 
-const RegisterScreen = ({navigation, route}: any) => {
-  const verifiedEmail = String(route?.params?.verifiedEmail || '').trim().toLowerCase();
+const RegisterScreen = ({navigation}: any) => {
+  const {height: screenHeight, width: screenWidth} =
+    useWindowDimensions();
+
+  // SRM AP ERP verification
+  const [erpUsername, setErpUsername] = useState('');
+  const [erpPassword, setErpPassword] = useState('');
+  const [isVerified, setIsVerified] = useState(false);
+  const [verificationToken, setVerificationToken] = useState('');
+  const [isVerifying, setIsVerifying] = useState(false);
+  const [verificationError, setVerificationError] = useState('');
+
+  // FoodE account details
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
 
   const [nameError, setNameError] = useState('');
-  const [phoneError, setPhoneError] =
-    useState('');
-  const [passwordError, setPasswordError] =
-    useState('');
+  const [phoneError, setPhoneError] = useState('');
+  const [passwordError, setPasswordError] = useState('');
+  const [isRegistering, setIsRegistering] = useState(false);
+
+  const heroHeight = Math.max(
+    225,
+    Math.min(screenHeight * 0.32, 290),
+  );
+
+  const getErrorMessage = (
+    error: any,
+    fallback: string,
+  ): string => {
+    const message =
+      error?.response?.data?.message || error?.message;
+
+    return typeof message === 'string' && message.trim()
+      ? message
+      : fallback;
+  };
 
   // ==========================================
-  // REGISTER
+  // VERIFY SRM AP STUDENT
+  // ==========================================
+
+  const handleVerifyStudent = async () => {
+    if (isVerifying || isVerified) {
+      return;
+    }
+
+    if (!erpUsername.trim() || !erpPassword) {
+      setVerificationError(
+        'Enter your SRM AP registration number and ERP password.',
+      );
+      return;
+    }
+
+    setIsVerifying(true);
+    setVerificationError('');
+    setIsVerified(false);
+    setVerificationToken('');
+
+    try {
+      const response = await verifySRMAPStudent({
+        username: erpUsername.trim(),
+        password: erpPassword,
+      });
+
+      if (
+        response?.success !== true ||
+        !response?.verificationToken
+      ) {
+        setVerificationError(
+          response?.message || 'Student verification failed.',
+        );
+        return;
+      }
+
+      setVerificationToken(response.verificationToken);
+      setIsVerified(true);
+
+      // Do not retain the ERP password after verification.
+      setErpPassword('');
+
+      Alert.alert(
+        'Student Verified',
+        'Your SRM AP student identity has been verified.',
+      );
+    } catch (error: any) {
+      setVerificationError(
+        getErrorMessage(
+          error,
+          'Unable to verify your student identity. Please try again.',
+        ),
+      );
+    } finally {
+      setIsVerifying(false);
+    }
+  };
+
+  // ==========================================
+  // REGISTER FOOD E ACCOUNT
   // ==========================================
 
   const handleRegister = async () => {
+    if (!isVerified || !verificationToken) {
+      Alert.alert(
+        'Verification Required',
+        'Verify your SRM AP student identity before creating your account.',
+      );
+      return;
+    }
+
+    if (isRegistering || isVerifying) {
+      return;
+    }
+
     const trimmedName = name.trim();
-    const value = phone.trim();
+    const trimmedPhone = phone.trim();
 
     setNameError('');
     setPhoneError('');
     setPasswordError('');
 
-    // Account creation is available only after university email verification.
-    if (!/^[a-zA-Z0-9._%+-]+@srmap\.edu\.in$/i.test(verifiedEmail)) {
-      Alert.alert('Verify your email first', 'Please verify your @srmap.edu.in email before creating your FoodE account.', [
-        {text: 'Continue', onPress: () => navigation.replace('EmailVerification')},
-      ]);
-      return;
-    }
-
-    // Name
-    if (!trimmedName) {
-      setNameError('Name is required');
-      return;
-    }
-
     if (trimmedName.length < 2) {
-      setNameError('Enter a valid name');
+      setNameError('Name must be at least 2 characters.');
       return;
     }
 
-    // Mobile number validation
-    if (!value) {
-      setPhoneError('Mobile number is required');
+    if (!/^\d{10}$/.test(trimmedPhone)) {
+      setPhoneError('Enter a valid 10-digit mobile number.');
       return;
     }
 
-    const phoneRegex = /^[0-9]{10}$/;
-
-    if (!phoneRegex.test(value)) {
-      setPhoneError(
-        'Enter a valid 10-digit mobile number',
-      );
-      return;
-    }
-
-    // Password
-    if (password.length < 6) {
+    if (password.length < 8) {
       setPasswordError(
-        'Password must be at least 6 characters',
+        'Password must contain at least 8 characters.',
       );
       return;
     }
 
-    // API
-    try {
-      const response = await registerUser(({
-        name: trimmedName,
-        phone: value,
-        password,
-        email: verifiedEmail,
-      }) as any);
+    setIsRegistering(true);
 
-      if (!response.success) {
-        setPhoneError(
-          response.message ||
-            'Unable to create account',
+    try {
+      const response = await registerUser({
+        name: trimmedName,
+        phone: trimmedPhone,
+        password,
+        verificationToken,
+      });
+
+      if (response?.success !== true) {
+        Alert.alert(
+          'Registration Failed',
+          response?.message || 'Unable to create your account.',
         );
         return;
       }
 
+      // Clear sensitive values after successful registration.
+      setIsVerified(false);
+      setVerificationToken('');
+      setErpPassword('');
+      setPassword('');
+
       Alert.alert(
         'Account Created',
-        'Your account has been created. Please sign in.',
+        'Your FoodE account has been created. You can now log in using your mobile number and password.',
         [
           {
             text: 'OK',
@@ -115,110 +202,206 @@ const RegisterScreen = ({navigation, route}: any) => {
         ],
       );
     } catch (error: any) {
-      console.log(
-        'Registration Error:',
-        error.response?.data || error,
+      Alert.alert(
+        'Registration Failed',
+        getErrorMessage(
+          error,
+          'Unable to connect to the FoodE server.',
+        ),
       );
-
-      setPhoneError(
-        error.response?.data?.message ||
-          'Unable to connect to FoodE server',
-      );
+    } finally {
+      setIsRegistering(false);
     }
+  };
+
+  // Changing the ERP username invalidates verification.
+  const handleERPUsernameChange = (text: string) => {
+    if (isVerified || isVerifying) {
+      return;
+    }
+
+    setErpUsername(text);
+    setVerificationError('');
+  };
+
+  const handleERPPasswordChange = (text: string) => {
+    if (isVerified || isVerifying) {
+      return;
+    }
+
+    setErpPassword(text);
+    setVerificationError('');
   };
 
   return (
     <View style={styles.screen}>
       <StatusBar
-        barStyle="light-content"
-        backgroundColor={ORANGE}
+        hidden={false}
         translucent={false}
+        backgroundColor={ORANGE}
+        barStyle="light-content"
       />
 
-      <KeyboardAvoidingView
-        style={styles.keyboardContainer}
-        behavior={
-          Platform.OS === 'ios'
-            ? 'padding'
-            : undefined
-        }>
+      {/* Orange branding header */}
+      <View style={[styles.hero, {height: heroHeight}]}>
+        <View style={styles.heroCircleLarge} />
+        <View style={styles.heroCircleSmall} />
+        <View style={styles.heroDot} />
+        <View style={styles.heroLine} />
 
+        {navigation.canGoBack() && (
+          <TouchableOpacity
+            onPress={() => navigation.goBack()}
+            style={styles.backButton}
+            activeOpacity={0.75}
+            accessibilityRole="button"
+            accessibilityLabel="Go back">
+            <ArrowLeft
+              size={25}
+              color="#FFFFFF"
+              weight="bold"
+            />
+          </TouchableOpacity>
+        )}
+
+        <View style={styles.brand}>
+          <AppText style={styles.brandText}>FoodE</AppText>
+          <View style={styles.brandLine} />
+          <AppText style={styles.brandTagline}>
+            FOOD. FAST. FRESH.
+          </AppText>
+        </View>
+      </View>
+
+      {/* Full-height white card */}
+      <KeyboardAvoidingView
+        style={styles.card}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView
+          style={styles.scrollView}
+          contentContainerStyle={[
+            styles.cardContent,
+            {
+              minHeight: Math.max(
+                0,
+                screenHeight - heroHeight + 28,
+              ),
+              paddingHorizontal: screenWidth < 360 ? 18 : 24,
+            },
+          ]}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
           bounces={false}
-          overScrollMode="never"
-          contentContainerStyle={
-            styles.scrollContent
-          }>
+          overScrollMode="never">
 
-          {/* ==================================
-              HERO
-          ================================== */}
+          <View style={styles.handle} />
 
-          <View style={styles.hero}>
+          {/* Heading */}
+          <View style={styles.header}>
+            <AppText style={styles.title}>
+              Create Account
+            </AppText>
 
-            <View
-              style={styles.heroCircleLarge}
-            />
-
-            <View
-              style={styles.heroCircleSmall}
-            />
-
-            <View style={styles.heroDot} />
-
-            <View style={styles.heroLine} />
-
-            <View style={styles.brand}>
-              <AppText
-                style={styles.brandText}>
-                FoodE
-              </AppText>
-
-              <View style={styles.brandLine} />
-
-              <AppText
-                style={styles.brandTagline}>
-                FOOD. FAST. FRESH.
-              </AppText>
-            </View>
-
+            <AppText style={styles.subtitle}>
+              Verify your SRM AP student identity to join FoodE.
+            </AppText>
           </View>
 
-          {/* ==================================
-              REGISTER CARD
-          ================================== */}
+          {/* STEP 1: ERP VERIFICATION */}
+          <View style={styles.sectionHeader}>
+            <AppText style={styles.sectionTitle}>
+              1. SRM AP Student Verification
+            </AppText>
 
-          <View style={styles.registerCard}>
+            <AppText style={styles.sectionSubtitle}>
+              Use your college ERP credentials.
+            </AppText>
+          </View>
 
-            <View style={styles.handle} />
+          <View style={styles.field}>
+            <AppInput
+              label="ERP Username / Registration Number"
+              placeholder="Enter your ERP username"
+              value={erpUsername}
+              onChangeText={handleERPUsernameChange}
+              autoCapitalize="none"
+              editable={!isVerified && !isVerifying}
+            />
+          </View>
 
-            <View style={styles.header}>
-              <AppText style={styles.title}>
-                Create Account
+          <View style={styles.field}>
+            <AppInput
+              label="ERP Password"
+              placeholder="Enter your ERP password"
+              value={erpPassword}
+              onChangeText={handleERPPasswordChange}
+              secureTextEntry
+              autoCapitalize="none"
+              editable={!isVerified && !isVerifying}
+            />
+          </View>
+
+          <View
+            pointerEvents={
+              isVerifying || isVerified ? 'none' : 'auto'
+            }
+            style={
+              isVerifying || isVerified
+                ? styles.disabledButton
+                : undefined
+            }>
+            <AppButton
+              title={
+                isVerifying
+                  ? 'Verifying Student...'
+                  : 'Verify SRM AP Student'
+              }
+              onPress={handleVerifyStudent}
+            />
+          </View>
+
+          {isVerified && (
+            <View style={styles.verifiedBox}>
+              <AppText style={styles.verifiedTitle}>
+                ✓ Verified SRM AP Student
               </AppText>
 
-              <AppText style={styles.subtitle}>
-                Join FoodE and start ordering
-                your favorite food.
+              <AppText style={styles.verifiedSubtitle}>
+                You can now create your FoodE account.
               </AppText>
             </View>
+          )}
 
-            <View style={styles.verifiedEmailBox}>
-              <AppText style={styles.verifiedEmailLabel}>Verified university email</AppText>
-              <AppText style={styles.verifiedEmailValue}>{verifiedEmail || 'Not verified'}</AppText>
-            </View>
+          {!!verificationError && (
+            <AppText style={styles.errorText}>
+              {verificationError}
+            </AppText>
+          )}
 
-            {/* =================================
-                FULL NAME
-            ================================= */}
+          {/* STEP 2: FOOD E ACCOUNT */}
+          <View style={styles.sectionHeader}>
+            <AppText style={styles.sectionTitle}>
+              2. FoodE Account Details
+            </AppText>
 
+            <AppText style={styles.sectionSubtitle}>
+              {isVerified
+                ? 'Complete your account details.'
+                : 'Complete verification to unlock these fields.'}
+            </AppText>
+          </View>
+
+          <View
+            pointerEvents={isVerified ? 'auto' : 'none'}
+            style={!isVerified ? styles.disabledFields : undefined}>
+
+            {/* Full name */}
             <View style={styles.field}>
               <AppInput
                 label="Full Name"
                 placeholder="Enter your full name"
                 value={name}
+                editable={isVerified}
                 onChangeText={text => {
                   setName(text);
                   setNameError('');
@@ -227,47 +410,42 @@ const RegisterScreen = ({navigation, route}: any) => {
                 autoCapitalize="words"
               />
 
-              {nameError ? (
+              {!!nameError && (
                 <AppText style={styles.errorText}>
                   {nameError}
                 </AppText>
-              ) : null}
+              )}
             </View>
 
-            {/* =================================
-                MOBILE NUMBER
-            ================================= */}
-
+            {/* Mobile number */}
             <View style={styles.field}>
               <AppInput
                 label="Mobile Number"
                 placeholder="Enter your 10-digit mobile number"
                 value={phone}
+                editable={isVerified}
                 onChangeText={text => {
-                  setPhone(text);
+                  setPhone(text.replace(/\D/g, '').slice(0, 10));
                   setPhoneError('');
                 }}
                 leftIcon="call-outline"
                 keyboardType="phone-pad"
-                autoCapitalize="none"
               />
 
-              {phoneError ? (
+              {!!phoneError && (
                 <AppText style={styles.errorText}>
                   {phoneError}
                 </AppText>
-              ) : null}
+              )}
             </View>
 
-            {/* =================================
-                PASSWORD
-            ================================= */}
-
+            {/* FoodE password */}
             <View style={styles.field}>
               <AppInput
-                label="Password"
-                placeholder="Enter your password"
+                label="FoodE Password"
+                placeholder="Create a password (minimum 8 characters)"
                 value={password}
+                editable={isVerified}
                 onChangeText={text => {
                   setPassword(text);
                   setPasswordError('');
@@ -277,53 +455,54 @@ const RegisterScreen = ({navigation, route}: any) => {
                 autoCapitalize="none"
               />
 
-              {passwordError ? (
+              {!!passwordError && (
                 <AppText style={styles.errorText}>
                   {passwordError}
                 </AppText>
-              ) : null}
+              )}
             </View>
+          </View>
 
-            {/* =================================
-                CREATE ACCOUNT
-            ================================= */}
-
+          {/* Create account */}
+          <View
+            pointerEvents={
+              isVerified && !isRegistering ? 'auto' : 'none'
+            }
+            style={
+              !isVerified || isRegistering
+                ? styles.disabledButton
+                : undefined
+            }>
             <AppButton
-              title="Create Account"
+              title={
+                isRegistering
+                  ? 'Creating Account...'
+                  : 'Create Account'
+              }
               onPress={handleRegister}
             />
+          </View>
 
-            {/* =================================
-                LOGIN
-            ================================= */}
-
-            <TouchableOpacity
-              activeOpacity={0.7}
-              style={styles.loginButton}
-              onPress={() => navigation.navigate('Login')}>
-
-              <AppText style={styles.loginText}>
-                Already have an account?{' '}
-                <AppText
-                  style={styles.loginHighlight}>
-                  Sign In
-                </AppText>
+          {/* Existing account */}
+          <TouchableOpacity
+            activeOpacity={0.7}
+            style={styles.loginButton}
+            onPress={() => navigation.navigate('Login')}>
+            <AppText style={styles.loginText}>
+              Already have an account?{' '}
+              <AppText style={styles.loginHighlight}>
+                Sign In
               </AppText>
+            </AppText>
+          </TouchableOpacity>
 
-            </TouchableOpacity>
-
-            {/* =================================
-                VERSION
-            ================================= */}
-
+          {/* Footer */}
+          <View style={styles.footer}>
             <AppText style={styles.version}>
               Version 1.0.0
             </AppText>
-
           </View>
-
         </ScrollView>
-
       </KeyboardAvoidingView>
     </View>
   );
@@ -331,251 +510,233 @@ const RegisterScreen = ({navigation, route}: any) => {
 
 export default RegisterScreen;
 
-// ==================================================
-// STYLES
-// ==================================================
-
 const styles = StyleSheet.create({
-
   screen: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
-  },
-
-  keyboardContainer: {
-    flex: 1,
-  },
-
-  scrollContent: {
-    flexGrow: 1,
-    paddingBottom: 24,
-  },
-
-  // ================================================
-  // HERO
-  // ================================================
-
-  hero: {
-    minHeight: 190,
     backgroundColor: ORANGE,
-    overflow: 'hidden',
+  },
+
+  // Orange header
+  hero: {
+    width: '100%',
+    backgroundColor: ORANGE,
     alignItems: 'center',
     justifyContent: 'center',
-    position: 'relative',
+    overflow: 'hidden',
   },
-
-  // ================================================
-  // BRAND
-  // ================================================
 
   brand: {
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 8,
+    marginTop: 15,
   },
 
   brandText: {
-    color: '#FFFFFF',
-    fontSize: 56,
+    color: '#FFF0DF',
+    fontSize: 62,
     fontWeight: '900',
     letterSpacing: -2.5,
   },
 
   brandLine: {
-    width: 42,
-    height: 4,
+    width: 72,
+    height: 5,
     borderRadius: 4,
-    backgroundColor: '#FFFFFF',
-    marginTop: 4,
+    backgroundColor: '#FFF0DF',
+    marginTop: 7,
   },
 
   brandTagline: {
-    color: '#FFFFFF',
-    fontSize: 10,
+    color: '#FFF0DF',
+    fontSize: 12,
     fontWeight: '700',
-    letterSpacing: 2.2,
-    marginTop: 8,
+    letterSpacing: 3,
+    marginTop: 10,
   },
 
-  // ================================================
-  // HERO DECORATION
-  // ================================================
+  // Back button
+  backButton: {
+    position: 'absolute',
+    top: 20,
+    left: 24,
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: 'rgba(255,255,255,0.22)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 2,
+  },
 
+  // Decorations
   heroCircleLarge: {
     position: 'absolute',
-    width: 190,
-    height: 190,
-    borderRadius: 95,
+    width: 210,
+    height: 210,
+    borderRadius: 105,
     borderWidth: 1,
-    borderColor:
-      'rgba(255,255,255,0.12)',
+    borderColor: 'rgba(255,255,255,0.13)',
     right: -80,
-    top: -105,
+    top: -100,
   },
 
   heroCircleSmall: {
     position: 'absolute',
-    width: 75,
-    height: 75,
-    borderRadius: 38,
+    width: 100,
+    height: 100,
+    borderRadius: 50,
     borderWidth: 1,
-    borderColor:
-      'rgba(255,255,255,0.14)',
-    left: -25,
-    bottom: -30,
+    borderColor: 'rgba(255,255,255,0.14)',
+    left: -40,
+    bottom: -25,
   },
 
   heroDot: {
     position: 'absolute',
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    backgroundColor:
-      'rgba(255,255,255,0.25)',
-    left: 65,
-    top: 100,
+    width: 13,
+    height: 13,
+    borderRadius: 7,
+    backgroundColor: 'rgba(255,255,255,0.25)',
+    left: '17%',
+    top: '57%',
   },
 
   heroLine: {
     position: 'absolute',
-    width: 75,
+    width: 120,
     height: 1,
-    backgroundColor:
-      'rgba(255,255,255,0.16)',
-    right: 55,
-    bottom: 65,
-    transform: [
-      {
-        rotate: '-35deg',
-      },
-    ],
+    backgroundColor: 'rgba(255,255,255,0.17)',
+    right: 45,
+    bottom: 55,
+    transform: [{rotate: '-35deg'}],
   },
 
-  // ================================================
-  // REGISTER CARD
-  // ================================================
-
-  verifiedEmailBox: {
-    backgroundColor: '#F7F7F7',
-    borderRadius: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 11,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: '#EAEAEA',
-  },
-  verifiedEmailLabel: {fontSize: 11, color: '#777777', marginBottom: 4},
-  verifiedEmailValue: {fontSize: 14, fontWeight: '700', color: '#242424'},
-
-  registerCard: {
-    backgroundColor: '#FFFFFF',
-
-    borderTopLeftRadius: 34,
-    borderTopRightRadius: 34,
-
-    paddingHorizontal: 20,
-    paddingTop: 13,
-    paddingBottom: 30,
-
+  // Full-height card
+  card: {
+    flex: 1,
+    minHeight: 0,
+    width: '100%',
     marginTop: -28,
+    backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: 36,
+    borderTopRightRadius: 36,
+    overflow: 'hidden',
+    elevation: 0,
+  },
 
-    elevation: 8,
+  scrollView: {
+    flex: 1,
+  },
 
-    shadowColor: '#000000',
-
-    shadowOffset: {
-      width: 0,
-      height: -4,
-    },
-
-    shadowOpacity: 0.08,
-    shadowRadius: 14,
+  cardContent: {
+    flexGrow: 1,
+    paddingTop: 18,
+    paddingBottom: Platform.OS === 'ios' ? 18 : 14,
   },
 
   handle: {
-    width: 38,
-    height: 4,
-    borderRadius: 4,
-    backgroundColor: '#E2E2E2',
     alignSelf: 'center',
-    marginBottom: 18,
+    width: 70,
+    height: 5,
+    borderRadius: 4,
+    backgroundColor: '#E0E0E0',
+    marginBottom: 23,
   },
 
-  // ================================================
-  // HEADER
-  // ================================================
-
+  // Main heading
   header: {
-    marginBottom: 18,
+    marginBottom: 22,
   },
 
   title: {
-    fontSize: 27,
-    fontWeight: '800',
-    color: '#161616',
-    marginBottom: 5,
+    color: DARK,
+    fontSize: 32,
+    fontWeight: '900',
+    letterSpacing: -0.8,
   },
 
   subtitle: {
-    fontSize: 14,
-    lineHeight: 20,
     color: '#777777',
+    fontSize: 15,
+    lineHeight: 21,
+    marginTop: 7,
   },
 
-  // ================================================
-  // FIELDS
-  // ================================================
+  // Sections
+  sectionHeader: {
+    marginTop: 3,
+    marginBottom: 12,
+  },
+
+  sectionTitle: {
+    color: '#262626',
+    fontSize: 15,
+    fontWeight: '800',
+  },
+
+  sectionSubtitle: {
+    color: '#777777',
+    fontSize: 12,
+    lineHeight: 18,
+    marginTop: 4,
+  },
 
   field: {
-    marginBottom: 5,
+    marginBottom: 12,
+  },
+
+  // Verification success
+  verifiedBox: {
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: '#BBF7D0',
+    backgroundColor: '#F0FDF4',
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    marginTop: 12,
+    marginBottom: 18,
+  },
+
+  verifiedTitle: {
+    color: GREEN,
+    fontSize: 14,
+    fontWeight: '800',
+  },
+
+  verifiedSubtitle: {
+    color: '#166534',
+    fontSize: 12,
+    lineHeight: 18,
+    marginTop: 4,
   },
 
   errorText: {
-    color: '#E53935',
-    fontSize: 13,
-    fontWeight: '500',
-    marginTop: 3,
-    marginLeft: 5,
-  },
-
-  // ================================================
-  // TERMS
-  // ================================================
-
-  checkboxContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 10,
-    marginBottom: 3,
-  },
-
-  termsTouchable: {
-    flex: 1,
-    marginLeft: 5,
-  },
-
-  checkboxText: {
-    color: '#777777',
-    fontSize: 13,
-    lineHeight: 19,
-  },
-
-  termsError: {
+    color: '#DC2626',
+    fontSize: 12,
+    lineHeight: 18,
+    marginTop: 4,
     marginBottom: 8,
   },
 
-  // ================================================
-  // LOGIN
-  // ================================================
+  disabledFields: {
+    opacity: 0.45,
+  },
 
+  disabledButton: {
+    opacity: 0.5,
+  },
+
+  // Sign in
   loginButton: {
     alignItems: 'center',
-    marginTop: 20,
+    justifyContent: 'center',
+    paddingVertical: 15,
   },
 
   loginText: {
     color: '#777777',
-    fontSize: 14,
+    fontSize: 13,
+    textAlign: 'center',
   },
 
   loginHighlight: {
@@ -583,15 +744,16 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
 
-  // ================================================
-  // VERSION
-  // ================================================
-
-  version: {
-    color: '#AAAAAA',
-    fontSize: 11,
-    textAlign: 'center',
-    marginTop: 20,
+  // Bottom footer
+  footer: {
+    alignItems: 'center',
+    marginTop: 'auto',
+    paddingTop: 12,
   },
 
+  version: {
+    color: '#B0B0B0',
+    fontSize: 13,
+    textAlign: 'center',
+  },
 });

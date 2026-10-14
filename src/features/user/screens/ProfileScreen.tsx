@@ -49,12 +49,8 @@ const ProfileScreen = ({navigation}: any) => {
   };
 
   return (
-    <SafeAreaView style={{flex: 1}} edges={['top', 'left', 'right']}>
-      <AppScreen backgroundColor={COLORS.background}>
-      <StatusBar
-        backgroundColor={COLORS.background}
-        barStyle="dark-content"
-      />
+    <SafeAreaView style={{flex: 1, backgroundColor: COLORS.background}} edges={['top', 'left', 'right']}>
+      <StatusBar backgroundColor="#FF7A00" barStyle="light-content" hidden={false} translucent={false} />
 
       <ScrollView
         style={styles.scrollView}
@@ -117,7 +113,6 @@ const ProfileScreen = ({navigation}: any) => {
         </View>
 
       </ScrollView>
-      </AppScreen>
     </SafeAreaView>
   );
 };

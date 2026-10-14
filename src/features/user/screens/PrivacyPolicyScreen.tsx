@@ -1,15 +1,19 @@
+
 import React from 'react';
 import {SafeAreaView} from 'react-native-safe-area-context';
-import {ScrollView,
+import {useNavigation} from '@react-navigation/native';
+import {
+  ScrollView,
   StatusBar,
   StyleSheet,
   Text,
+  TouchableOpacity,
   View,
-  Platform,
   useWindowDimensions,
 } from 'react-native';
 
 import {
+  ArrowLeft,
   LockKey,
   CheckCircle,
 } from 'phosphor-react-native';
@@ -17,9 +21,9 @@ import {
 const ORANGE = '#FF7A00';
 
 const PrivacyPolicyScreen: React.FC = () => {
+  const navigation = useNavigation<any>();
   const {width} = useWindowDimensions();
 
-  // Responsive layout
   const horizontalPadding = Math.min(
     Math.max(width * 0.05, 16),
     24,
@@ -31,10 +35,15 @@ const PrivacyPolicyScreen: React.FC = () => {
   );
 
   return (
-    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
+    <SafeAreaView
+      style={styles.container}
+      edges={['top', 'left', 'right']}>
+
       <StatusBar
-        barStyle="dark-content"
-        backgroundColor="#F7F8FA"
+        backgroundColor={ORANGE}
+        barStyle="light-content"
+        hidden={false}
+        translucent={false}
       />
 
       <ScrollView
@@ -52,6 +61,21 @@ const PrivacyPolicyScreen: React.FC = () => {
         {/* Header */}
         <View style={styles.header}>
           <View style={styles.titleRow}>
+            {navigation.canGoBack() && (
+              <TouchableOpacity
+                onPress={() => navigation.goBack()}
+                style={styles.backButton}
+                activeOpacity={0.7}
+                accessibilityLabel="Go back">
+
+                <ArrowLeft
+                  size={22}
+                  color="#1E232C"
+                  weight="bold"
+                />
+              </TouchableOpacity>
+            )}
+
             <View style={styles.titleIcon}>
               <LockKey
                 size={22}
@@ -61,124 +85,236 @@ const PrivacyPolicyScreen: React.FC = () => {
             </View>
 
             <Text
-              style={[
-                styles.title,
-                {fontSize: titleSize},
-              ]}
+              style={[styles.title, {fontSize: titleSize}]}
               maxFontSizeMultiplier={1.3}>
               Privacy Policy
             </Text>
           </View>
 
           <Text style={styles.subtitle}>
-            Your privacy matters to us.
+            Your privacy matters to us at FoodE.
           </Text>
 
           <View style={styles.updatedBadge}>
             <View style={styles.statusDot} />
-
             <Text style={styles.updatedText}>
-              Your privacy. Your trust.
+              Student-focused. Privacy-conscious.
             </Text>
           </View>
+        </View>
+
+        {/* Introduction */}
+        <View style={styles.card}>
+          <View style={styles.sectionHeader}>
+            <View style={styles.accentBar} />
+            <Text style={styles.heading}>Introduction</Text>
+          </View>
+
+          <Text style={styles.text}>
+            FoodE is a food ordering platform designed for
+            the SRM University–AP community. This Privacy
+            Policy explains what information we collect,
+            how we use it, and how it supports your use of
+            the app.
+          </Text>
+
+          <Text style={[styles.text, styles.paragraph]}>
+            By using FoodE, you acknowledge that your
+            information may be processed as described in
+            this policy.
+          </Text>
         </View>
 
         {/* Information We Collect */}
         <View style={styles.card}>
           <View style={styles.sectionHeader}>
             <View style={styles.accentBar} />
-
             <Text style={styles.heading}>
               Information We Collect
             </Text>
           </View>
 
           <Text style={styles.description}>
-            To provide a smooth food ordering experience,
-            FoodE may collect the following information:
+            FoodE may collect the following information
+            when you register and use the platform:
           </Text>
 
           <View style={styles.policyItem}>
             <View style={styles.bullet} />
-
             <Text style={styles.text}>
-              Basic account information such as your name,
-              email address, and phone number.
+              <Text style={styles.boldText}>
+                University verification details:{' '}
+              </Text>
+              relevant details obtained from or verified
+              against SRM University–AP ERP records, where
+              authorized and available, to verify student
+              eligibility.
             </Text>
           </View>
 
           <View style={styles.policyItem}>
             <View style={styles.bullet} />
-
             <Text style={styles.text}>
-              Delivery information required to complete
-              your food orders.
+              <Text style={styles.boldText}>
+                Mobile number:{' '}
+              </Text>
+              used for account identification and
+              verification. FoodE does not use email
+              addresses as its account registration method.
             </Text>
           </View>
 
           <View style={styles.policyItem}>
             <View style={styles.bullet} />
-
             <Text style={styles.text}>
-              Order history to help improve your experience.
+              <Text style={styles.boldText}>
+                Order and delivery information:{' '}
+              </Text>
+              food selections, order history, delivery
+              address, and contact details required to
+              fulfil your order.
+            </Text>
+          </View>
+
+          <View style={styles.policyItem}>
+            <View style={styles.bullet} />
+            <Text style={styles.text}>
+              <Text style={styles.boldText}>
+                App and notification information:{' '}
+              </Text>
+              device notification tokens and relevant
+              technical information needed to provide
+              notifications and operate the app.
             </Text>
           </View>
         </View>
 
-        {/* How We Use Your Information */}
+        {/* ERP Verification */}
         <View style={styles.card}>
           <View style={styles.sectionHeader}>
             <View style={styles.accentBar} />
+            <Text style={styles.heading}>
+              University ERP Verification
+            </Text>
+          </View>
 
+          <Text style={styles.text}>
+            FoodE may use authorized SRM University–AP ERP
+            information to verify whether a user is eligible
+            to access student-focused services.
+          </Text>
+
+          <Text style={[styles.text, styles.paragraph]}>
+            ERP information is intended for verification
+            and related account eligibility purposes. FoodE
+            does not intend to use university records for
+            unrelated purposes.
+          </Text>
+
+          <Text style={[styles.text, styles.paragraph]}>
+            Access to ERP information should be limited to
+            authorized access and the information necessary
+            for verification. FoodE does not claim to be
+            an official university service unless formally
+            authorized to represent itself as one.
+          </Text>
+        </View>
+
+        {/* How We Use Information */}
+        <View style={styles.card}>
+          <View style={styles.sectionHeader}>
+            <View style={styles.accentBar} />
             <Text style={styles.heading}>
               How We Use Your Information
             </Text>
           </View>
 
-          <Text style={styles.description}>
-            Your information helps us provide and improve
-            FoodE services.
+          <View style={styles.policyItem}>
+            <View style={styles.bullet} />
+            <Text style={styles.text}>
+              Register accounts and verify eligible users.
+            </Text>
+          </View>
+
+          <View style={styles.policyItem}>
+            <View style={styles.bullet} />
+            <Text style={styles.text}>
+              Process food orders and coordinate delivery.
+            </Text>
+          </View>
+
+          <View style={styles.policyItem}>
+            <View style={styles.bullet} />
+            <Text style={styles.text}>
+              Send order updates, including order confirmation
+              and delivery notifications.
+            </Text>
+          </View>
+
+          <View style={styles.policyItem}>
+            <View style={styles.bullet} />
+            <Text style={styles.text}>
+              Respond to support requests and maintain
+              platform safety.
+            </Text>
+          </View>
+
+          <View style={styles.policyItem}>
+            <View style={styles.bullet} />
+            <Text style={styles.text}>
+              Maintain, troubleshoot, and improve FoodE.
+            </Text>
+          </View>
+        </View>
+
+        {/* Sharing */}
+        <View style={styles.card}>
+          <View style={styles.sectionHeader}>
+            <View style={styles.accentBar} />
+            <Text style={styles.heading}>
+              Information Sharing
+            </Text>
+          </View>
+
+          <Text style={styles.text}>
+            Information necessary to fulfil an order, such
+            as the relevant order details and delivery
+            contact information, may be shared with the
+            restaurant or delivery personnel involved in
+            fulfilling that order.
           </Text>
 
-          <View style={styles.policyItem}>
-            <View style={styles.bullet} />
-
-            <Text style={styles.text}>
-              Process and deliver your food orders.
-            </Text>
-          </View>
-
-          <View style={styles.policyItem}>
-            <View style={styles.bullet} />
-
-            <Text style={styles.text}>
-              Provide customer support when you need help.
-            </Text>
-          </View>
-
-          <View style={styles.policyItem}>
-            <View style={styles.bullet} />
-
-            <Text style={styles.text}>
-              Improve FoodE services and user experience.
-            </Text>
-          </View>
+          <Text style={[styles.text, styles.paragraph]}>
+            Information may also be processed by service
+            providers that support FoodE, such as hosting
+            and notification services, or disclosed when
+            required by applicable law. We aim to limit
+            sharing to what is reasonably necessary for
+            these purposes.
+          </Text>
         </View>
 
         {/* Data Protection */}
         <View style={styles.card}>
           <View style={styles.sectionHeader}>
             <View style={styles.accentBar} />
-
             <Text style={styles.heading}>
-              Data Protection
+              Data Protection and Retention
             </Text>
           </View>
 
           <Text style={styles.text}>
-            We do not sell your personal information.
-            Your data is securely stored and used only
-            for providing FoodE services.
+            FoodE aims to use reasonable safeguards to
+            protect personal information against
+            unauthorized access, disclosure, alteration,
+            or loss.
+          </Text>
+
+          <Text style={[styles.text, styles.paragraph]}>
+            Information is retained for as long as
+            reasonably necessary to operate the platform,
+            maintain relevant records, resolve disputes,
+            and meet applicable legal requirements.
           </Text>
 
           <View style={styles.privacyNote}>
@@ -188,25 +324,90 @@ const PrivacyPolicyScreen: React.FC = () => {
               weight="fill"
               style={styles.privacyNoteIcon}
             />
-
             <Text style={styles.privacyNoteText}>
-              We value your privacy and aim to handle
-              your information responsibly.
+              We do not sell personal information as a
+              business practice.
             </Text>
           </View>
         </View>
 
-        {/* Footer */}
-        <View style={styles.footer}>
-          <Text style={styles.footerTitle}>
-            FoodE Privacy
+        {/* User Rights */}
+        <View style={styles.card}>
+          <View style={styles.sectionHeader}>
+            <View style={styles.accentBar} />
+            <Text style={styles.heading}>
+              Your Choices and Rights
+            </Text>
+          </View>
+
+          <Text style={styles.text}>
+            You can contact the FoodE team to ask about
+            your personal information, request correction
+            of inaccurate details, or request account
+            deletion, subject to applicable legal and
+            operational requirements.
           </Text>
 
-          <Text style={styles.footerText}>
-            Your trust matters to us.
+          <Text style={[styles.text, styles.paragraph]}>
+            You can also manage notification permissions
+            through your device settings. Disabling
+            notifications may prevent you from receiving
+            order updates as push notifications.
           </Text>
         </View>
 
+        {/* Policy Changes */}
+        <View style={styles.card}>
+          <View style={styles.sectionHeader}>
+            <View style={styles.accentBar} />
+            <Text style={styles.heading}>
+              Changes to This Policy
+            </Text>
+          </View>
+
+          <Text style={styles.text}>
+            This policy may be updated as FoodE features,
+            university verification processes, or legal
+            requirements change. Updated wording will be
+            published on this screen along with a revised
+            effective date where appropriate.
+          </Text>
+        </View>
+
+        {/* Contact */}
+        <View style={styles.card}>
+          <View style={styles.sectionHeader}>
+            <View style={styles.accentBar} />
+            <Text style={styles.heading}>
+              Contact FoodE
+            </Text>
+          </View>
+
+          <Text style={styles.text}>
+            For privacy questions, data correction requests,
+            or account-related concerns, contact the FoodE
+            team through the support channel provided in
+            the app.
+          </Text>
+
+          <Text style={[styles.text, styles.paragraph]}>
+            FoodE does not use email as its account
+            registration method. This does not prevent
+            FoodE from adding a separate contact channel
+            in the future if needed.
+          </Text>
+        </View>
+
+        {/* Footer */}
+        <View style={styles.footer}>
+          <Text style={styles.footerTitle}>FoodE Privacy</Text>
+          <Text style={styles.footerText}>
+            Built for a better campus food experience.
+          </Text>
+          <Text style={styles.footerSmall}>
+            Please review this policy periodically.
+          </Text>
+        </View>
       </ScrollView>
     </SafeAreaView>
   );
@@ -218,11 +419,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F7F8FA',
-
-    paddingTop:
-      Platform.OS === 'android'
-        ? StatusBar.currentHeight ?? 0
-        : 0,
   },
 
   scrollView: {
@@ -233,7 +429,6 @@ const styles = StyleSheet.create({
     flexGrow: 1,
   },
 
-  // Header
   header: {
     marginBottom: 24,
   },
@@ -242,6 +437,23 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     flexWrap: 'wrap',
+  },
+
+  backButton: {
+    width: 42,
+    height: 42,
+    borderRadius: 14,
+    backgroundColor: '#FFFFFF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 10,
+    borderWidth: 1,
+    borderColor: '#E8ECF4',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: 2},
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
   },
 
   titleIcon: {
@@ -293,19 +505,15 @@ const styles = StyleSheet.create({
     color: '#C45D0A',
   },
 
-  // Policy Cards
   card: {
     width: '100%',
     backgroundColor: '#FFFCF8',
     borderRadius: 18,
     padding: 18,
     marginBottom: 18,
-
     borderWidth: 1,
     borderColor: '#F0F0F0',
-
     elevation: 2,
-
     shadowColor: '#000000',
     shadowOpacity: 0.04,
     shadowRadius: 8,
@@ -345,7 +553,6 @@ const styles = StyleSheet.create({
     marginBottom: 14,
   },
 
-  // Policy List Items
   policyItem: {
     flexDirection: 'row',
     alignItems: 'flex-start',
@@ -370,7 +577,15 @@ const styles = StyleSheet.create({
     lineHeight: 23,
   },
 
-  // Privacy Note
+  boldText: {
+    fontWeight: '700',
+    color: '#374151',
+  },
+
+  paragraph: {
+    marginTop: 12,
+  },
+
   privacyNote: {
     flexDirection: 'row',
     alignItems: 'flex-start',
@@ -395,7 +610,6 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
 
-  // Footer
   footer: {
     alignItems: 'center',
     paddingTop: 4,
@@ -412,5 +626,12 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#B0B5BE',
     marginTop: 4,
+  },
+
+  footerSmall: {
+    fontSize: 11,
+    color: '#9CA3AF',
+    marginTop: 8,
+    textAlign: 'center',
   },
 });

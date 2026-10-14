@@ -51,18 +51,18 @@ const RestaurantHeader: React.FC<RestaurantHeaderProps> = ({restaurant}) => {
 
   return (
     <View style={styles.container}>
-      <StatusBar translucent backgroundColor="transparent" barStyle="light-content" />
+      <StatusBar hidden={true} />
 
       {hasImage ? (
         <ImageBackground
           source={{uri: imageUri}}
-          style={StyleSheet.absoluteFillObject}
+          style={StyleSheet.absoluteFill}
           resizeMode="cover"
           onError={() => setImageError(true)}>
           <View style={styles.imageTint} />
         </ImageBackground>
       ) : (
-        <View style={[StyleSheet.absoluteFillObject, styles.fallback]}>
+        <View style={[StyleSheet.absoluteFill, styles.fallback]}>
           <ForkKnife size={48} color="#FFFFFF" weight="duotone" />
           <Text style={styles.fallbackText}>FoodE</Text>
           <Text style={styles.fallbackCaption}>Freshly made for you</Text>
@@ -137,7 +137,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#C85C00',
   },
   imageTint: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     backgroundColor: 'rgba(20, 12, 5, 0.12)',
   },
   fallback: {

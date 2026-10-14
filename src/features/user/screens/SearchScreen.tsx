@@ -8,6 +8,7 @@ import {
   ActivityIndicator,
   FlatList,
   Image,
+  StatusBar,
   StyleSheet,
   Text,
   TextInput,
@@ -17,7 +18,7 @@ import {
 
 import {SafeAreaView} from 'react-native-safe-area-context';
 
-import { MagnifyingGlass, X, Microphone, Clock, Storefront, ForkKnife, Star, CaretRight, Warning } from 'phosphor-react-native';
+import { ArrowLeft, MagnifyingGlass, X, Microphone, Clock, Storefront, ForkKnife, Star, CaretRight, Warning } from 'phosphor-react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {useNavigation} from '@react-navigation/native';
 
@@ -581,59 +582,14 @@ const SearchScreen = () => {
       food.name,
     );
 
-    const restaurant =
-      food.restaurant;
-
-    // Restaurant object
-    if (
-      restaurant &&
-      typeof restaurant ===
-        'object'
-    ) {
-      navigation.navigate(
-        'RestaurantDetails',
-        {
-          restaurant: {
-            id: restaurant._id,
-            backendId:
-              restaurant._id,
-            name: restaurant.name,
-            isActive:
-              restaurant.isActive,
-            image: undefined,
-            coverImage: undefined,
-            cuisines: '',
-            rating: 0,
-            deliveryTime:
-              '20-30 min',
-            distance: '',
-            priceForTwo: '',
-            offer: '',
-            freeDelivery: false,
-            address:
-              'SRM AP University, Neerukonda',
-            isVeg: false,
-          },
-        },
-      );
-
+    const restaurant = (food as any).restaurant;
+    if (restaurant && typeof restaurant === 'object') {
+      navigation.navigate('RestaurantDetails', {restaurant});
       return;
     }
-
-    // Restaurant ID
-    const foundRestaurant =
-      restaurants.find(
-        item => getRestaurantId(item) === String(restaurant),
-      );
-
-    if (foundRestaurant) {
-      navigation.navigate(
-        'RestaurantDetails',
-        {
-          restaurant:
-            foundRestaurant,
-        },
-      );
+    const restaurantId = (food as any).restaurantId || (food as any).restaurantID;
+    if (restaurantId) {
+      navigation.navigate('RestaurantDetails', {restaurantId});
     }
   };
 
@@ -997,6 +953,7 @@ const SearchScreen = () => {
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
+      <StatusBar backgroundColor="#FF7A00" barStyle="light-content" hidden={false} translucent={false} />
       <FlatList
         data={[]}
         keyExtractor={() =>
@@ -1013,9 +970,19 @@ const SearchScreen = () => {
                 SEARCH BAR
             ======================================= */}
 
-            <View
-              style={styles.searchContainer}>
-              <MagnifyingGlass size={21} color="#888888" weight="regular" />
+            <View style={styles.searchRow}>
+              {navigation.canGoBack() && (
+                <TouchableOpacity
+                  activeOpacity={0.75}
+                  onPress={() => navigation.goBack()}
+                  style={styles.backButton}>
+                  <ArrowLeft size={22} color="#1E232C" weight="bold" />
+                </TouchableOpacity>
+              )}
+
+              <View
+                style={[styles.searchContainer, navigation.canGoBack() && {flex: 1}]}>
+                <MagnifyingGlass size={21} color="#888888" weight="regular" />
 
               <TextInput
                 autoFocus
@@ -1048,10 +1015,11 @@ const SearchScreen = () => {
                 <Microphone size={21} color="#FF7A00" weight="regular" />
               </TouchableOpacity>
             </View>
+          </View>
 
-            {/* =======================================
-                FILTERS
-            ======================================= */}
+          {/* =======================================
+              FILTERS
+          ======================================= */}
 
             <FlatList
               data={filters}
@@ -1331,13 +1299,34 @@ const styles =
     // SEARCH
     // ===============================================
 
-    searchContainer: {
+    searchRow: {
       flexDirection: 'row',
       alignItems: 'center',
-      marginHorizontal: 16,
-      marginTop: 12,
       paddingHorizontal: 16,
-      height: 56,
+      marginTop: 10,
+    },
+
+    backButton: {
+      width: 44,
+      height: 44,
+      borderRadius: 22,
+      backgroundColor: '#FFFFFF',
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginRight: 10,
+      shadowColor: '#000',
+      shadowOffset: {width: 0, height: 2},
+      shadowOpacity: 0.08,
+      shadowRadius: 4,
+      elevation: 3,
+    },
+
+    searchContainer: {
+      flex: 1,
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingHorizontal: 14,
+      height: 52,
       borderRadius: 18,
       backgroundColor: '#FFFCF8',
       borderWidth: 1,

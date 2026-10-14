@@ -187,11 +187,8 @@ const AdminDashboardScreen = ({navigation}: any) => {
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.center}>
-        <StatusBar
-          barStyle="dark-content"
-          backgroundColor="#F7F8FA"
-        />
+      <SafeAreaView style={styles.center} edges={['top', 'left', 'right']}>
+        <StatusBar hidden={true} />
 
         <ActivityIndicator
           size="large"
@@ -242,11 +239,8 @@ const AdminDashboardScreen = ({navigation}: any) => {
   ];
 
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar
-        barStyle="dark-content"
-        backgroundColor="#F7F8FA"
-      />
+    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
+      <StatusBar hidden={true} />
 
       <ScrollView
         showsVerticalScrollIndicator={false}
@@ -443,6 +437,9 @@ const AdminDashboardScreen = ({navigation}: any) => {
           }
           onReviewsPress={() =>
             navigation.navigate('AdminReviews')
+          }
+          onBroadcastPress={() =>
+            navigation.navigate('AdminBroadcast')
           }
         />
 

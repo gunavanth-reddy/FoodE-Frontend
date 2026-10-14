@@ -477,11 +477,7 @@ const AddFoodScreen = ({
         style={styles.loadingContainer}
         edges={['top', 'left', 'right']}>
 
-
-        <StatusBar
-          barStyle="dark-content"
-          backgroundColor="#F8F8FA"
-        />
+        <StatusBar hidden={true} />
 
         <ActivityIndicator
           size="large"
@@ -511,11 +507,7 @@ const AddFoodScreen = ({
         style={styles.emptyContainer}
         edges={['top', 'left', 'right']}>
 
-
-        <StatusBar
-          barStyle="dark-content"
-          backgroundColor="#F8F8FA"
-        />
+        <StatusBar hidden={true} />
 
         <Text
           style={
@@ -572,11 +564,7 @@ const AddFoodScreen = ({
       style={styles.container}
       edges={['top', 'left', 'right']}>
 
-
-      <StatusBar
-        barStyle="dark-content"
-        backgroundColor="#F8F8FA"
-      />
+      <StatusBar hidden={true} />
 
       <ScrollView
         showsVerticalScrollIndicator={

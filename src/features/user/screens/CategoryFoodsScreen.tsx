@@ -4,6 +4,7 @@ import {
   ActivityIndicator,
   Image,
   ScrollView,
+  StatusBar,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -231,12 +232,18 @@ const CategoryFoodsScreen = () => {
   // ===================================================
 
   const handleFoodPress = (food: Food) => {
-    const restaurant = food.restaurant;
+    const restaurant = (food as any).restaurant;
+    if (restaurant && typeof restaurant === 'object') {
+      handleOpenRestaurant(restaurant);
+      return;
+    }
+    const restaurantId = (food as any).restaurantId || (food as any).restaurantID;
+    if (restaurantId) {
+      navigation.navigate('RestaurantDetails', {restaurantId});
+    }
+  };
 
-    // ================================================
-    // POPULATED RESTAURANT
-    // ================================================
-
+  const handleOpenRestaurant = (restaurant: any) => {
     if (
       typeof restaurant === 'object' &&
       restaurant !== null
@@ -518,6 +525,7 @@ const CategoryFoodsScreen = () => {
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
+      <StatusBar backgroundColor="#FF7A00" barStyle="light-content" hidden={false} translucent={false} />
       {/* ============================================
           HEADER
       ============================================ */}

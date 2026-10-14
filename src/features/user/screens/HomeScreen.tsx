@@ -475,12 +475,8 @@ const HomeScreen: React.FC = () => {
       );
     };
 
-  const handleFoodPress = (
-    food: Food,
-  ) => {
-    handleOpenRestaurantFromFood(
-      food,
-    );
+  const handleFoodPress = (food: Food) => {
+    handleOpenRestaurantFromFood(food);
   };
 
   const handleRetryFoods = () => {
@@ -498,13 +494,14 @@ const HomeScreen: React.FC = () => {
       style={styles.safeArea}
       edges={['top', 'left', 'right']}>
 
-      <StatusBar
-        barStyle="light-content"
-        backgroundColor="#F47721"
-        translucent={false}
-      />
+      <StatusBar backgroundColor="#FF7A00" barStyle="light-content" hidden={false} translucent={false} />
 
       <View style={styles.body}>
+        {/* Static app bar: remains visible while page content scrolls. */}
+        <View style={styles.headerContainer}>
+          <Header />
+        </View>
+
         <ScrollView
           showsVerticalScrollIndicator={false}
           bounces
@@ -519,11 +516,6 @@ const HomeScreen: React.FC = () => {
               tintColor="#F47721"
             />
           }>
-
-          {/* Header scrolls with the page */}
-          <View style={styles.headerContainer}>
-            <Header />
-          </View>
 
           {/* Search */}
           <View style={styles.searchContainer}>
