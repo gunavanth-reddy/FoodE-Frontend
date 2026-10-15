@@ -15,7 +15,7 @@ const Avatar = ({uri, size = 72}: Props) => (
   ]}>
     {uri ? (
       <Image
-        source={{uri}}
+        source={{uri, cache: 'force-cache'}}
         style={{width: size, height: size, borderRadius: size / 2}}
         resizeMode="cover"
       />

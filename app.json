@@ -1,4 +1,14 @@
 {
-  "name": "FoodE",
-  "displayName": "FoodE"
+  "expo": {
+    "name": "FoodE",
+    "slug": "foode",
+    "version": "0.0.1",
+    "web": {
+      "bundler": "metro",
+      "output": "single"
+    },
+    "plugins": [
+      "expo-image"
+    ]
+  }
 }

@@ -15,6 +15,7 @@
   },
   "include": [
     "App.tsx",
+    "App.web.tsx",
     "index.js",
     "src/**/*.ts",
     "src/**/*.tsx"

@@ -18,6 +18,20 @@ npm start
 yarn start
 ```
 
+## Run and build the web app with Expo
+
+The web app runs in iPhone, iPad, and desktop browsers in a phone-width layout.
+Android browsers automatically open the FoodE Google Play listing.
+
+```sh
+npm run web
+npm run build:web
+```
+
+The production web export is written to `dist/`. CDN images use Expo Image's
+memory-and-disk cache policy; image URLs are cache keys, so replaced images with
+new URLs are fetched as new assets.
+
 ## Step 2: Build and run your app
 
 With Metro running, open a new terminal window/pane from the root of your React Native project, and use one of the following commands to build and run your Android or iOS app:

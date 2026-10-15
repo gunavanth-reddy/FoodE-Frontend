@@ -6,7 +6,9 @@ import {
 } from '@react-native-firebase/messaging';
 
 import App from './App';
-import {name as appName} from './app.json';
+import appConfig from './app.json';
+
+const appName = appConfig.expo.name;
 
 // =====================================================
 // FCM BACKGROUND MESSAGE HANDLER
