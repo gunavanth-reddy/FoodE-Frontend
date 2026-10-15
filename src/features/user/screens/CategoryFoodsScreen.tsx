@@ -2,7 +2,6 @@ import {SafeAreaView} from 'react-native-safe-area-context';
 import React, {useEffect, useState} from 'react';
 import {
   ActivityIndicator,
-  Image,
   ScrollView,
   StatusBar,
   StyleSheet,
@@ -25,6 +24,7 @@ import {
   Food,
   getFoodsByCategory,
 } from '../../restaurant/services/foodService';
+import AsyncImage from '../../../components/images/AsyncImage';
 
 // =====================================================
 // ROUTE TYPE
@@ -385,25 +385,11 @@ const CategoryFoodsScreen = () => {
         {/* IMAGE */}
 
         <View style={styles.imageContainer}>
-          {food.image ? (
-            <Image
-              source={{
-                uri: food.image,
-              }}
-              style={styles.foodImage}
-            />
-          ) : (
-            <View
-              style={
-                styles.imagePlaceholder
-              }>
-              <ForkKnife
-                size={34}
-                color="#FF7A00"
-                weight="duotone"
-              />
-            </View>
-          )}
+          <AsyncImage
+            source={food.image}
+            style={styles.foodImage}
+            kind="food"
+          />
 
           {/* VEG / NON VEG */}
 

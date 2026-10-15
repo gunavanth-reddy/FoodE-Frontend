@@ -7,7 +7,6 @@ import React, {
 import {
   ActivityIndicator,
   FlatList,
-  Image,
   StatusBar,
   StyleSheet,
   Text,
@@ -35,6 +34,7 @@ import {
 import {
   Restaurant,
 } from '../components/home/restaurant/restaurantData';
+import AsyncImage from '../../../components/images/AsyncImage';
 
 // =====================================================
 // TYPES
@@ -684,19 +684,11 @@ const SearchScreen = () => {
       style={styles.resultCard}>
       <View
         style={styles.imageWrapper}>
-        {getRestaurantImage(item) ? (
-          <Image
-            source={{uri: getRestaurantImage(item)}}
-            style={styles.resultImage}
-          />
-        ) : (
-          <View
-            style={
-              styles.imagePlaceholder
-            }>
-            <Storefront size={30} color="#FF7A00" weight="duotone" />
-          </View>
-        )}
+        <AsyncImage
+          source={getRestaurantImage(item)}
+          style={styles.resultImage}
+          kind="restaurant"
+        />
 
         <View
           style={styles.imageRating}>
@@ -785,21 +777,11 @@ const SearchScreen = () => {
         style={styles.resultCard}>
         <View
           style={styles.imageWrapper}>
-          {item.image ? (
-            <Image
-              source={{
-                uri: item.image,
-              }}
-              style={styles.resultImage}
-            />
-          ) : (
-            <View
-              style={
-                styles.imagePlaceholder
-              }>
-              <ForkKnife size={30} color="#FF7A00" weight="duotone" />
-            </View>
-          )}
+          <AsyncImage
+            source={item.image}
+            style={styles.resultImage}
+            kind="food"
+          />
 
           <View
             style={[

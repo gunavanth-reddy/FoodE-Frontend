@@ -1,7 +1,6 @@
-import React, {useState} from 'react';
+import React from 'react';
 
 import {
-  Image,
   StyleSheet,
   Text,
   View,
@@ -10,19 +9,15 @@ import {
 import {CartItem} from '../../../../context/CartContext';
 
 import CartQuantitySelector from './CartQuantitySelector';
-import {ForkKnife} from 'phosphor-react-native';
+import AsyncImage from '../../../../components/images/AsyncImage';
 
 interface CartItemCardProps {
   item: CartItem;
 }
 
 const CartItemCard: React.FC<CartItemCardProps> = ({item}) => {
-  const [imageFailed, setImageFailed] = useState(false);
-
   const imageUri =
     typeof item.image === 'string' ? item.image.trim() : '';
-
-  const showImage = imageUri.length > 0 && !imageFailed;
 
   const hasOriginalPrice =
     typeof item.originalPrice === 'number' &&
@@ -32,22 +27,11 @@ const CartItemCard: React.FC<CartItemCardProps> = ({item}) => {
     <View style={styles.container}>
       {/* FOOD IMAGE */}
       <View style={styles.imageWrapper}>
-        {showImage ? (
-          <Image
-            source={{uri: imageUri}}
-            style={styles.image}
-            resizeMode="cover"
-            onError={() => {
-              console.warn('Cart food image failed to load:', imageUri);
-              setImageFailed(true);
-            }}
-          />
-        ) : (
-          <View style={styles.imagePlaceholder}>
-            <ForkKnife size={28} color="#FF7A00" weight="duotone" />
-            <Text style={styles.placeholderText}>No image</Text>
-          </View>
-        )}
+        <AsyncImage
+          source={imageUri || undefined}
+          style={styles.image}
+          kind="food"
+        />
       </View>
 
       {/* FOOD INFORMATION */}
@@ -131,19 +115,6 @@ const styles = StyleSheet.create({
   image: {
     width: '100%',
     height: '100%',
-  },
-
-  imagePlaceholder: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#FFF4EA',
-  },
-
-  placeholderText: {
-    marginTop: 3,
-    fontSize: 10,
-    color: '#9CA3AF',
   },
 
   // FOOD DETAILS

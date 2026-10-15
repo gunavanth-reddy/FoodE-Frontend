@@ -1,17 +1,16 @@
-import React, {useEffect, useState} from 'react';
+import React from 'react';
 
 import {
-  Image,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
-  Text as RNText,
 } from 'react-native';
 
 import {MenuItem} from '../../data/menu/types';
 import QuantitySelector from './QuantitySelector';
-import {ForkKnife, Star} from 'phosphor-react-native';
+import {Star} from 'phosphor-react-native';
+import AsyncImage from '../../../../components/images/AsyncImage';
 
 interface MenuItemCardProps {
   item: MenuItem;
@@ -22,23 +21,6 @@ const MenuItemCard: React.FC<MenuItemCardProps> = ({
   item,
   onPress,
 }) => {
-  const [imageError, setImageError] = useState(false);
-
-  const imageValue = item?.image;
-
-  useEffect(() => {
-    setImageError(false);
-  }, [imageValue]);
-
-  const imageSource =
-    typeof imageValue === 'string' && imageValue.trim().length > 0
-      ? {uri: imageValue.trim()}
-      : imageValue &&
-          typeof imageValue === 'object' &&
-          'uri' in imageValue
-        ? imageValue
-        : null;
-
   return (
     <TouchableOpacity
       activeOpacity={0.9}
@@ -87,24 +69,11 @@ const MenuItemCard: React.FC<MenuItemCardProps> = ({
 
       {/* Right Section */}
       <View style={styles.imageSection}>
-        {imageSource && !imageError ? (
-          <Image
-            source={imageSource}
-            style={styles.image}
-            resizeMode="cover"
-            onError={() => {
-              console.warn('Menu item image failed:', imageSource);
-              setImageError(true);
-            }}
-          />
-        ) : (
-          <View style={[styles.image, styles.imagePlaceholder]}>
-            <ForkKnife size={28} color="#FF7A00" weight="duotone" />
-            <RNText style={styles.placeholderText}>
-              Image unavailable
-            </RNText>
-          </View>
-        )}
+        <AsyncImage
+          source={item?.image}
+          style={styles.image}
+          kind="food"
+        />
 
         <QuantitySelector item={item} />
       </View>

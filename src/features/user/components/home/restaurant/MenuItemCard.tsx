@@ -1,6 +1,5 @@
 import React from 'react';
 import {
-  Image,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -15,6 +14,7 @@ import {
 
 import {MenuItem} from '../../../data/menu/types';
 import {useCart} from '../../../../../context/CartContext';
+import AsyncImage from '../../../../../components/images/AsyncImage';
 
 interface MenuItemCardProps {
   item: MenuItem;
@@ -96,9 +96,10 @@ const MenuItemCard: React.FC<MenuItemCardProps> = ({
 
       {/* IMAGE + CART CONTROLS */}
       <View style={styles.imageSection}>
-        <Image
+        <AsyncImage
           source={item.image}
           style={styles.image}
+          kind="food"
         />
 
         {quantity === 0 ? (

@@ -6,7 +6,6 @@ import React, {
 import {
   ActivityIndicator,
   Alert,
-  Image,
   ScrollView,
   StatusBar,
   StyleSheet,
@@ -24,7 +23,6 @@ import {
   ArrowLeft,
   Camera,
   Clock,
-  ForkKnife,
   Plus,
 } from 'phosphor-react-native';
 
@@ -41,6 +39,7 @@ import {
   createFood,
   CreateFoodData,
 } from '../services/foodService';
+import AsyncImage from '../../../components/images/AsyncImage';
 
 // =====================================================
 // AUTH
@@ -788,24 +787,17 @@ const AddFoodScreen = ({
         />
 
         <View style={styles.imagePickerCard}>
-          {imageFile?.uri ? (
-            <Image
-              source={{uri: imageFile.uri}}
-              style={styles.selectedImage}
-              resizeMode="cover"
-            />
-          ) : image.trim() ? (
-            <Image
-              source={{uri: image.trim()}}
-              style={styles.selectedImage}
-              resizeMode="cover"
-            />
-          ) : (
-            <View style={styles.imagePlaceholder}>
-              <Camera size={36} color="#FF7A00" weight="duotone" />
-              <Text style={styles.imagePlaceholderText}>No image selected</Text>
-            </View>
-          )}
+          <AsyncImage
+            source={imageFile?.uri || image.trim() || undefined}
+            style={styles.selectedImage}
+            kind="food"
+            placeholder={
+              <View style={styles.imagePlaceholder}>
+                <Camera size={36} color="#FF7A00" weight="duotone" />
+                <Text style={styles.imagePlaceholderText}>No image selected</Text>
+              </View>
+            }
+          />
 
           <TouchableOpacity
             activeOpacity={0.85}
@@ -826,7 +818,7 @@ const AddFoodScreen = ({
         </View>
 
         <Text style={styles.helperText}>
-          Select a JPG, PNG, or WEBP image (maximum 5 MB). It will be uploaded to Cloudinary.
+          Select a JPG, PNG, or WEBP image (maximum 5 MB).
         </Text>
 
         <InputField
@@ -916,15 +908,11 @@ const AddFoodScreen = ({
               styles.previewImage
             }>
 
-            {imageFile?.uri || image.trim() ? (
-              <Image
-                source={{uri: imageFile?.uri || image.trim()}}
-                style={styles.previewImageContent}
-                resizeMode="cover"
-              />
-            ) : (
-              <ForkKnife size={32} color="#FF7A00" weight="duotone" />
-            )}
+            <AsyncImage
+              source={imageFile?.uri || image.trim() || undefined}
+              style={styles.previewImageContent}
+              kind="food"
+            />
 
           </View>
 

@@ -1,13 +1,11 @@
 import React, {
   useCallback,
-  useEffect,
   useState,
 } from 'react';
 
 import {
   ActivityIndicator,
   Alert,
-  Image,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -37,6 +35,8 @@ import {
   RestaurantData,
   Restaurant,
 } from '../services/restaurantService';
+import {useFocusEffect} from '@react-navigation/native';
+import AsyncImage from '../../../components/images/AsyncImage';
 
 import {useAuth} from '../../../context/AuthContext';
 
@@ -478,9 +478,11 @@ const RestaurantDetailsScreen: React.FC<Props> = ({
       }
     }, [token]);
 
-  useEffect(() => {
-    loadRestaurant();
-  }, [loadRestaurant]);
+  useFocusEffect(
+    useCallback(() => {
+      loadRestaurant();
+    }, [loadRestaurant]),
+  );
 
   // ===================================================
   // VALIDATE FORM
@@ -1054,20 +1056,11 @@ const RestaurantDetailsScreen: React.FC<Props> = ({
               }
               disabled={saving}>
 
-              {getImageUri(
-                logo,
-              ) ? (
-                <Image
-                  source={{
-                    uri:
-                      getImageUri(
-                        logo,
-                      ),
-                  }}
-                  style={
-                    styles.logoPreview
-                  }
-                  resizeMode="cover"
+              {getImageUri(logo) ? (
+                <AsyncImage
+                  source={getImageUri(logo)}
+                  style={styles.logoPreview}
+                  kind="restaurant"
                 />
               ) : (
                 <View
@@ -1121,20 +1114,11 @@ const RestaurantDetailsScreen: React.FC<Props> = ({
               }
               disabled={saving}>
 
-              {getImageUri(
-                coverImage,
-              ) ? (
-                <Image
-                  source={{
-                    uri:
-                      getImageUri(
-                        coverImage,
-                      ),
-                  }}
-                  style={
-                    styles.coverPreview
-                  }
-                  resizeMode="cover"
+              {getImageUri(coverImage) ? (
+                <AsyncImage
+                  source={getImageUri(coverImage)}
+                  style={styles.coverPreview}
+                  kind="restaurant"
                 />
               ) : (
                 <View

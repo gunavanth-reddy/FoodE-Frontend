@@ -2,7 +2,6 @@ import React, {useState} from 'react';
 
 import {
   Alert,
-  Image,
   Pressable,
   StyleSheet,
   Text,
@@ -10,7 +9,6 @@ import {
 } from 'react-native';
 
 import {
-  ForkKnife,
   Clock,
   Heart,
   Star,
@@ -18,6 +16,7 @@ import {
 
 import {Food} from '../../../../restaurant/services/foodService';
 import {useCart} from '../../../../../context/CartContext';
+import AsyncImage from '../../../../../components/images/AsyncImage';
 
 interface FoodCardProps {
   food: Food;
@@ -141,21 +140,11 @@ const FoodCard: React.FC<FoodCardProps> = ({
       {/* Image with clean floating badges */}
       <View style={styles.imageContainer}>
 
-        {hasImage ? (
-          <Image
-            source={{uri: food.image}}
-            style={styles.image}
-            resizeMode="cover"
-          />
-        ) : (
-          <View style={styles.imagePlaceholder}>
-            <ForkKnife
-              size={30}
-              color="#C9CDD3"
-              weight="regular"
-            />
-          </View>
-        )}
+        <AsyncImage
+          source={hasImage ? food.image : undefined}
+          style={styles.image}
+          kind="food"
+        />
 
         {!!food.preparationTime && (
           <View style={styles.timeBadge}>
@@ -328,13 +317,6 @@ const styles = StyleSheet.create({
   image: {
     width: '100%',
     height: '100%',
-  },
-
-  imagePlaceholder: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#F3F4F6',
   },
 
   timeBadge: {

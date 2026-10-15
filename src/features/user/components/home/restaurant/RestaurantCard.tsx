@@ -1,7 +1,6 @@
 import React from 'react';
 
 import {
-  Image,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -9,7 +8,6 @@ import {
 } from 'react-native';
 
 import {
-  Storefront,
   Heart,
   Star,
   Clock,
@@ -19,6 +17,7 @@ import {
 } from 'phosphor-react-native';
 
 import {Restaurant} from './restaurantData';
+import AsyncImage from '../../../../../components/images/AsyncImage';
 
 interface RestaurantCardProps {
   restaurant: Restaurant;
@@ -49,10 +48,6 @@ const RestaurantCard: React.FC<
   // ===================================================
   // IMAGE
   // ===================================================
-
-  const hasImage =
-    restaurant.image !== null &&
-    restaurant.image !== undefined;
 
   // ===================================================
   // OPEN STATUS
@@ -173,27 +168,11 @@ const RestaurantCard: React.FC<
           styles.imageContainer
         }>
 
-        {hasImage ? (
-          <Image
-            source={
-              restaurant.image
-                ? {uri: restaurant.image}
-                : undefined
-            }
-            style={styles.image}
-          />
-        ) : (
-          <View
-            style={
-              styles.imagePlaceholder
-            }>
-            <Storefront
-              size={34}
-              color="#D1D5DB"
-              weight="duotone"
-            />
-          </View>
-        )}
+        <AsyncImage
+          source={restaurant.image}
+          style={styles.image}
+          kind="restaurant"
+        />
 
         {/* =========================================
             FAVORITE

@@ -1,6 +1,5 @@
 import React from 'react';
 import {
-  Image,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -13,6 +12,7 @@ import {
 } from 'phosphor-react-native';
 
 import Colors from '../../../../../constants/colors';
+import AsyncImage from '../../../../../components/images/AsyncImage';
 
 interface RestaurantHeaderProps {
   restaurant?: {
@@ -43,17 +43,11 @@ const RestaurantHeader: React.FC<RestaurantHeaderProps> = ({
     <View style={styles.container}>
       {/* Restaurant Image */}
       <View style={styles.imageContainer}>
-        {imageSource ? (
-          <Image
-            source={{uri: imageSource}}
-            style={styles.image}
-            resizeMode="cover"
-          />
-        ) : (
-          <View style={styles.placeholder}>
-            <Text style={styles.placeholderText}>FoodE</Text>
-          </View>
-        )}
+        <AsyncImage
+          source={imageSource}
+          style={styles.image}
+          kind="restaurant"
+        />
 
         {/* Top Actions */}
         <View style={styles.topActions}>

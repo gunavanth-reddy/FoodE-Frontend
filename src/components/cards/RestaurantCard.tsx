@@ -1,14 +1,14 @@
-import React, {useState} from 'react';
+import React from 'react';
 import {
   View,
   Text,
-  Image,
   TouchableOpacity,
   StyleSheet,
 } from 'react-native';
 
 import Ionicons from '@react-native-vector-icons/ionicons/static';
 import Colors from '../../constants/colors';
+import AsyncImage from '../images/AsyncImage';
 
 interface RestaurantCardProps {
   name: string;
@@ -43,8 +43,6 @@ const RestaurantCard = ({
   onPress,
   onFavorite,
 }: RestaurantCardProps) => {
-  const [imageError, setImageError] = useState(false);
-
   // Prefer restaurant cover image, then logo, then image.
   const restaurantImage =
     coverImage?.trim() ||
@@ -93,26 +91,11 @@ const RestaurantCard = ({
       disabled={!onPress}>
 
       {/* Restaurant Image */}
-      {restaurantImage && !imageError ? (
-        <Image
-          source={{uri: restaurantImage}}
-          style={styles.image}
-          resizeMode="cover"
-          onError={() => setImageError(true)}
-        />
-      ) : (
-        <View style={[styles.image, styles.imagePlaceholder]}>
-          <Ionicons
-            name="restaurant-outline"
-            size={48}
-            color="#999"
-          />
-
-          <Text style={styles.placeholderText}>
-            {name || 'Restaurant'}
-          </Text>
-        </View>
-      )}
+      <AsyncImage
+        source={restaurantImage}
+        style={styles.image}
+        kind="restaurant"
+      />
 
       {/* Offer Badge */}
       {!!offer && (

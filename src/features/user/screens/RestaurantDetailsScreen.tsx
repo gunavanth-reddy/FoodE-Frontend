@@ -2,7 +2,6 @@
 import {SafeAreaView} from 'react-native-safe-area-context';
 import React, {
   useCallback,
-  useEffect,
   useMemo,
   useState,
 } from 'react';
@@ -17,6 +16,7 @@ import {
   Text,
   View,
 } from 'react-native';
+import {useFocusEffect} from '@react-navigation/native';
 
 import {
   ArrowLeft,
@@ -160,9 +160,11 @@ const RestaurantDetailsScreen: React.FC<Props> = ({
     }
   }, [restaurantId]);
 
-  useEffect(() => {
-    void loadFoods();
-  }, [loadFoods]);
+  useFocusEffect(
+    useCallback(() => {
+      loadFoods();
+    }, [loadFoods]),
+  );
 
   // Refresh menu
   const handleRefresh = useCallback(async () => {

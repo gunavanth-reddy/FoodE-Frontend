@@ -146,7 +146,7 @@ const buildRestaurantFormData = (
     // ===============================================
 
     if (key === 'logo' || key === 'coverImage') {
-      // Existing Cloudinary URL
+      // Preserve existing image URLs, including legacy Cloudinary URLs.
       if (typeof value === 'string') {
         // Keep existing URLs if supplied.
         // Skip empty image strings.

@@ -1,6 +1,5 @@
-import React, {useEffect, useMemo, useState} from 'react';
+import React, {useMemo} from 'react';
 import {
-  Image,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -12,6 +11,7 @@ import Ionicons from '@react-native-vector-icons/ionicons/static';
 
 import Colors from '../../constants/colors';
 import {Food} from '../../features/restaurant/services/foodService';
+import AsyncImage from '../images/AsyncImage';
 
 interface FoodCardProps {
   food: Food;
@@ -32,8 +32,6 @@ const FoodCard: React.FC<FoodCardProps> = ({
   onFavoritePress,
   showFavorite = true,
 }) => {
-  const [imageFailed, setImageFailed] = useState(false);
-
   const imageUri = useMemo(() => {
     const raw = food?.image?.trim();
 
@@ -49,10 +47,6 @@ const FoodCard: React.FC<FoodCardProps> = ({
     // Support backend-relative paths such as /uploads/food.jpg.
     return `${BACKEND_ORIGIN}${raw.startsWith('/') ? '' : '/'}${raw}`;
   }, [food?.image]);
-
-  useEffect(() => {
-    setImageFailed(false);
-  }, [imageUri]);
 
   const isVeg = food.foodType
     ? food.foodType === 'veg'
@@ -82,31 +76,11 @@ const FoodCard: React.FC<FoodCardProps> = ({
       
       {/* Food photo */}
       <View style={styles.imageContainer}>
-        {!!imageUri && !imageFailed ? (
-          <Image
-            source={{uri: imageUri}}
-            style={styles.image}
-            resizeMode="cover"
-            onError={() => {
-              console.warn(
-                'Food image failed to load:',
-                imageUri,
-              );
-              setImageFailed(true);
-            }}
-          />
-        ) : (
-          <View style={styles.imagePlaceholder}>
-            <Ionicons
-              name="fast-food-outline"
-              size={42}
-              color="#C7C7C7"
-            />
-            <Text style={styles.placeholderText}>
-              Image unavailable
-            </Text>
-          </View>
-        )}
+        <AsyncImage
+          source={imageUri}
+          style={styles.image}
+          kind="food"
+        />
 
         <View style={styles.imageShade} />
 

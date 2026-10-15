@@ -1,6 +1,5 @@
 import React, {useState} from 'react';
 import {
-  ImageBackground,
   Pressable,
   StatusBar,
   StyleSheet,
@@ -9,8 +8,9 @@ import {
 } from 'react-native';
 import {useNavigation} from '@react-navigation/native';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
-import {ArrowLeft, Heart, ForkKnife, MapPin, Star} from 'phosphor-react-native';
+import {ArrowLeft, Heart, MapPin, Star} from 'phosphor-react-native';
 import type {Restaurant} from '../home/restaurant/restaurantData';
+import AsyncImage from '../../../../components/images/AsyncImage';
 
 interface RestaurantHeaderProps {
   restaurant: Restaurant;
@@ -22,7 +22,6 @@ const RestaurantHeader: React.FC<RestaurantHeaderProps> = ({restaurant}) => {
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
   const [isFavorite, setIsFavorite] = useState(false);
-  const [imageError, setImageError] = useState(false);
 
   const data = restaurant as Restaurant & {
     coverImage?: string | null;
@@ -43,7 +42,6 @@ const RestaurantHeader: React.FC<RestaurantHeaderProps> = ({restaurant}) => {
   const imageUri = [data.coverImage, data.image, data.imageUrl, data.logo].find(
     value => typeof value === 'string' && value.trim().length > 0,
   )?.trim() || '';
-  const hasImage = Boolean(imageUri) && !imageError;
   const cuisineText = Array.isArray(data.cuisines)
     ? data.cuisines.join(' · ')
     : data.cuisines || data.cuisine || 'Freshly made for you';
@@ -53,21 +51,12 @@ const RestaurantHeader: React.FC<RestaurantHeaderProps> = ({restaurant}) => {
     <View style={styles.container}>
       <StatusBar hidden={true} />
 
-      {hasImage ? (
-        <ImageBackground
-          source={{uri: imageUri}}
-          style={StyleSheet.absoluteFill}
-          resizeMode="cover"
-          onError={() => setImageError(true)}>
-          <View style={styles.imageTint} />
-        </ImageBackground>
-      ) : (
-        <View style={[StyleSheet.absoluteFill, styles.fallback]}>
-          <ForkKnife size={48} color="#FFFFFF" weight="duotone" />
-          <Text style={styles.fallbackText}>FoodE</Text>
-          <Text style={styles.fallbackCaption}>Freshly made for you</Text>
-        </View>
-      )}
+      <AsyncImage
+        source={imageUri}
+        style={StyleSheet.absoluteFill}
+        kind="restaurant"
+      />
+      <View style={[StyleSheet.absoluteFill, styles.imageTint]} />
 
       <View style={[styles.topControls, {top: insets.top + 10}]}>
         <Pressable
@@ -139,24 +128,6 @@ const styles = StyleSheet.create({
   imageTint: {
     ...StyleSheet.absoluteFill,
     backgroundColor: 'rgba(20, 12, 5, 0.12)',
-  },
-  fallback: {
-    backgroundColor: ORANGE,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  fallbackText: {
-    marginTop: 8,
-    color: '#FFFFFF',
-    fontSize: 34,
-    fontWeight: '900',
-    letterSpacing: -1,
-  },
-  fallbackCaption: {
-    marginTop: 4,
-    color: '#FFF0DF',
-    fontSize: 13,
-    fontWeight: '600',
   },
   topControls: {
     position: 'absolute',

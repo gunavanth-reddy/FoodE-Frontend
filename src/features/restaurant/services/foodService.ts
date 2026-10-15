@@ -378,7 +378,7 @@ const buildFoodFormData = (
     formData.append(key, String(value));
   });
 
-  // Attach selected image for Multer / Cloudinary
+  // Attach the selected image for the backend upload handler.
   if (foodData.imageFile) {
     formData.append(
       'image',

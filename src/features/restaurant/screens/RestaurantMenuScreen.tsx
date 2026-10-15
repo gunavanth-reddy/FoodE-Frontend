@@ -1,6 +1,5 @@
 import React, {
   useCallback,
-  useEffect,
   useMemo,
   useState,
 } from 'react';
@@ -8,7 +7,6 @@ import React, {
 import {
   ActivityIndicator,
   Alert,
-  Image,
   Modal,
   RefreshControl,
   ScrollView,
@@ -36,6 +34,8 @@ import {
   SquaresFour,
   FloppyDisk,
 } from 'phosphor-react-native';
+import {useFocusEffect} from '@react-navigation/native';
+import AsyncImage from '../../../components/images/AsyncImage';
 
 import {
   getMyCategories,
@@ -206,9 +206,11 @@ const RestaurantMenuScreen = ({
   // INITIAL LOAD
   // ===================================================
 
-  useEffect(() => {
-    loadMenu();
-  }, [loadMenu]);
+  useFocusEffect(
+    useCallback(() => {
+      loadMenu();
+    }, [loadMenu]),
+  );
 
   // ===================================================
   // REFRESH
@@ -1286,24 +1288,11 @@ const RestaurantMenuScreen = ({
                       styles.foodImage
                     }>
 
-                    {food.image ? (
-                      <Image
-                        source={{
-                          uri: food.image,
-                        }}
-                        style={
-                          styles.foodImageActual
-                        }
-                      />
-                    ) : (
-                      <View style={styles.foodPlaceholderIcon}>
-                        <ForkKnife
-                          size={30}
-                          color="#FF7A00"
-                          weight="duotone"
-                        />
-                      </View>
-                    )}
+                    <AsyncImage
+                      source={food.image}
+                      style={styles.foodImageActual}
+                      kind="food"
+                    />
 
                   </View>
 

@@ -1,6 +1,5 @@
 import React, {
   useCallback,
-  useEffect,
   useMemo,
   useState,
 } from 'react';
@@ -22,6 +21,7 @@ import {
 import {
   CompositeNavigationProp,
   useNavigation,
+  useFocusEffect,
 } from '@react-navigation/native';
 import {
   NativeStackNavigationProp,
@@ -282,13 +282,12 @@ const HomeScreen: React.FC = () => {
       }
     }, []);
 
-  useEffect(() => {
-    loadRestaurants();
-    loadFoods();
-  }, [
-    loadRestaurants,
-    loadFoods,
-  ]);
+  useFocusEffect(
+    useCallback(() => {
+      loadRestaurants();
+      loadFoods();
+    }, [loadRestaurants, loadFoods]),
+  );
 
   const onRefresh =
     useCallback(async () => {
