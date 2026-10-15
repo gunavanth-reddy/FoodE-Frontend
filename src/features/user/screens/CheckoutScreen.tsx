@@ -30,6 +30,7 @@ import {
 
 import {useAuth} from '../../../context/AuthContext';
 import {useCart} from '../../../context/CartContext';
+import API_BASE_URL from '../../../config/api';
 import {FoodEAlert} from '../../../utils/FoodEAlert';
 
 import {
@@ -50,9 +51,6 @@ type CheckoutNavigationProp =
 // =====================================================
 // API
 // =====================================================
-
-const API_BASE_URL =
-  'https://foode.site/api';
 
 // =====================================================
 // DELIVERY SLOT

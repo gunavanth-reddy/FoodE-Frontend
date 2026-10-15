@@ -14,14 +14,13 @@ import notifee, {
   AndroidStyle,
   EventType,
 } from '@notifee/react-native';
+import API_BASE_URL from '../config/api';
 
 // =====================================================
 // FCM CONFIGURATION
 // =====================================================
 
 const messaging = getMessaging();
-
-const API_BASE_URL = 'https://foode.site/api';
 
 const NOTIFICATION_CHANNEL_ID = 'foode_default';
 

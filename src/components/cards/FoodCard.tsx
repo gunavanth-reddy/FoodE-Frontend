@@ -10,6 +10,7 @@ import {
 import Ionicons from '@react-native-vector-icons/ionicons/static';
 
 import Colors from '../../constants/colors';
+import API_BASE_URL from '../../config/api';
 import {Food} from '../../features/restaurant/services/foodService';
 import AsyncImage from '../images/AsyncImage';
 
@@ -21,8 +22,6 @@ interface FoodCardProps {
   onFavoritePress?: () => void;
   showFavorite?: boolean;
 }
-
-const BACKEND_ORIGIN = 'https://foode.site/api';
 
 const FoodCard: React.FC<FoodCardProps> = ({
   food,
@@ -45,7 +44,7 @@ const FoodCard: React.FC<FoodCardProps> = ({
     }
 
     // Support backend-relative paths such as /uploads/food.jpg.
-    return `${BACKEND_ORIGIN}${raw.startsWith('/') ? '' : '/'}${raw}`;
+    return `${API_BASE_URL}${raw.startsWith('/') ? '' : '/'}${raw}`;
   }, [food?.image]);
 
   const isVeg = food.foodType

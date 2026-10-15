@@ -2,8 +2,7 @@
 // CATEGORY SERVICE
 // =====================================================
 
-const API_BASE_URL =
-  'https://foode.site/api';
+import API_BASE_URL from '../../../config/api';
 
 // =====================================================
 // TYPES
