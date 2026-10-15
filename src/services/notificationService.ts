@@ -1,3 +1,4 @@
+import {PermissionsAndroid, Platform} from 'react-native';
 import {
   AuthorizationStatus,
   getInitialNotification,
@@ -147,11 +148,22 @@ export const requestNotificationPermission = async (
   authToken: string,
 ): Promise<string | null> => {
   try {
-    const authStatus = await requestPermission(messaging);
+    let enabled: boolean;
 
-    const enabled =
-      authStatus === AuthorizationStatus.AUTHORIZED ||
-      authStatus === AuthorizationStatus.PROVISIONAL;
+    if (Platform.OS === 'android') {
+      const permissionGranted =
+        Platform.Version < 33 ||
+        (await PermissionsAndroid.request(
+          PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS,
+        )) === PermissionsAndroid.RESULTS.GRANTED;
+
+      enabled = permissionGranted;
+    } else {
+      const authStatus = await requestPermission(messaging);
+      enabled =
+        authStatus === AuthorizationStatus.AUTHORIZED ||
+        authStatus === AuthorizationStatus.PROVISIONAL;
+    }
 
     if (!enabled) {
       console.log(
