@@ -10,6 +10,9 @@ import {
 } from 'react-native';
 import {ForkKnife, Storefront} from 'phosphor-react-native';
 
+const isFoodECdnUrl = (uri: string): boolean =>
+  /^https?:\/\/cdn\.foode\.site(?:\/|$)/i.test(uri);
+
 interface AsyncImageProps {
   source?: ImageSourcePropType | string | null;
   style: StyleProp<ViewStyle>;
@@ -35,6 +38,14 @@ const AsyncImage: React.FC<AsyncImageProps> = ({
         ? {uri: source.trim()}
         : undefined
       : source || undefined;
+  const cachedImageSource: ImageSourcePropType | undefined =
+    imageSource &&
+    typeof imageSource === 'object' &&
+    !Array.isArray(imageSource) &&
+    typeof imageSource.uri === 'string' &&
+    isFoodECdnUrl(imageSource.uri)
+      ? {...imageSource, cache: 'force-cache'}
+      : imageSource;
 
   const sourceKey =
     typeof source === 'string'
@@ -56,7 +67,7 @@ const AsyncImage: React.FC<AsyncImageProps> = ({
     <View style={[style, styles.container]}>
       {imageSource && !imageFailed ? (
         <Image
-          source={imageSource}
+          source={cachedImageSource}
           style={StyleSheet.absoluteFill}
           resizeMode={resizeMode}
           onError={() => setImageFailed(true)}
