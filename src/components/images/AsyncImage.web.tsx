@@ -11,9 +11,7 @@ import {
   type ImageSource,
 } from 'expo-image';
 import {ForkKnife, Storefront} from 'phosphor-react-native';
-
-const isFoodECdnUrl = (uri: string): boolean =>
-  /^https?:\/\/cdn\.foode\.site(?:\/|$)/i.test(uri);
+import {resolveImageUri} from './resolveImageUri';
 
 interface AsyncImageProps {
   source?: ImageSource | string | null;
@@ -37,18 +35,32 @@ const AsyncImage: React.FC<AsyncImageProps> = ({
   const imageSource =
     typeof source === 'string'
       ? sourceUri
-        ? {uri: sourceUri}
+        ? {uri: resolveImageUri(sourceUri)}
         : undefined
       : source || undefined;
+  const normalizedImageSource =
+    imageSource &&
+    typeof imageSource === 'object' &&
+    !Array.isArray(imageSource) &&
+    'uri' in imageSource &&
+    typeof imageSource.uri === 'string'
+      ? {...imageSource, uri: resolveImageUri(imageSource.uri)}
+      : imageSource;
   const imageUri =
-    typeof imageSource === 'object' && imageSource && 'uri' in imageSource
-      ? imageSource.uri
+    normalizedImageSource &&
+    typeof normalizedImageSource === 'object' &&
+    !Array.isArray(normalizedImageSource) &&
+    'uri' in normalizedImageSource &&
+    typeof normalizedImageSource.uri === 'string'
+      ? normalizedImageSource.uri
       : undefined;
   const shouldCacheImage =
-    typeof imageUri === 'string' && isFoodECdnUrl(imageUri);
+    typeof imageUri === 'string';
   const sourceKey =
     sourceUri ??
-    (typeof imageSource === 'number' ? `asset:${imageSource}` : imageUri ?? '');
+    (    typeof normalizedImageSource === 'number'
+      ? `asset:${normalizedImageSource}`
+      : imageUri ?? '');
 
   useEffect(() => {
     setImageFailed(false);
@@ -56,9 +68,9 @@ const AsyncImage: React.FC<AsyncImageProps> = ({
 
   return (
     <View style={[style, styles.container]}>
-      {imageSource && !imageFailed ? (
+      {normalizedImageSource && !imageFailed ? (
         <ExpoImage
-          source={imageSource}
+          source={normalizedImageSource}
           style={StyleSheet.absoluteFill}
           contentFit={resizeMode}
           cachePolicy={shouldCacheImage ? 'memory-disk' : 'disk'}

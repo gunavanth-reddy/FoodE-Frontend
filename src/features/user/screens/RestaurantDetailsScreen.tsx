@@ -128,7 +128,7 @@ const RestaurantDetailsScreen: React.FC<Props> = ({
   const [error, setError] = useState<string | null>(null);
 
   const [selectedCategory, setSelectedCategory] =
-    useState('Popular');
+    useState('All');
 
   const [searchQuery, setSearchQuery] = useState('');
   const [isFavorite, setIsFavorite] = useState(false);
@@ -238,6 +238,7 @@ const RestaurantDetailsScreen: React.FC<Props> = ({
     );
 
     return [
+      'All',
       'Popular',
       ...uniqueCategories.filter(
         category => category !== 'Popular',
@@ -248,7 +249,9 @@ const RestaurantDetailsScreen: React.FC<Props> = ({
   // Filter menu
   const filteredMenu = useMemo(() => {
     let items =
-      selectedCategory === 'Popular'
+      selectedCategory === 'All'
+        ? menuItems
+        : selectedCategory === 'Popular'
         ? menuItems.filter(item => item.isPopular)
         : menuItems.filter(
             item => item.category === selectedCategory,
@@ -880,7 +883,7 @@ const styles = StyleSheet.create({
   },
 
   foodCardWrap: {
-    marginHorizontal: 14,
+    marginHorizontal: 20,
   },
 
   centerContainer: {

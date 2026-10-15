@@ -54,9 +54,6 @@ import {
   Plus,
   Storefront,
   SignOut,
-  MapPin,
-  Phone,
-  PencilSimple,
 } from 'phosphor-react-native';
 
 // =====================================================
@@ -211,20 +208,16 @@ const RestaurantDashboardScreen = ({
           'fulfilled'
         ) {
           const orderData =
-            ordersResult.value;
+            ordersResult.value.orders;
 
           console.log(
             'FoodE Dashboard Orders:',
             orderData.length
           );
 
-          setOrders(
-            Array.isArray(orderData)
-              ? orderData
-              : []
-          );
+          setOrders(orderData);
 
-          const latestOrders = Array.isArray(orderData) ? orderData : [];
+          const latestOrders = orderData;
           const placedOrders = latestOrders.filter(order => order.status === 'PLACED');
 
           if (hasLoadedOrders.current) {
@@ -275,7 +268,7 @@ const RestaurantDashboardScreen = ({
         }
       }
     },
-    [token],
+    [token, navigation],
   );
 
   // ===================================================
@@ -640,6 +633,7 @@ const RestaurantDashboardScreen = ({
             location="Create your restaurant to get started"
             isOpen={false}
             onToggle={() => {}}
+            onEdit={handleRestaurantPress}
           />
 
           <TouchableOpacity
@@ -767,83 +761,8 @@ const RestaurantDashboardScreen = ({
           onToggle={
             handleToggleRestaurant
           }
+          onEdit={handleRestaurantPress}
         />
-
-        {/* =========================================
-            RESTAURANT INFORMATION
-        ========================================= */}
-
-        <View
-          style={
-            styles.detailsCard
-          }>
-          <Text
-            style={
-              styles.detailsTitle
-            }>
-            Your Restaurant
-          </Text>
-
-          {restaurant.city ? (
-            <View style={styles.detailRow}>
-              <MapPin
-                size={18}
-                color="#777777"
-                weight="regular"
-              />
-              <Text
-                style={styles.detailsText}>
-                {restaurant.city}
-              </Text>
-            </View>
-          ) : null}
-
-          {restaurant.phone ? (
-            <View style={styles.detailRow}>
-              <Phone
-                size={18}
-                color="#777777"
-                weight="regular"
-              />
-              <Text
-                style={styles.detailsText}>
-                {restaurant.phone}
-              </Text>
-            </View>
-          ) : null}
-
-          {restaurant.cuisines &&
-          restaurant.cuisines.length >
-            0 ? (
-            <View style={styles.detailRow}>
-              <Storefront
-                size={18}
-                color="#777777"
-                weight="regular"
-              />
-              <Text
-                style={styles.detailsText}>
-                {restaurant.cuisines.join(
-                  ', ',
-                )}
-              </Text>
-            </View>
-          ) : null}
-
-          <TouchableOpacity
-            activeOpacity={0.8}
-            onPress={
-              handleRestaurantPress
-            }
-            style={
-              styles.editButton
-            }>
-            <View style={styles.editButtonContent}>
-              <PencilSimple size={19} color="#FF7A00" weight="regular" />
-              <Text style={styles.editButtonText}>Edit Restaurant</Text>
-            </View>
-          </TouchableOpacity>
-        </View>
 
         {/* =========================================
             TODAY'S STATS

@@ -23,6 +23,7 @@ import {
   AppButton,
   AppText,
 } from '../../../components';
+import {APP_VERSION} from '../../../config/version';
 
 const ORANGE = '#FF5A00';
 const GREEN = '#16803D';
@@ -499,7 +500,7 @@ const RegisterScreen = ({navigation}: any) => {
           {/* Footer */}
           <View style={styles.footer}>
             <AppText style={styles.version}>
-              Version 1.0.0
+              Version {APP_VERSION}
             </AppText>
           </View>
         </ScrollView>

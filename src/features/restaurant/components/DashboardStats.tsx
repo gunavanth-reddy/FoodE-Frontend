@@ -29,56 +29,16 @@ const DashboardStats: React.FC<DashboardStatsProps> = ({
 }) => {
     return (
         <View style={styles.container}>
-
-            {/* =========================================
-                ORDERS
-            ========================================= */}
-
             <View style={styles.card}>
-
-                <View
-                    style={[
-                        styles.iconContainer,
-                        styles.orangeBackground,
-                    ]}
-                >
-                    <Text style={styles.icon}>
-                        🛒
-                    </Text>
-                </View>
-
                 <Text style={styles.value}>
                     {orders}
                 </Text>
-
                 <Text style={styles.label}>
-                    Orders
+                    Orders today
                 </Text>
-
-                <Text style={styles.subText}>
-                    Today
-                </Text>
-
             </View>
 
-
-            {/* =========================================
-                REVENUE
-            ========================================= */}
-
             <View style={styles.card}>
-
-                <View
-                    style={[
-                        styles.iconContainer,
-                        styles.greenBackground,
-                    ]}
-                >
-                    <Text style={styles.rupee}>
-                        ₹
-                    </Text>
-                </View>
-
                 <Text
                     style={styles.value}
                     numberOfLines={1}
@@ -86,49 +46,19 @@ const DashboardStats: React.FC<DashboardStatsProps> = ({
                 >
                     ₹{revenue.toLocaleString("en-IN")}
                 </Text>
-
                 <Text style={styles.label}>
-                    Revenue
+                    Revenue today
                 </Text>
-
-                <Text style={styles.subText}>
-                    Today
-                </Text>
-
             </View>
-
-
-            {/* =========================================
-                RATING
-            ========================================= */}
 
             <View style={styles.card}>
-
-                <View
-                    style={[
-                        styles.iconContainer,
-                        styles.yellowBackground,
-                    ]}
-                >
-                    <Text style={styles.icon}>
-                        ⭐
-                    </Text>
-                </View>
-
-                <Text style={styles.value}>
-                    {rating.toFixed(1)}
+                <Text style={styles.value} numberOfLines={1}>
+                    {rating.toFixed(1)} ★
                 </Text>
-
                 <Text style={styles.label}>
-                    Rating
-                </Text>
-
-                <Text style={styles.subText}>
                     {reviewCount} reviews
                 </Text>
-
             </View>
-
         </View>
     );
 };
@@ -142,51 +72,17 @@ const styles = StyleSheet.create({
 
     container: {
         flexDirection: "row",
-        gap: 10,
-        marginBottom: 28,
+        gap: 8,
+        marginBottom: 20,
     },
 
     card: {
         flex: 1,
         backgroundColor: "#FFFFFF",
-        borderRadius: 19,
-        padding: 13,
-        minHeight: 145,
-    },
-
-    // ================================================
-    // ICON
-    // ================================================
-
-    iconContainer: {
-        width: 36,
-        height: 36,
-        borderRadius: 12,
-        alignItems: "center",
+        borderRadius: 14,
+        padding: 11,
+        minHeight: 76,
         justifyContent: "center",
-        marginBottom: 12,
-    },
-
-    orangeBackground: {
-        backgroundColor: "#FFF0E3",
-    },
-
-    greenBackground: {
-        backgroundColor: "#E9F8EF",
-    },
-
-    yellowBackground: {
-        backgroundColor: "#FFF7D9",
-    },
-
-    icon: {
-        fontSize: 17,
-    },
-
-    rupee: {
-        fontSize: 17,
-        fontWeight: "800",
-        color: "#17171B",
     },
 
     // ================================================
@@ -194,7 +90,7 @@ const styles = StyleSheet.create({
     // ================================================
 
     value: {
-        fontSize: 18,
+        fontSize: 16,
         fontWeight: "800",
         color: "#17171B",
     },
@@ -203,13 +99,6 @@ const styles = StyleSheet.create({
         fontSize: 11,
         color: "#8C8C95",
         marginTop: 3,
-    },
-
-    subText: {
-        fontSize: 10,
-        color: "#22A55A",
-        fontWeight: "700",
-        marginTop: 9,
     },
 
 });

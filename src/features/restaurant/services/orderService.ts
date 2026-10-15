@@ -177,6 +177,12 @@ interface OrdersResponse {
 
   count?: number;
 
+  total?: number;
+
+  pageSize?: number;
+
+  hasMore?: boolean;
+
   orders?: RestaurantOrder[];
 
   message?: string;
@@ -362,7 +368,13 @@ const normalizeOrders = (
 
 export const getRestaurantOrders = async (
   token: string,
-): Promise<RestaurantOrder[]> => {
+  page = 1,
+  date?: string,
+): Promise<{
+  orders: RestaurantOrder[];
+  hasMore: boolean;
+  total: number;
+}> => {
   if (!token) {
     throw new Error(
       'Authentication token is missing.',
@@ -374,9 +386,14 @@ export const getRestaurantOrders = async (
       'FoodE: Fetching restaurant orders...',
     );
 
+    const query = new URLSearchParams({page: String(page)});
+    if (date) {
+      query.set('date', date);
+    }
+
     const response =
       await fetchWithTimeout(
-        `${API_BASE_URL}/orders/restaurant/my`,
+        `${API_BASE_URL}/orders/restaurant/my?${query.toString()}`,
         {
           method: 'GET',
 
@@ -431,9 +448,13 @@ export const getRestaurantOrders = async (
     // IMPORTANT:
     // Normalize every item before sending
     // data to the owner screen.
-    return normalizeOrders(
-      data.orders || [],
-    );
+    const orders = normalizeOrders(data.orders || []);
+
+    return {
+      orders,
+      hasMore: data.hasMore ?? orders.length === (data.pageSize ?? 30),
+      total: data.total ?? orders.length,
+    };
   } catch (error: any) {
     console.log(
       'getRestaurantOrders error:',

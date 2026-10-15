@@ -1,4 +1,5 @@
 import React, {
+  useCallback,
   useEffect,
   useState,
 } from 'react';
@@ -16,8 +17,6 @@ import {
 } from 'react-native';
 
 import {SafeAreaView} from 'react-native-safe-area-context';
-
-import {launchImageLibrary, Asset} from 'react-native-image-picker';
 
 import {
   ArrowLeft,
@@ -99,9 +98,6 @@ const AddFoodScreen = ({
   const [image, setImage] =
     useState('');
 
-  const [imageFile, setImageFile] =
-    useState<Asset | null>(null);
-
   const [isVegetarian, setIsVegetarian] =
     useState(false);
 
@@ -109,12 +105,7 @@ const AddFoodScreen = ({
   // LOAD CATEGORIES
   // ===================================================
 
-  useEffect(() => {
-    loadCategories();
-  }, [token]);
-
-  const loadCategories =
-    async () => {
+  const loadCategories = useCallback(async () => {
       try {
         setLoading(true);
 
@@ -164,49 +155,11 @@ const AddFoodScreen = ({
       } finally {
         setLoading(false);
       }
-    };
+  }, [token]);
 
-  // ===================================================
-  // IMAGE PICKER
-  // ===================================================
-
-  const handleChooseImage = async () => {
-    try {
-      const result = await launchImageLibrary({
-        mediaType: 'photo',
-        selectionLimit: 1,
-        quality: 1
-      });
-
-      if (result.didCancel) return;
-
-      if (result.errorCode) {
-        Alert.alert(
-          'Image Picker Error',
-          result.errorMessage || 'Unable to select image.',
-        );
-        return;
-      }
-
-      const asset = result.assets?.[0];
-
-      if (!asset?.uri) {
-        Alert.alert('No Image', 'Please select a valid image.');
-        return;
-      }
-
-      if (asset.fileSize && asset.fileSize > 5 * 1024 * 1024) {
-        Alert.alert('Image Too Large', 'Please select an image smaller than 5 MB.');
-        return;
-      }
-
-      setImageFile(asset);
-      setImage('');
-    } catch (error) {
-      console.log('Image Picker Error:', error);
-      Alert.alert('Error', 'Could not open your gallery.');
-    }
-  };
+  useEffect(() => {
+    loadCategories();
+  }, [loadCategories]);
 
   // ===================================================
   // VALIDATION
@@ -379,14 +332,6 @@ const AddFoodScreen = ({
 
           image:
             image.trim(),
-
-          imageFile: imageFile
-            ? {
-                uri: imageFile.uri!,
-                type: imageFile.type || 'image/jpeg',
-                fileName: imageFile.fileName || `food-${Date.now()}.jpg`,
-              }
-            : null,
 
           price:
             Number(price),
@@ -786,9 +731,9 @@ const AddFoodScreen = ({
           title="Food Image"
         />
 
-        <View style={styles.imagePickerCard}>
+        <View style={styles.imagePreviewCard}>
           <AsyncImage
-            source={imageFile?.uri || image.trim() || undefined}
+            source={image.trim() || undefined}
             style={styles.selectedImage}
             kind="food"
             placeholder={
@@ -799,35 +744,16 @@ const AddFoodScreen = ({
             }
           />
 
-          <TouchableOpacity
-            activeOpacity={0.85}
-            onPress={handleChooseImage}
-            style={styles.chooseImageButton}>
-            <Text style={styles.chooseImageButtonText}>
-              {imageFile ? 'Change Image' : 'Choose from Gallery'}
-            </Text>
-          </TouchableOpacity>
-
-          {imageFile && (
-            <TouchableOpacity
-              onPress={() => setImageFile(null)}
-              style={styles.removeImageButton}>
-              <Text style={styles.removeImageText}>Remove Image</Text>
-            </TouchableOpacity>
-          )}
         </View>
 
         <Text style={styles.helperText}>
-          Select a JPG, PNG, or WEBP image (maximum 5 MB).
+          Paste a publicly accessible image URL to preview the food image.
         </Text>
 
         <InputField
-          label="Or use an Image URL (optional)"
+          label="Food Image URL (optional)"
           value={image}
-          onChangeText={(value) => {
-            setImage(value);
-            if (value.trim()) setImageFile(null);
-          }}
+          onChangeText={setImage}
           placeholder="https://example.com/food.jpg"
           autoCapitalize="none"
         />
@@ -909,7 +835,7 @@ const AddFoodScreen = ({
             }>
 
             <AsyncImage
-              source={imageFile?.uri || image.trim() || undefined}
+              source={image.trim() || undefined}
               style={styles.previewImageContent}
               kind="food"
             />
@@ -1329,10 +1255,10 @@ const styles =
       paddingTop: 14,
     },
 
-    imagePickerCard: {
+    imagePreviewCard: {
       backgroundColor: '#FFFFFF',
       borderRadius: 18,
-      padding: 14,
+      padding: 10,
       marginBottom: 18,
       borderWidth: 1,
       borderColor: '#EEEEF2',
@@ -1353,40 +1279,10 @@ const styles =
       justifyContent: 'center',
     },
 
-    imagePlaceholderIcon: {
-      fontSize: 36,
-      marginBottom: 8,
-    },
-
     imagePlaceholderText: {
       color: '#909099',
       fontSize: 13,
       fontWeight: '600',
-    },
-
-    chooseImageButton: {
-      marginTop: 12,
-      backgroundColor: '#FF7A00',
-      paddingVertical: 13,
-      borderRadius: 12,
-      alignItems: 'center',
-    },
-
-    chooseImageButtonText: {
-      color: '#FFFFFF',
-      fontSize: 14,
-      fontWeight: '800',
-    },
-
-    removeImageButton: {
-      alignItems: 'center',
-      paddingTop: 10,
-    },
-
-    removeImageText: {
-      color: '#D93025',
-      fontSize: 12,
-      fontWeight: '700',
     },
 
     previewImageContent: {

@@ -1,12 +1,15 @@
 import React, {
   useCallback,
   useMemo,
+  useRef,
   useState,
 } from "react";
 
 import {
   ActivityIndicator,
   Alert,
+  NativeScrollEvent,
+  NativeSyntheticEvent,
   RefreshControl,
   ScrollView,
   StyleSheet,
@@ -29,14 +32,12 @@ import {
 import { useAuth } from "../../../context/AuthContext";
 
 import {
-  MagnifyingGlass,
   X,
   Star,
   Storefront,
   ChatCircleText,
   ArrowUpRight,
   PaperPlaneTilt,
-  Check,
 } from "phosphor-react-native";
 
 // =====================================================
@@ -158,6 +159,16 @@ const RestaurantReviewsScreen =
 
     const [reviews, setReviews] =
       useState<Review[]>([]);
+    const [totalReviewCount, setTotalReviewCount] = useState(0);
+    const [ratingSummary, setRatingSummary] = useState({
+      averageRating: 0,
+      countsByRating: {} as Record<number, number>,
+    });
+    const [hasMoreReviews, setHasMoreReviews] = useState(false);
+    const [loadingMoreReviews, setLoadingMoreReviews] = useState(false);
+    const currentPage = useRef(1);
+    const loadingMoreRef = useRef(false);
+    const reviewRequestId = useRef(0);
 
     const [
       activeFilter,
@@ -199,8 +210,15 @@ const RestaurantReviewsScreen =
         async (
           showLoader = true,
         ) => {
+          const requestId = ++reviewRequestId.current;
           if (!token) {
             setReviews([]);
+            setTotalReviewCount(0);
+            setRatingSummary({
+              averageRating: 0,
+              countsByRating: {},
+            });
+            setHasMoreReviews(false);
             setLoading(false);
             return;
           }
@@ -210,18 +228,20 @@ const RestaurantReviewsScreen =
               setLoading(true);
             }
 
-            // FIX 2:
-            // getMyReviews() now returns OwnerReview[]
-            const data = await getMyReviews(token);
+            const result = await getMyReviews(token, 1);
+            if (requestId !== reviewRequestId.current) {
+              return;
+            }
 
-const reviewData = Array.isArray(data)
-  ? data
-  : (data as any)?.reviews || [];
-
-const mapped = reviewData.map(mapReview);
-
-setReviews(mapped);
+            currentPage.current = 1;
+            setReviews(result.reviews.map(mapReview));
+            setTotalReviewCount(result.total);
+            setRatingSummary(result.summary);
+            setHasMoreReviews(result.hasMore);
           } catch (error: any) {
+            if (requestId !== reviewRequestId.current) {
+              return;
+            }
             console.log(
               "Load reviews error:",
               error,
@@ -233,12 +253,70 @@ setReviews(mapped);
                 "Something went wrong while loading reviews.",
             );
           } finally {
-            setLoading(false);
-            setRefreshing(false);
+            if (requestId === reviewRequestId.current) {
+              setLoading(false);
+              setRefreshing(false);
+            }
           }
         },
         [token],
       );
+
+      const loadMoreReviews = useCallback(async () => {
+        if (!token || !hasMoreReviews || loadingMoreRef.current) {
+          return;
+        }
+
+        loadingMoreRef.current = true;
+        setLoadingMoreReviews(true);
+        const requestId = reviewRequestId.current;
+
+        try {
+          const nextPage = currentPage.current + 1;
+          const result = await getMyReviews(token, nextPage);
+          if (requestId !== reviewRequestId.current) {
+            return;
+          }
+
+          const existingIds = new Set(reviews.map(review => review.id));
+          const nextReviews = result.reviews
+            .map(mapReview)
+            .filter(review => !existingIds.has(review.id));
+
+          currentPage.current = nextPage;
+          setReviews(current => [...current, ...nextReviews]);
+          setTotalReviewCount(result.total);
+          setRatingSummary(result.summary);
+          setHasMoreReviews(result.hasMore);
+        } catch (error: any) {
+          if (requestId !== reviewRequestId.current) {
+            return;
+          }
+
+          console.error("Load more reviews error:", error);
+          Alert.alert(
+            "Unable to Load More Reviews",
+            error?.message || "Please try again.",
+          );
+        } finally {
+          loadingMoreRef.current = false;
+          setLoadingMoreReviews(false);
+        }
+      }, [hasMoreReviews, reviews, token]);
+
+      const handleReviewsScroll = (
+        event: NativeSyntheticEvent<NativeScrollEvent>,
+      ) => {
+        const {contentOffset, contentSize, layoutMeasurement} =
+          event.nativeEvent;
+
+        if (
+          contentOffset.y + layoutMeasurement.height >=
+          contentSize.height - 260
+        ) {
+          loadMoreReviews();
+        }
+      };
 
     // =================================================
     // LOAD WHEN SCREEN OPENS
@@ -301,6 +379,11 @@ setReviews(mapped);
         activeFilter,
         search,
       ]);
+
+    const visibleReviewCount =
+      activeFilter === "ALL" && !search.trim()
+        ? totalReviewCount
+        : filteredReviews.length;
 
     // =================================================
     // RESPONSE
@@ -395,47 +478,13 @@ setReviews(mapped);
     // RATING COUNTS
     // =================================================
 
-    const totalReviews =
-      reviews.length;
-
-    const fiveStarCount =
-      reviews.filter(
-        review =>
-          review.rating === 5,
-      ).length;
-
-    const fourStarCount =
-      reviews.filter(
-        review =>
-          review.rating === 4,
-      ).length;
-
-    const threeStarCount =
-      reviews.filter(
-        review =>
-          review.rating === 3,
-      ).length;
-
-    const twoStarCount =
-      reviews.filter(
-        review =>
-          review.rating === 2,
-      ).length;
-
-    const oneStarCount =
-      reviews.filter(
-        review =>
-          review.rating === 1,
-      ).length;
-
-    const averageRating =
-      totalReviews === 0
-        ? 0
-        : reviews.reduce(
-            (sum, review) =>
-              sum + review.rating,
-            0,
-          ) / totalReviews;
+    const totalReviews = totalReviewCount;
+    const fiveStarCount = ratingSummary.countsByRating[5] || 0;
+    const fourStarCount = ratingSummary.countsByRating[4] || 0;
+    const threeStarCount = ratingSummary.countsByRating[3] || 0;
+    const twoStarCount = ratingSummary.countsByRating[2] || 0;
+    const oneStarCount = ratingSummary.countsByRating[1] || 0;
+    const averageRating = ratingSummary.averageRating;
 
     // =================================================
     // UI
@@ -450,6 +499,8 @@ setReviews(mapped);
           showsVerticalScrollIndicator={
             false
           }
+          onScroll={handleReviewsScroll}
+          scrollEventThrottle={300}
           contentContainerStyle={
             styles.scrollContent
           }
@@ -774,7 +825,7 @@ setReviews(mapped);
                   }
                 >
                   {
-                    filteredReviews.length
+                    visibleReviewCount
                   }
                 </Text>
               </View>
@@ -863,6 +914,13 @@ setReviews(mapped);
                   )}
                 </View>
               )}
+
+              {loadingMoreReviews ? (
+                <ActivityIndicator
+                  color="#FF7A00"
+                  style={styles.loadingMoreReviews}
+                />
+              ) : null}
 
               <View
                 style={
@@ -1516,6 +1574,9 @@ const styles =
 
     reviewsContainer: {
       gap: 12,
+    },
+    loadingMoreReviews: {
+      paddingVertical: 18,
     },
 
     reviewCard: {

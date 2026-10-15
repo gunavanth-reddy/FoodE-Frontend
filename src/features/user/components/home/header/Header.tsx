@@ -1,6 +1,6 @@
 import React, {useEffect, useRef} from 'react';
 import {Animated, Easing, Pressable, StyleSheet, Text, View} from 'react-native';
-import {MapPin, UserCircle, Bell} from 'phosphor-react-native';
+import {MapPin, User, Bell} from 'phosphor-react-native';
 import {useNavigation} from '@react-navigation/native';
 import {BottomTabNavigationProp} from '@react-navigation/bottom-tabs';
 import {NativeStackNavigationProp} from '@react-navigation/native-stack';
@@ -34,7 +34,7 @@ const Header: React.FC = () => {
           <Bell size={23} color="#FFFFFF" weight="regular" />
         </Pressable>
         <Pressable accessibilityRole="button" accessibilityLabel="Open profile" onPress={() => navigation.navigate('Profile')} style={({pressed}) => [styles.profile, pressed && styles.pressed]}>
-          <UserCircle size={27} color={ORANGE} weight="fill" />
+          <User size={25} color="#FFFFFF" weight="fill" />
         </Pressable>
       </View>
     </Animated.View>
@@ -50,6 +50,6 @@ const styles = StyleSheet.create({
   location: {fontSize: 11, fontWeight: '600', color: '#FFE4D2', flexShrink: 1},
   actions: {flexDirection: 'row', alignItems: 'center', gap: 7},
   action: {width: 42, height: 42, alignItems: 'center', justifyContent: 'center', borderRadius: 21},
-  profile: {width: 42, height: 42, alignItems: 'center', justifyContent: 'center', borderRadius: 21, backgroundColor: '#FFFFFF'},
+  profile: {width: 42, height: 42, alignItems: 'center', justifyContent: 'center', borderRadius: 21, backgroundColor: 'rgba(255,255,255,0.15)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.35)'},
   pressed: {opacity: 0.78, transform: [{scale: 0.94}], backgroundColor: 'rgba(255,255,255,0.2)'},
 });

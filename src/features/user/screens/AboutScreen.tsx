@@ -19,6 +19,7 @@ import {
   MapPin,
   Code,
 } from 'phosphor-react-native';
+import {APP_VERSION} from '../../../config/version';
 
 const ORANGE = '#FF7A00';
 
@@ -84,7 +85,7 @@ const AboutScreen: React.FC = () => {
 
           <View style={styles.versionBadge}>
             <Text style={styles.versionText}>
-              VERSION 1.0.0
+              VERSION {APP_VERSION}
             </Text>
           </View>
         </View>
@@ -175,7 +176,7 @@ const AboutScreen: React.FC = () => {
           <View style={styles.footerDivider} />
 
           <Text style={styles.footerText}>
-            FoodE · Version 1.0.0
+            FoodE · Version {APP_VERSION}
           </Text>
 
           <Text style={styles.copyright}>

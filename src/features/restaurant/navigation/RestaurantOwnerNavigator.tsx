@@ -91,6 +91,10 @@ const RestaurantOwnerNavigator =
           component={
             RestaurantOrdersScreen
           }
+          options={{
+            headerShown: true,
+            headerTitle: '',
+          }}
         />
 
         {/* =========================================
@@ -102,6 +106,10 @@ const RestaurantOwnerNavigator =
           component={
             RestaurantMenuScreen
           }
+          options={{
+            headerShown: true,
+            headerTitle: '',
+          }}
         />
 
         {/* =========================================
@@ -135,6 +143,10 @@ const RestaurantOwnerNavigator =
           component={
             RestaurantDetailsScreen
           }
+          options={{
+            headerShown: true,
+            headerTitle: '',
+          }}
         />
 
         {/* =========================================
@@ -146,6 +158,10 @@ const RestaurantOwnerNavigator =
           component={
             RestaurantReviewsScreen
           }
+          options={{
+            headerShown: true,
+            headerTitle: '',
+          }}
         />
 
         {/* =========================================
@@ -168,6 +184,10 @@ const RestaurantOwnerNavigator =
           component={
             DeliverySlotsScreen
           }
+          options={{
+            headerShown: true,
+            headerTitle: '',
+          }}
         />
 
       </Stack.Navigator>

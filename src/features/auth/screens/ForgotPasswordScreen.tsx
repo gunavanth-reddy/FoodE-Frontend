@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 
 import {AppText, AppButton} from '../../../components';
+import {APP_VERSION} from '../../../config/version';
 
 const ORANGE = '#FF5A00';
 const DARK = '#171717';
@@ -179,7 +180,7 @@ const ForgotPasswordScreen = ({navigation}: any) => {
           {/* Footer stays near the bottom */}
           <View style={styles.footer}>
             <AppText style={styles.version}>
-              Version 1.0.0
+              Version {APP_VERSION}
             </AppText>
           </View>
         </ScrollView>

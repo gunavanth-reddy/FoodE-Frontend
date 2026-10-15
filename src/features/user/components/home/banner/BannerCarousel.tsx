@@ -7,8 +7,8 @@ import React, {
 
 import {
   Animated,
-  Dimensions,
   FlatList,
+  LayoutChangeEvent,
   NativeScrollEvent,
   NativeSyntheticEvent,
   StyleSheet,
@@ -16,8 +16,6 @@ import {
 } from 'react-native';
 
 import BannerCard from './BannerCard';
-
-const {width} = Dimensions.get('window');
 
 const AUTO_SCROLL_INTERVAL = 3500;
 
@@ -53,6 +51,8 @@ const BASE_COUNT = baseBannerData.length;
 
 const BannerCarousel: React.FC = () => {
   const flatListRef = useRef<FlatList>(null);
+  const [containerWidth, setContainerWidth] = useState(0);
+  const containerWidthRef = useRef(0);
 
   const scrollX = useRef(
     new Animated.Value(0),
@@ -85,7 +85,11 @@ const BannerCarousel: React.FC = () => {
   const startAutoScroll = useCallback(() => {
     stopAutoScroll();
 
-    if (bannerData.length <= 1) {
+    if (
+      bannerData.length <= 1 ||
+      containerWidth === 0 ||
+      containerWidthRef.current === 0
+    ) {
       return;
     }
 
@@ -110,7 +114,15 @@ const BannerCarousel: React.FC = () => {
         animated: true,
       });
     }, AUTO_SCROLL_INTERVAL);
-  }, [stopAutoScroll]);
+  }, [containerWidth, stopAutoScroll]);
+
+  const handleLayout = (event: LayoutChangeEvent) => {
+    const measuredWidth = event.nativeEvent.layout.width;
+    if (measuredWidth > 0 && measuredWidth !== containerWidthRef.current) {
+      containerWidthRef.current = measuredWidth;
+      setContainerWidth(measuredWidth);
+    }
+  };
 
   // =====================================================
   // AUTO SCROLL LIFECYCLE
@@ -131,11 +143,14 @@ const BannerCarousel: React.FC = () => {
   const onMomentumScrollEnd = (
     event: NativeSyntheticEvent<NativeScrollEvent>,
   ) => {
+    if (!containerWidthRef.current) {
+      return;
+    }
     const offsetX =
       event.nativeEvent.contentOffset.x;
 
     const index = Math.round(
-      offsetX / width,
+      offsetX / containerWidthRef.current,
     );
 
     const safeIndex = Math.max(
@@ -154,52 +169,50 @@ const BannerCarousel: React.FC = () => {
   // =====================================================
 
   return (
-    <View style={styles.container}>
-      <Animated.FlatList
-        ref={flatListRef}
-        data={bannerData}
-        horizontal
-        pagingEnabled
-        bounces={false}
-        showsHorizontalScrollIndicator={false}
-        decelerationRate="fast"
-        keyExtractor={(item, index) => `${item.id}-${index}`}
-        renderItem={({item}) => (
-          <BannerCard image={item.image} />
-        )}
-        onScrollBeginDrag={stopAutoScroll}
-        onMomentumScrollEnd={
-          onMomentumScrollEnd
-        }
-        scrollEventThrottle={16}
-        onScroll={Animated.event(
-          [
-            {
-              nativeEvent: {
-                contentOffset: {
-                  x: scrollX,
+    <View onLayout={handleLayout} style={styles.container}>
+      {containerWidth > 0 ? (
+        <Animated.FlatList
+          ref={flatListRef}
+          data={bannerData}
+          horizontal
+          pagingEnabled
+          bounces={false}
+          showsHorizontalScrollIndicator={false}
+          decelerationRate="fast"
+          keyExtractor={(item, index) => `${item.id}-${index}`}
+          renderItem={({item}) => (
+            <BannerCard image={item.image} width={containerWidth} />
+          )}
+          onScrollBeginDrag={stopAutoScroll}
+          onMomentumScrollEnd={onMomentumScrollEnd}
+          scrollEventThrottle={16}
+          onScroll={Animated.event(
+            [
+              {
+                nativeEvent: {
+                  contentOffset: {
+                    x: scrollX,
+                  },
                 },
               },
-            },
-          ],
-          {
-            useNativeDriver: false,
-          },
-        )}
-        getItemLayout={(_, index) => ({
-          length: width,
-          offset: width * index,
-          index,
-        })}
-        onScrollToIndexFailed={info => {
-          setTimeout(() => {
-            flatListRef.current?.scrollToIndex({
-              index: info.index,
-              animated: true,
-            });
-          }, 300);
-        }}
-      />
+            ],
+            {useNativeDriver: false},
+          )}
+          getItemLayout={(_, index) => ({
+            length: containerWidth,
+            offset: containerWidth * index,
+            index,
+          })}
+          onScrollToIndexFailed={info => {
+            setTimeout(() => {
+              flatListRef.current?.scrollToIndex({
+                index: info.index,
+                animated: true,
+              });
+            }, 300);
+          }}
+        />
+      ) : null}
 
       {/* PAGINATION DOTS */}
 
@@ -230,6 +243,8 @@ export default BannerCarousel;
 const styles = StyleSheet.create({
   container: {
     width: '100%',
+    alignSelf: 'center',
+    maxWidth: 640,
     position: 'relative',
     marginBottom: 12,
     overflow: 'hidden',

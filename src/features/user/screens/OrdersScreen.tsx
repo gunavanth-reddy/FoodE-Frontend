@@ -1,4 +1,5 @@
-import React, {useCallback, useState} from 'react';
+import React, {useCallback, useRef, useState} from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   ActivityIndicator,
   Alert,
@@ -38,13 +39,29 @@ import {
 } from '../services/orderService';
 
 import EmptyOrders from '../components/orders/EmptyOrders';
+import DateFilterCalendar, {
+  getLocalDateKey,
+} from '../../../components/common/DateFilterCalendar';
 
 const ORANGE = '#FF6B00';
+
+const uniqueOrdersById = <T extends {_id: string}>(
+  orders: T[],
+): T[] => {
+  const seenIds = new Set<string>();
+  return orders.filter(order => {
+    if (seenIds.has(order._id)) {
+      return false;
+    }
+    seenIds.add(order._id);
+    return true;
+  });
+};
 
 const OrdersScreen: React.FC = () => {
   const navigation = useNavigation<any>();
 
-  const {token, isLoggedIn} = useAuth();
+  const {token, isLoggedIn, user} = useAuth();
 
   const {width, height} = useWindowDimensions();
 
@@ -63,6 +80,13 @@ const OrdersScreen: React.FC = () => {
 
   const [orders, setOrders] =
     useState<UserOrder[]>([]);
+  const [selectedDate, setSelectedDate] = useState(getLocalDateKey);
+  const selectedDateRef = useRef(selectedDate);
+  const loadedPages = useRef(1);
+  const loadingMoreRef = useRef(false);
+  const loadRequestId = useRef(0);
+  const [hasMore, setHasMore] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
 
   const [loading, setLoading] =
     useState(true);
@@ -75,7 +99,8 @@ const OrdersScreen: React.FC = () => {
   // =====================================================
 
   const loadOrders = useCallback(
-    async (showLoader = true) => {
+    async (showLoader = true, targetPageCount?: number) => {
+      const requestId = ++loadRequestId.current;
       if (!isLoggedIn || !token) {
         setOrders([]);
         setLoading(false);
@@ -88,24 +113,62 @@ const OrdersScreen: React.FC = () => {
           setLoading(true);
         }
 
-        const data =
-          await getMyOrders(token);
+        const dateStorageKey =
+          `foode.customer-orders.date.${user?.id || 'account'}`;
+        const savedDate = await AsyncStorage.getItem(dateStorageKey);
+        if (savedDate && targetPageCount === undefined) {
+          selectedDateRef.current = savedDate;
+          setSelectedDate(savedDate);
+        }
+
+        const requestDate = selectedDateRef.current;
+        const storageKey =
+          `foode.customer-orders.pages.${user?.id || 'account'}.${requestDate}`;
+        const storedPageCount = Number(
+          await AsyncStorage.getItem(storageKey),
+        );
+        const savedPageCount =
+          targetPageCount ??
+          (Number.isSafeInteger(storedPageCount) && storedPageCount > 0
+            ? Math.min(storedPageCount, 10000)
+            : 1);
+        const loadedOrders: UserOrder[] = [];
+        let nextHasMore = true;
+        let pagesLoaded = 0;
+
+        for (let page = 1; page <= savedPageCount; page += 1) {
+          const result = await getMyOrders(
+            token,
+            page,
+            requestDate,
+          );
+          loadedOrders.push(...result.orders);
+          pagesLoaded = page;
+          nextHasMore = result.hasMore;
+
+          if (!nextHasMore) {
+            break;
+          }
+        }
+
+        if (requestId !== loadRequestId.current) {
+          return;
+        }
 
         console.log(
           'FOODE ORDERS SCREEN:',
-          JSON.stringify(
-            data,
-            null,
-            2,
-          ),
+          loadedOrders.length,
         );
 
-        setOrders(
-          Array.isArray(data)
-            ? data
-            : [],
-        );
+        loadedPages.current = Math.max(1, pagesLoaded);
+        await AsyncStorage.setItem(storageKey, String(loadedPages.current));
+        setOrders(uniqueOrdersById(loadedOrders));
+        setHasMore(nextHasMore);
       } catch (error: any) {
+        if (requestId !== loadRequestId.current) {
+          return;
+        }
+
         console.log(
           'Orders screen error:',
           error,
@@ -117,11 +180,13 @@ const OrdersScreen: React.FC = () => {
             'Something went wrong while loading your orders.',
         );
       } finally {
-        setLoading(false);
-        setRefreshing(false);
+        if (requestId === loadRequestId.current) {
+          setLoading(false);
+          setRefreshing(false);
+        }
       }
     },
-    [token, isLoggedIn],
+    [token, isLoggedIn, user?.id],
   );
 
   // =====================================================
@@ -143,6 +208,73 @@ const OrdersScreen: React.FC = () => {
       setRefreshing(true);
       loadOrders(false);
     }, [loadOrders]);
+
+  const handleDateChange = useCallback(
+    async (date: string) => {
+      selectedDateRef.current = date;
+      loadRequestId.current += 1;
+      loadedPages.current = 1;
+      setOrders([]);
+      setHasMore(true);
+      setSelectedDate(date);
+      await AsyncStorage.setItem(
+        `foode.customer-orders.date.${user?.id || 'account'}`,
+        date,
+      );
+      if (user?.id) {
+        await AsyncStorage.setItem(
+          `foode.customer-orders.pages.${user.id}.${date}`,
+          '1',
+        );
+      }
+      await loadOrders(true, 1);
+    },
+    [loadOrders, user?.id],
+  );
+
+  const loadNextPage = useCallback(async () => {
+    if (!token || !hasMore || loadingMoreRef.current) {
+      return;
+    }
+
+    loadingMoreRef.current = true;
+    setLoadingMore(true);
+
+    try {
+      const requestDate = selectedDateRef.current;
+      const requestId = loadRequestId.current;
+      const nextPage = loadedPages.current + 1;
+      const result = await getMyOrders(
+        token,
+        nextPage,
+        requestDate,
+      );
+      if (
+        requestDate !== selectedDateRef.current ||
+        requestId !== loadRequestId.current
+      ) {
+        return;
+      }
+      loadedPages.current = nextPage;
+      setOrders(current =>
+        uniqueOrdersById([...current, ...result.orders]),
+      );
+      setHasMore(result.hasMore);
+      await AsyncStorage.setItem(
+        `foode.customer-orders.pages.${user?.id || 'account'}.${selectedDateRef.current}`,
+        String(nextPage),
+      );
+    } catch (error: any) {
+      console.error('Load more customer orders error:', error);
+      Alert.alert(
+        'Unable to Load More Orders',
+        error?.message || 'Please try again.',
+      );
+    } finally {
+      loadingMoreRef.current = false;
+      setLoadingMore(false);
+    }
+  }, [hasMore, token, user?.id]);
 
   // =====================================================
   // RESTAURANT NAME
@@ -957,6 +1089,11 @@ const OrdersScreen: React.FC = () => {
 
       </View>
 
+      <DateFilterCalendar
+        value={selectedDate}
+        onChange={handleDateChange}
+      />
+
       {/* =================================================
           LOADING
       ================================================= */}
@@ -1037,6 +1174,16 @@ const OrdersScreen: React.FC = () => {
           }
           renderItem={
             renderOrder
+          }
+          onEndReached={loadNextPage}
+          onEndReachedThreshold={0.4}
+          ListFooterComponent={
+            loadingMore ? (
+              <ActivityIndicator
+                style={styles.loadingMore}
+                color={ORANGE}
+              />
+            ) : null
           }
           showsVerticalScrollIndicator={
             false
@@ -1176,6 +1323,9 @@ const styles = StyleSheet.create({
     paddingTop: 16,
     paddingBottom: 100,
     flexGrow: 1,
+  },
+  loadingMore: {
+    paddingVertical: 18,
   },
 
   // ===================================================
@@ -1503,4 +1653,3 @@ const styles = StyleSheet.create({
     paddingBottom: 100,
   },
 });
-

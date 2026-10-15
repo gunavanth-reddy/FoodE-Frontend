@@ -181,6 +181,14 @@ interface OrdersResponse {
 
   count?: number;
 
+  total?: number;
+
+  page?: number;
+
+  pageSize?: number;
+
+  hasMore?: boolean;
+
   orders?: UserOrder[];
 
   message?: string;
@@ -574,7 +582,13 @@ export const createOrder = async (
 
 export const getMyOrders = async (
   token: string,
-): Promise<UserOrder[]> => {
+  page = 1,
+  date?: string,
+): Promise<{
+  orders: UserOrder[];
+  hasMore: boolean;
+  total: number;
+}> => {
   if (!token) {
     throw new Error(
       'Authentication token is missing.',
@@ -582,9 +596,14 @@ export const getMyOrders = async (
   }
 
   try {
+    const query = new URLSearchParams({page: String(page)});
+    if (date) {
+      query.set('date', date);
+    }
+
     const response =
       await fetchWithTimeout(
-        `${API_BASE_URL}/orders/my`,
+        `${API_BASE_URL}/orders/my?${query.toString()}`,
         {
           method: 'GET',
 
@@ -647,7 +666,11 @@ export const getMyOrders = async (
       ),
     );
 
-    return orders;
+    return {
+      orders,
+      hasMore: data.hasMore ?? orders.length === (data.pageSize ?? 10),
+      total: data.total ?? orders.length,
+    };
   } catch (error: any) {
     console.log(
       'getMyOrders error:',

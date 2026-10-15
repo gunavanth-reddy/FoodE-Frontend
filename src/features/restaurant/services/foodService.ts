@@ -334,15 +334,7 @@ export interface CreateFoodData {
   name: string;
   description?: string;
 
-  // Existing image URL (backward compatibility)
   image?: string;
-
-  // Selected local image file
-  imageFile?: {
-    uri: string;
-    type: string;
-    fileName: string;
-  } | null;
 
   price: number;
   discountedPrice?: number | null;
@@ -353,46 +345,6 @@ export interface CreateFoodData {
 }
 
 // =====================================================
-// BUILD MULTIPART FORM DATA
-// =====================================================
-
-const buildFoodFormData = (
-  foodData: CreateFoodData | Partial<CreateFoodData>,
-): FormData => {
-  const formData = new FormData();
-
-  Object.entries(foodData).forEach(([key, value]) => {
-    if (
-      value === undefined ||
-      value === null ||
-      key === 'imageFile'
-    ) {
-      return;
-    }
-
-    // Don't send empty image URL when uploading a new image
-    if (key === 'image' && foodData.imageFile) {
-      return;
-    }
-
-    formData.append(key, String(value));
-  });
-
-  // Attach the selected image for the backend upload handler.
-  if (foodData.imageFile) {
-    formData.append(
-      'image',
-      {
-        uri: foodData.imageFile.uri,
-        type: foodData.imageFile.type || 'image/jpeg',
-        name: foodData.imageFile.fileName || 'food-image.jpg',
-      } as any,
-    );
-  }
-
-  return formData;
-};
-
 // =====================================================
 // CREATE FOOD
 // OWNER
@@ -407,18 +359,16 @@ export const createFood = async (
   }
 
   try {
-    const formData = buildFoodFormData(foodData);
-
     const response = await fetchWithTimeout(
       `${API_BASE_URL}/foods`,
       {
         method: 'POST',
         headers: {
+          'Content-Type': 'application/json',
           Accept: 'application/json',
           Authorization: `Bearer ${token}`,
-          // Do not manually set multipart Content-Type
         },
-        body: formData,
+        body: JSON.stringify(foodData),
       },
       60000,
     );
@@ -460,18 +410,16 @@ export const updateFood = async (
   }
 
   try {
-    const formData = buildFoodFormData(foodData);
-
     const response = await fetchWithTimeout(
       `${API_BASE_URL}/foods/${foodId}`,
       {
         method: 'PUT',
         headers: {
+          'Content-Type': 'application/json',
           Accept: 'application/json',
           Authorization: `Bearer ${token}`,
-          // Do not manually set multipart Content-Type
         },
-        body: formData,
+        body: JSON.stringify(foodData),
       },
       60000,
     );

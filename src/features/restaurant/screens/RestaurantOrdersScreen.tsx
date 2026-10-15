@@ -9,6 +9,8 @@ import React, {
 import {
   ActivityIndicator,
   Alert,
+  NativeScrollEvent,
+  NativeSyntheticEvent,
   RefreshControl,
   ScrollView,
   StatusBar,
@@ -18,6 +20,7 @@ import {
   View,
 } from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import {useAuth} from '../../../context/AuthContext';
 
@@ -40,12 +43,28 @@ import {
   RestaurantOrder,
   OrderStatus,
 } from '../services/orderService';
+import DateFilterCalendar, {
+  getLocalDateKey,
+} from '../../../components/common/DateFilterCalendar';
 
 // =====================================================
 // CONSTANTS
 // =====================================================
 
 const ORANGE = '#FF7A00';
+
+const uniqueOrdersById = <T extends {_id: string}>(
+  orders: T[],
+): T[] => {
+  const seenIds = new Set<string>();
+  return orders.filter(order => {
+    if (seenIds.has(order._id)) {
+      return false;
+    }
+    seenIds.add(order._id);
+    return true;
+  });
+};
 
 // =====================================================
 // FILTER TYPES
@@ -62,9 +81,16 @@ type FilterType =
 // =====================================================
 
 const RestaurantOrdersScreen: React.FC = () => {
-  const {token} = useAuth();
+  const {token, user} = useAuth();
 
   const [orders, setOrders] = useState<RestaurantOrder[]>([]);
+  const [selectedDate, setSelectedDate] = useState(getLocalDateKey);
+  const selectedDateRef = useRef(selectedDate);
+  const loadedPages = useRef(1);
+  const loadingMoreRef = useRef(false);
+  const loadRequestId = useRef(0);
+  const [hasMore, setHasMore] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [activeFilter, setActiveFilter] =
     useState<FilterType>('ALL');
 
@@ -81,7 +107,12 @@ const RestaurantOrdersScreen: React.FC = () => {
   // =====================================================
 
   const loadOrders = useCallback(
-    async (showLoader = true) => {
+    async (
+      showLoader = true,
+      targetPageCount?: number,
+      preserveLoadedOrders = false,
+    ) => {
+      const requestId = ++loadRequestId.current;
       if (!token) {
         setOrders([]);
         setLoading(false);
@@ -94,8 +125,47 @@ const RestaurantOrdersScreen: React.FC = () => {
           setLoading(true);
         }
 
-        const data = await getRestaurantOrders(token);
-        const nextOrders = Array.isArray(data) ? data : [];
+        const dateStorageKey =
+          `foode.restaurant-orders.date.${user?.id || 'account'}`;
+        const savedDate = await AsyncStorage.getItem(dateStorageKey);
+        if (savedDate && targetPageCount === undefined) {
+          selectedDateRef.current = savedDate;
+          setSelectedDate(savedDate);
+        }
+
+        const requestDate = selectedDateRef.current;
+        const storageKey =
+          `foode.restaurant-orders.pages.${user?.id || 'account'}.${requestDate}`;
+        const storedPageCount = Number(
+          await AsyncStorage.getItem(storageKey),
+        );
+        const savedPageCount =
+          targetPageCount ??
+          (Number.isSafeInteger(storedPageCount) && storedPageCount > 0
+            ? Math.min(storedPageCount, 10000)
+            : 1);
+        const nextOrders: RestaurantOrder[] = [];
+        let nextHasMore = true;
+        let pagesLoaded = 0;
+
+        for (let page = 1; page <= savedPageCount; page += 1) {
+          const result = await getRestaurantOrders(
+            token,
+            page,
+            requestDate,
+          );
+          nextOrders.push(...result.orders);
+          pagesLoaded = page;
+          nextHasMore = result.hasMore;
+
+          if (!nextHasMore) {
+            break;
+          }
+        }
+
+        if (requestId !== loadRequestId.current) {
+          return;
+        }
 
         if (hasLoadedOrders.current) {
           const freshOrder = nextOrders.find(order => order.status === 'PLACED' && !knownOrderIds.current.has(order._id));
@@ -113,8 +183,26 @@ const RestaurantOrdersScreen: React.FC = () => {
 
         nextOrders.forEach(order => knownOrderIds.current.add(order._id));
         hasLoadedOrders.current = true;
-        setOrders(nextOrders);
+
+        if (preserveLoadedOrders) {
+          setOrders(current => {
+            const firstPageIds = new Set(nextOrders.map(order => order._id));
+            return uniqueOrdersById([
+              ...nextOrders,
+              ...current.filter(order => !firstPageIds.has(order._id)),
+            ]);
+          });
+        } else {
+          loadedPages.current = Math.max(1, pagesLoaded);
+          await AsyncStorage.setItem(storageKey, String(loadedPages.current));
+          setOrders(uniqueOrdersById(nextOrders));
+          setHasMore(nextHasMore);
+        }
       } catch (error: any) {
+        if (requestId !== loadRequestId.current) {
+          return;
+        }
+
         console.log(
           'Restaurant orders error:',
           error,
@@ -126,11 +214,13 @@ const RestaurantOrdersScreen: React.FC = () => {
             'Something went wrong while loading orders.',
         );
       } finally {
-        setLoading(false);
-        setRefreshing(false);
+        if (requestId === loadRequestId.current) {
+          setLoading(false);
+          setRefreshing(false);
+        }
       }
     },
-    [token],
+    [token, user?.id],
   );
 
   // =====================================================
@@ -142,7 +232,7 @@ const RestaurantOrdersScreen: React.FC = () => {
   }, [loadOrders]);
 
   useEffect(() => {
-    const interval = setInterval(() => loadOrders(false), 15000);
+    const interval = setInterval(() => loadOrders(false, 1, true), 15000);
     return () => clearInterval(interval);
   }, [loadOrders]);
 
@@ -153,6 +243,89 @@ const RestaurantOrdersScreen: React.FC = () => {
   const handleRefresh = async () => {
     setRefreshing(true);
     await loadOrders(false);
+  };
+
+  const handleDateChange = useCallback(
+    async (date: string) => {
+      selectedDateRef.current = date;
+      loadRequestId.current += 1;
+      loadedPages.current = 1;
+      knownOrderIds.current.clear();
+      hasLoadedOrders.current = false;
+      setOrders([]);
+      setHasMore(true);
+      setSelectedDate(date);
+      await AsyncStorage.setItem(
+        `foode.restaurant-orders.date.${user?.id || 'account'}`,
+        date,
+      );
+      if (user?.id) {
+        await AsyncStorage.setItem(
+          `foode.restaurant-orders.pages.${user.id}.${date}`,
+          '1',
+        );
+      }
+      await loadOrders(true, 1);
+    },
+    [loadOrders, user?.id],
+  );
+
+  const loadNextPage = useCallback(async () => {
+    if (!token || !hasMore || loadingMoreRef.current) {
+      return;
+    }
+
+    loadingMoreRef.current = true;
+    setLoadingMore(true);
+
+    try {
+      const requestDate = selectedDateRef.current;
+      const requestId = loadRequestId.current;
+      const nextPage = loadedPages.current + 1;
+      const result = await getRestaurantOrders(
+        token,
+        nextPage,
+        requestDate,
+      );
+      if (
+        requestDate !== selectedDateRef.current ||
+        requestId !== loadRequestId.current
+      ) {
+        return;
+      }
+      loadedPages.current = nextPage;
+      setOrders(current =>
+        uniqueOrdersById([...current, ...result.orders]),
+      );
+      setHasMore(result.hasMore);
+      await AsyncStorage.setItem(
+        `foode.restaurant-orders.pages.${user?.id || 'account'}.${selectedDateRef.current}`,
+        String(nextPage),
+      );
+    } catch (error: any) {
+      console.error('Load more restaurant orders error:', error);
+      Alert.alert(
+        'Unable to Load More Orders',
+        error?.message || 'Please try again.',
+      );
+    } finally {
+      loadingMoreRef.current = false;
+      setLoadingMore(false);
+    }
+  }, [hasMore, token, user?.id]);
+
+  const handleScroll = (
+    event: NativeSyntheticEvent<NativeScrollEvent>,
+  ) => {
+    const {contentOffset, contentSize, layoutMeasurement} =
+      event.nativeEvent;
+
+    if (
+      contentOffset.y + layoutMeasurement.height >=
+      contentSize.height - 240
+    ) {
+      loadNextPage();
+    }
   };
 
   // =====================================================
@@ -299,6 +472,8 @@ const RestaurantOrdersScreen: React.FC = () => {
 
       <ScrollView
         showsVerticalScrollIndicator={false}
+        onScroll={handleScroll}
+        scrollEventThrottle={300}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
@@ -336,6 +511,12 @@ const RestaurantOrdersScreen: React.FC = () => {
             />
           </TouchableOpacity>
         </View>
+
+        <DateFilterCalendar
+          value={selectedDate}
+          onChange={handleDateChange}
+          style={styles.dateFilter}
+        />
 
         {/* =================================================
             SUMMARY
@@ -473,6 +654,12 @@ const RestaurantOrdersScreen: React.FC = () => {
                 }
               />
             ))}
+            {loadingMore ? (
+              <ActivityIndicator
+                style={styles.loadingMore}
+                color={ORANGE}
+              />
+            ) : null}
           </View>
         )}
 
@@ -688,12 +875,6 @@ const OrderCard: React.FC<OrderCardProps> = ({
       ? backendTotal
       : calculatedOrderTotal;
 
-  const deliveryFee =
-    safeDeliveryFee;
-
-  const discount =
-    safeDiscount;
-
   // =====================================================
   // TIME
   // =====================================================
@@ -787,20 +968,6 @@ const OrderCard: React.FC<OrderCardProps> = ({
             </Text>
           </View>
         ))}
-      </View>
-
-      {/* =================================================
-          ORDER TOTAL
-      ================================================= */}
-
-      <View style={styles.orderTotalOnly}>
-        <Text style={styles.ownerTotalLabel}>
-          Order Total
-        </Text>
-
-        <Text style={styles.ownerTotalValue}>
-          ₹{total.toFixed(2)}
-        </Text>
       </View>
 
       {/* =================================================
@@ -1137,6 +1304,9 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#777780',
   },
+  loadingMore: {
+    paddingVertical: 18,
+  },
 
   // =====================================================
   // HEADER
@@ -1147,6 +1317,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     marginBottom: 22,
+  },
+  dateFilter: {
+    marginHorizontal: 0,
   },
 
   smallText: {
@@ -1265,15 +1438,15 @@ const styles = StyleSheet.create({
   // =====================================================
 
   ordersContainer: {
-    gap: 12,
+    gap: 9,
   },
 
   orderCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 20,
+    borderRadius: 16,
     borderWidth: 1,
     borderColor: '#EEEEF2',
-    padding: 16,
+    padding: 12,
   },
 
   orderTop: {
@@ -1282,9 +1455,9 @@ const styles = StyleSheet.create({
   },
 
   orderIcon: {
-    width: 45,
-    height: 45,
-    borderRadius: 15,
+    width: 38,
+    height: 38,
+    borderRadius: 12,
     backgroundColor: '#F5F5F7',
     alignItems: 'center',
     justifyContent: 'center',
@@ -1293,7 +1466,7 @@ const styles = StyleSheet.create({
 
   orderInfo: {
     flex: 1,
-    marginLeft: 12,
+    marginLeft: 10,
   },
 
   orderId: {
@@ -1341,8 +1514,8 @@ const styles = StyleSheet.create({
   // =====================================================
 
   itemsContainer: {
-    marginTop: 14,
-    paddingTop: 13,
+    marginTop: 10,
+    paddingTop: 10,
     borderTopWidth: 1,
     borderTopColor: '#F0F0F2',
   },
@@ -1351,13 +1524,13 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: '800',
     color: '#55555D',
-    marginBottom: 9,
+    marginBottom: 6,
   },
 
   itemRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: 5,
   },
 
   quantityPill: {
@@ -1423,8 +1596,8 @@ const styles = StyleSheet.create({
   addressBox: {
     backgroundColor: '#F8F8FA',
     borderRadius: 12,
-    padding: 11,
-    marginTop: 13,
+    padding: 9,
+    marginTop: 9,
   },
 
   addressTitle: {
@@ -1454,7 +1627,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginTop: 12,
+    marginTop: 9,
   },
 
   paymentBadge: {
@@ -1484,8 +1657,8 @@ const styles = StyleSheet.create({
   // =====================================================
 
   noteBox: {
-    marginTop: 12,
-    padding: 11,
+    marginTop: 9,
+    padding: 9,
     borderRadius: 12,
     backgroundColor: '#FFF9E8',
   },
@@ -1511,7 +1684,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginTop: 15,
+    marginTop: 10,
   },
 
   // =====================================================

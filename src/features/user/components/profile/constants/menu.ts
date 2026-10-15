@@ -1,4 +1,5 @@
 import {MenuItem} from '../types';
+import {APP_VERSION} from '../../../../../config/version';
 
 export const ACCOUNT_MENU: MenuItem[] = [
   {
@@ -82,7 +83,7 @@ export const ABOUT_MENU: MenuItem[] = [
   {
     id: '4',
     title: 'About FoodE',
-    subtitle: 'Version 1.0.0',
+    subtitle: `Version ${APP_VERSION}`,
     icon: 'info-outline',
     color: '#6366F1',
     route: 'About',

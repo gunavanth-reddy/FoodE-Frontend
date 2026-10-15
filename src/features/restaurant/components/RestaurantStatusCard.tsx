@@ -5,6 +5,7 @@ import {
     TouchableOpacity,
     View,
 } from "react-native";
+import {PencilSimple} from "phosphor-react-native";
 
 
 // =====================================================
@@ -16,6 +17,7 @@ interface RestaurantStatusCardProps {
     location?: string;
     isOpen: boolean;
     onToggle: () => void;
+    onEdit: () => void;
 }
 
 
@@ -30,6 +32,7 @@ const RestaurantStatusCard: React.FC<
     location = "SRM AP • Neerukonda",
     isOpen,
     onToggle,
+    onEdit,
 }) => {
 
     return (
@@ -66,6 +69,16 @@ const RestaurantStatusCard: React.FC<
 
                 </View>
 
+
+                <TouchableOpacity
+                    activeOpacity={0.75}
+                    accessibilityRole="button"
+                    accessibilityLabel="Edit restaurant"
+                    onPress={onEdit}
+                    style={styles.editButton}
+                >
+                    <PencilSimple size={17} color="#FFFFFF" weight="bold" />
+                </TouchableOpacity>
 
                 {/* STATUS */}
 
@@ -226,6 +239,15 @@ const styles = StyleSheet.create({
         paddingHorizontal: 10,
         paddingVertical: 7,
         borderRadius: 20,
+    },
+    editButton: {
+        width: 34,
+        height: 34,
+        borderRadius: 11,
+        backgroundColor: "#2A2A30",
+        alignItems: "center",
+        justifyContent: "center",
+        marginRight: 8,
     },
 
     openPill: {

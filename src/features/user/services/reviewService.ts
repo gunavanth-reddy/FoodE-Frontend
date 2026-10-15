@@ -81,6 +81,26 @@ interface ReviewsResponse {
   message?: string;
   count?: number;
   reviews?: Review[];
+  page?: number;
+  pageSize?: number;
+  total?: number;
+  hasMore?: boolean;
+  summary?: {
+    averageRating: number;
+    countsByRating: Record<number, number>;
+  };
+}
+
+export interface OwnerReviewsPage {
+  reviews: OwnerReview[];
+  page: number;
+  pageSize: number;
+  total: number;
+  hasMore: boolean;
+  summary: {
+    averageRating: number;
+    countsByRating: Record<number, number>;
+  };
 }
 
 interface ReviewResponse {
@@ -304,13 +324,15 @@ export const getFoodReviews = async (
 // =====================================================
 
 export const getMyReviews = async (
-  token: string
-): Promise<OwnerReview[]> => {
+  token: string,
+  page = 1,
+): Promise<OwnerReviewsPage> => {
   if (!token) {
     throw new Error("Authentication token is missing.");
   }
 
-  const url = `${API_BASE_URL}/reviews/my`;
+  const query = new URLSearchParams({page: String(page)});
+  const url = `${API_BASE_URL}/reviews/my?${query.toString()}`;
 
   console.log("========== GET MY REVIEWS ==========");
   console.log("URL:", url);
@@ -351,7 +373,30 @@ export const getMyReviews = async (
     );
   }
 
-  return data.reviews || [];
+  if (
+    !Array.isArray(data.reviews) ||
+    typeof data.page !== "number" ||
+    !Number.isSafeInteger(data.page) ||
+    typeof data.pageSize !== "number" ||
+    !Number.isSafeInteger(data.pageSize) ||
+    typeof data.total !== "number" ||
+    !Number.isSafeInteger(data.total) ||
+    typeof data.hasMore !== "boolean" ||
+    !data.summary ||
+    !Number.isFinite(data.summary.averageRating) ||
+    !data.summary.countsByRating
+  ) {
+    throw new Error("The owner reviews response is incomplete.");
+  }
+
+  return {
+    reviews: data.reviews,
+    page: data.page,
+    pageSize: data.pageSize,
+    total: data.total,
+    hasMore: data.hasMore,
+    summary: data.summary,
+  };
 };
 
 // =====================================================

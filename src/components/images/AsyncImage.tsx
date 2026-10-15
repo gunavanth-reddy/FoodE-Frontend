@@ -1,23 +1,23 @@
 import React, {ReactNode, useEffect, useState} from 'react';
 import {
-  Image,
-  ImageResizeMode,
-  ImageSourcePropType,
   StyleProp,
   StyleSheet,
   View,
   ViewStyle,
 } from 'react-native';
+import {
+  Image as ExpoImage,
+  type ImageContentFit,
+  type ImageSource,
+} from 'expo-image';
 import {ForkKnife, Storefront} from 'phosphor-react-native';
-
-const isFoodECdnUrl = (uri: string): boolean =>
-  /^https?:\/\/cdn\.foode\.site(?:\/|$)/i.test(uri);
+import {resolveImageUri} from './resolveImageUri';
 
 interface AsyncImageProps {
-  source?: ImageSourcePropType | string | null;
+  source?: ImageSource | string | null;
   style: StyleProp<ViewStyle>;
   kind?: 'food' | 'restaurant';
-  resizeMode?: ImageResizeMode;
+  resizeMode?: ImageContentFit;
   retryKey?: string | number;
   placeholder?: ReactNode;
 }
@@ -32,24 +32,33 @@ const AsyncImage: React.FC<AsyncImageProps> = ({
 }) => {
   const [imageFailed, setImageFailed] = useState(false);
 
-  const imageSource: ImageSourcePropType | undefined =
+  const imageSource: ImageSource | undefined =
     typeof source === 'string'
       ? source.trim()
-        ? {uri: source.trim()}
+        ? {uri: resolveImageUri(source)}
         : undefined
       : source || undefined;
-  const cachedImageSource: ImageSourcePropType | undefined =
+  const uriSource =
     imageSource &&
     typeof imageSource === 'object' &&
     !Array.isArray(imageSource) &&
-    typeof imageSource.uri === 'string' &&
-    isFoodECdnUrl(imageSource.uri)
-      ? {...imageSource, cache: 'force-cache'}
+    'uri' in imageSource &&
+    typeof imageSource.uri === 'string'
+      ? {...imageSource, uri: resolveImageUri(imageSource.uri)}
       : imageSource;
+  const imageUri =
+    uriSource &&
+    typeof uriSource === 'object' &&
+    !Array.isArray(uriSource) &&
+    'uri' in uriSource &&
+    typeof uriSource.uri === 'string'
+      ? uriSource.uri
+      : undefined;
+  const resolvedImageSource = uriSource;
 
   const sourceKey =
     typeof source === 'string'
-      ? source.trim()
+      ? imageUri || source.trim()
       : typeof source === 'number'
         ? `asset:${source}`
         : source &&
@@ -65,11 +74,12 @@ const AsyncImage: React.FC<AsyncImageProps> = ({
 
   return (
     <View style={[style, styles.container]}>
-      {imageSource && !imageFailed ? (
-        <Image
-          source={cachedImageSource}
+      {resolvedImageSource && !imageFailed ? (
+        <ExpoImage
+          source={resolvedImageSource}
           style={StyleSheet.absoluteFill}
-          resizeMode={resizeMode}
+          contentFit={resizeMode}
+          cachePolicy="memory-disk"
           onError={() => setImageFailed(true)}
         />
       ) : (

@@ -18,6 +18,7 @@ import {
   useAuth,
   normalizeUserRole,
 } from '../../../context/AuthContext';
+import {APP_VERSION} from '../../../config/version';
 
 const ORANGE = '#FF5A00';
 const DARK = '#171717';
@@ -327,7 +328,7 @@ const LoginScreen = ({navigation}: any) => {
             </TouchableOpacity>
 
             <AppText style={styles.version}>
-              Version 1.0.0
+              Version {APP_VERSION}
             </AppText>
           </View>
         </ScrollView>

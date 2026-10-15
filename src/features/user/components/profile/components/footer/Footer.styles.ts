@@ -9,35 +9,20 @@ import {
 export default StyleSheet.create({
   container: {
     alignItems: 'center',
-
-    marginTop: SPACING.xxl,
-
-    paddingBottom: SPACING.xxxl,
+    marginTop: SPACING.md,
+    paddingBottom: SPACING.lg,
   },
 
   logoutContainer: {
     width: '100%',
 
-    marginBottom: SPACING.md,
-  },
-
-  version: {
-    color: COLORS.textSecondary,
-
-    marginTop: SPACING.md,
-
-    textAlign: 'center',
-
-    ...TYPOGRAPHY.caption,
+    marginBottom: SPACING.sm,
   },
 
   copyright: {
-    color: COLORS.textLight,
-
-    marginTop: SPACING.sm,
-
+    color: COLORS.textSecondary,
     textAlign: 'center',
-
+    marginTop: SPACING.xs,
     ...TYPOGRAPHY.caption,
   },
 });

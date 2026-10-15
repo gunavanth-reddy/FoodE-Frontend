@@ -5,29 +5,27 @@ import {
   Image,
   TouchableOpacity,
   StyleSheet,
-  Dimensions,
   ImageSourcePropType,
 } from 'react-native';
 
-const {width} =
-  Dimensions.get('window');
-
 interface BannerCardProps {
   image: ImageSourcePropType;
+  width: number;
   onPress?: () => void;
 }
 
 const BannerCard = ({
   image,
+  width,
   onPress,
 }: BannerCardProps) => {
   return (
     <TouchableOpacity
       activeOpacity={0.95}
-      style={styles.wrapper}
+      style={[styles.wrapper, {width}]}
       onPress={onPress}>
 
-      <View style={styles.card}>
+      <View style={[styles.card, {width: Math.max(width - 28, 0)}]}>
 
         <Image
           source={image}
@@ -46,8 +44,6 @@ export default BannerCard;
 const styles = StyleSheet.create({
 
   wrapper: {
-    width: width,
-
     justifyContent: 'center',
     alignItems: 'center',
 
@@ -55,7 +51,7 @@ const styles = StyleSheet.create({
   },
 
   card: {
-    width: width - 28,
+    maxWidth: 640,
 
     height: 174,
 

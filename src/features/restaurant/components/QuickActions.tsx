@@ -13,7 +13,6 @@ import {
   Storefront,
   Star,
   Clock,
-  CaretRight,
 } from 'phosphor-react-native';
 
 // =====================================================
@@ -23,7 +22,6 @@ import {
 interface QuickAction {
   icon: React.ReactNode;
   title: string;
-  subtitle: string;
   onPress?: () => void;
 }
 
@@ -56,7 +54,6 @@ const QuickActions: React.FC<QuickActionsProps> = ({
         />
       ),
       title: 'Orders',
-      subtitle: 'Manage orders',
       onPress: onOrdersPress,
     },
 
@@ -69,7 +66,6 @@ const QuickActions: React.FC<QuickActionsProps> = ({
         />
       ),
       title: 'Menu',
-      subtitle: 'Manage food',
       onPress: onMenuPress,
     },
 
@@ -82,7 +78,6 @@ const QuickActions: React.FC<QuickActionsProps> = ({
         />
       ),
       title: 'Restaurant',
-      subtitle: 'Edit details',
       onPress: onRestaurantPress,
     },
 
@@ -95,7 +90,6 @@ const QuickActions: React.FC<QuickActionsProps> = ({
         />
       ),
       title: 'Reviews',
-      subtitle: 'View reviews',
       onPress: onReviewsPress,
     },
 
@@ -108,7 +102,6 @@ const QuickActions: React.FC<QuickActionsProps> = ({
         />
       ),
       title: 'Delivery Slots',
-      subtitle: 'Manage delivery times',
       onPress: onDeliverySlotsPress,
     },
   ];
@@ -131,22 +124,6 @@ const QuickActions: React.FC<QuickActionsProps> = ({
           <Text style={styles.title}>
             {action.title}
           </Text>
-
-          {/* SUBTITLE */}
-          <Text
-            style={styles.subtitle}
-            numberOfLines={1}>
-            {action.subtitle}
-          </Text>
-
-          {/* ARROW */}
-          <View style={styles.arrowContainer}>
-            <CaretRight
-              size={15}
-              color="#777780"
-              weight="bold"
-            />
-          </View>
         </TouchableOpacity>
       ))}
     </View>
@@ -161,53 +138,37 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 10,
-    marginBottom: 28,
+    justifyContent: 'space-between',
+    rowGap: 9,
+    marginBottom: 20,
   },
 
   card: {
-    width: '48%',
-    minHeight: 125,
+    width: '31.5%',
+    minHeight: 88,
     backgroundColor: '#FFFFFF',
-    borderRadius: 19,
-    padding: 15,
-    position: 'relative',
+    borderRadius: 15,
+    padding: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 
   iconContainer: {
-    width: 42,
-    height: 42,
-    borderRadius: 14,
+    width: 34,
+    height: 34,
+    borderRadius: 11,
     backgroundColor: '#FFF1E6',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 11,
+    marginBottom: 7,
   },
 
   title: {
-    fontSize: 14,
-    fontWeight: '800',
-    color: '#17171B',
-    paddingRight: 24,
-  },
-
-  subtitle: {
     fontSize: 11,
-    color: '#92929B',
-    marginTop: 4,
-    paddingRight: 24,
-  },
-
-  arrowContainer: {
-    position: 'absolute',
-    right: 14,
-    bottom: 14,
-    width: 25,
-    height: 25,
-    borderRadius: 10,
-    backgroundColor: '#F6F6F7',
-    alignItems: 'center',
-    justifyContent: 'center',
+    fontWeight: '700',
+    color: '#17171B',
+    textAlign: 'center',
+    includeFontPadding: false,
   },
 });
 

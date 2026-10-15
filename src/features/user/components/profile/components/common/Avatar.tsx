@@ -1,6 +1,6 @@
 import React from 'react';
 import {Image, StyleSheet, View} from 'react-native';
-import {UserCircle} from 'phosphor-react-native';
+import {User} from 'phosphor-react-native';
 import {COLORS} from '../../styles';
 
 interface Props {
@@ -24,7 +24,7 @@ const Avatar = ({uri, size = 72}: Props) => (
         styles.placeholder,
         {width: size, height: size, borderRadius: size / 2},
       ]}>
-        <UserCircle size={size * 0.78} color={COLORS.primary} weight="fill" />
+        <User size={size * 0.58} color={COLORS.primary} weight="fill" />
       </View>
     )}
   </View>
@@ -35,12 +35,12 @@ export default Avatar;
 const styles = StyleSheet.create({
   container: {
     overflow: 'hidden',
-    borderWidth: 2,
-    borderColor: '#FFB36F',
-    backgroundColor: '#FFF0E3',
+    borderWidth: 1,
+    borderColor: '#F0E7DF',
+    backgroundColor: '#FFFFFF',
   },
   placeholder: {
-    backgroundColor: '#FFF0E3',
+    backgroundColor: '#FFFFFF',
     alignItems: 'center',
     justifyContent: 'center',
   },

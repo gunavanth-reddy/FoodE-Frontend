@@ -67,7 +67,7 @@ const CartBar: React.FC<{bottomOffset?: number}> = ({bottomOffset = 88}) => {
         <ArrowRight
           size={20}
           weight="bold"
-          color="#FFFFFF"
+          color="#C85C00"
         />
       </View>
     </TouchableOpacity>

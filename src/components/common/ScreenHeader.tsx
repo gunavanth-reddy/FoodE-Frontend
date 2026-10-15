@@ -8,7 +8,7 @@ import {
   View,
   useWindowDimensions,
 } from 'react-native';
-import {ArrowLeft, UserCircle, Bell, ShoppingCart} from 'phosphor-react-native';
+import {ArrowLeft, User, Bell, ShoppingCart} from 'phosphor-react-native';
 import {useNavigation} from '@react-navigation/native';
 
 export interface ScreenHeaderProps {
@@ -89,7 +89,7 @@ const ScreenHeader: React.FC<ScreenHeaderProps> = ({
           <View style={styles.actions}>
             {onNotificationPress ? <Pressable accessibilityRole="button" accessibilityLabel="Notifications" onPress={onNotificationPress} style={({pressed}) => [styles.iconButton, pressed && styles.pressed]}><Bell size={23} color={titleColor} weight="regular" /></Pressable> : null}
             {onCartPress ? <Pressable accessibilityRole="button" accessibilityLabel="Cart" onPress={onCartPress} style={({pressed}) => [styles.iconButton, pressed && styles.pressed]}><ShoppingCart size={23} color={titleColor} weight="regular" /></Pressable> : null}
-            <Pressable accessibilityRole="button" accessibilityLabel="Open profile" onPress={openProfile} style={({pressed}) => [styles.iconButton, pressed && styles.pressed]}><UserCircle size={27} color={titleColor} weight="regular" /></Pressable>
+            <Pressable accessibilityRole="button" accessibilityLabel="Open profile" onPress={openProfile} style={({pressed}) => [styles.iconButton, pressed && styles.pressed]}>            <User size={25} color={titleColor} weight="regular" /></Pressable>
           </View>
         ) : <View style={styles.rightSpacer} />}
       </View>

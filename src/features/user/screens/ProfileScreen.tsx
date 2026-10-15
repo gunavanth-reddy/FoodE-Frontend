@@ -50,7 +50,7 @@ const ProfileScreen = ({navigation}: any) => {
 
   return (
     <SafeAreaView style={{flex: 1, backgroundColor: COLORS.background}} edges={['top', 'left', 'right']}>
-      <StatusBar backgroundColor="#FF7A00" barStyle="light-content" hidden={false} translucent={false} />
+      <StatusBar backgroundColor="#FFFFFF" barStyle="dark-content" hidden={false} translucent={false} />
 
       <ScrollView
         style={styles.scrollView}
@@ -129,6 +129,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: SPACING.screenHorizontal,
     paddingTop: SPACING.xs,
     paddingBottom: SPACING.lg,
+    backgroundColor: '#F7F8FA',
   },
 
   profileCard: {

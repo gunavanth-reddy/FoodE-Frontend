@@ -4,14 +4,12 @@ import {COLORS, SHADOWS, SPACING, TYPOGRAPHY} from '../../styles';
 export default StyleSheet.create({
   container: {
     backgroundColor: COLORS.surface,
-    borderRadius: 24,
-    padding: 16,
+    borderRadius: 20,
+    padding: 18,
     alignItems: 'center',
     marginBottom: SPACING.md,
     borderWidth: 1,
-    borderColor: '#FFD5B0',
-    borderTopWidth: 3,
-    borderTopColor: COLORS.primary,
+    borderColor: '#ECEFF3',
     ...SHADOWS.card,
   },
   avatarContainer: {marginBottom: 10},
@@ -21,7 +19,7 @@ export default StyleSheet.create({
   divider: {height: 1, width: '100%', backgroundColor: COLORS.divider, marginVertical: 14},
   statsRow: {width: '100%', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between'},
   stat: {flex: 1, alignItems: 'center', justifyContent: 'center'},
-  statValue: {color: COLORS.primaryDark, ...TYPOGRAPHY.h2},
+  statValue: {color: COLORS.textPrimary, ...TYPOGRAPHY.h2},
   statLabel: {color: COLORS.textSecondary, marginTop: 4, textAlign: 'center', ...TYPOGRAPHY.caption},
   statDivider: {width: 1, height: 30, backgroundColor: COLORS.divider},
   editProfileButton: {

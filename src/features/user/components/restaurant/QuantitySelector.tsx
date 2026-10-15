@@ -1,5 +1,6 @@
 import React from 'react';
 import {
+  ActivityIndicator,
   Alert,
   StyleSheet,
   Text,
@@ -17,10 +18,14 @@ import {useAuth} from '../../../../context/AuthContext';
 
 interface QuantitySelectorProps {
   item: MenuItem;
+  onAdd?: () => void;
+  adding?: boolean;
 }
 
 const QuantitySelector: React.FC<QuantitySelectorProps> = ({
   item,
+  onAdd,
+  adding = false,
 }) => {
   const navigation = useNavigation<any>();
 
@@ -36,6 +41,11 @@ const QuantitySelector: React.FC<QuantitySelectorProps> = ({
   const quantity = getQuantity(item.id);
 
   const handleAddItem = () => {
+    if (onAdd) {
+      onAdd();
+      return;
+    }
+
     if (!isLoggedIn) {
       Alert.alert(
         'Login Required',
@@ -80,12 +90,15 @@ const QuantitySelector: React.FC<QuantitySelectorProps> = ({
   if (quantity === 0) {
     return (
       <TouchableOpacity
+        disabled={adding}
         activeOpacity={0.8}
         style={styles.addButton}
         onPress={handleAddItem}>
-        <Text style={styles.addText}>
-          ADD
-        </Text>
+        {adding ? (
+          <ActivityIndicator size="small" color="#FF7A00" />
+        ) : (
+          <Text style={styles.addText}>ADD</Text>
+        )}
       </TouchableOpacity>
     );
   }

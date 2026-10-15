@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {useState} from 'react';
 
 import {
   StyleSheet,
@@ -21,11 +21,27 @@ const MenuItemCard: React.FC<MenuItemCardProps> = ({
   item,
   onPress,
 }) => {
+  const [adding, setAdding] = useState(false);
+
+  const handleAdd = async () => {
+    if (!onPress || adding) {
+      return;
+    }
+
+    try {
+      setAdding(true);
+      await onPress(item);
+    } finally {
+      setAdding(false);
+    }
+  };
+
   return (
     <TouchableOpacity
       activeOpacity={0.9}
       style={styles.container}
-      onPress={() => onPress?.(item)}>
+      onPress={handleAdd}
+      disabled={adding}>
 
       {/* Left Section */}
       <View style={styles.content}>
@@ -75,7 +91,11 @@ const MenuItemCard: React.FC<MenuItemCardProps> = ({
           kind="food"
         />
 
-        <QuantitySelector item={item} />
+        <QuantitySelector
+          item={item}
+          onAdd={handleAdd}
+          adding={adding}
+        />
       </View>
     </TouchableOpacity>
   );
@@ -88,7 +108,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     backgroundColor: '#FFF8F1',
-    marginHorizontal: 14,
+    marginHorizontal: 0,
     marginBottom: 6,
     padding: 12,
     borderRadius: 14,

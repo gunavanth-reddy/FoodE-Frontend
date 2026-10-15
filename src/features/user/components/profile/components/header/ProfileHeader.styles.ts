@@ -4,12 +4,12 @@ import {COLORS, SPACING, TYPOGRAPHY} from '../../styles';
 export default StyleSheet.create({
   container: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    marginBottom: SPACING.sm, paddingTop: SPACING.xs,
-    paddingBottom: 12, borderBottomWidth: 1, borderBottomColor: COLORS.divider,
+    marginBottom: SPACING.xs, paddingTop: SPACING.sm,
+    paddingBottom: 8,
   },
   textContainer: {flex: 1, marginRight: SPACING.md},
   title: {color: COLORS.textPrimary, ...TYPOGRAPHY.h1},
-  subtitle: {marginTop: 3, color: COLORS.textSecondary, ...TYPOGRAPHY.body},
+  subtitle: {marginTop: 3, color: COLORS.textSecondary, ...TYPOGRAPHY.caption},
   notificationButton: {
     width: 44, height: 44, borderRadius: 15, backgroundColor: COLORS.primaryLight,
     justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: '#FFD0A8',

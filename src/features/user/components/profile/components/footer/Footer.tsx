@@ -8,6 +8,7 @@ import {
 import styles from './Footer.styles';
 
 import {LogoutButton} from '../buttons';
+import {APP_VERSION} from '../../../../../../config/version';
 
 interface Props {
   isLoggedIn: boolean;
@@ -27,14 +28,8 @@ const Footer: React.FC<Props> = ({
         </View>
       )}
 
-      {/* App Version */}
-      <Text style={styles.version}>
-        FoodE  •  Version 1.0.0
-      </Text>
-
-      {/* Brand Footer */}
       <Text style={styles.copyright}>
-        Made with ❤️ for FoodE
+        FoodE · v{APP_VERSION} · Made with love
       </Text>
     </View>
   );

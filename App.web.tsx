@@ -54,6 +54,7 @@ export default function AppWeb() {
     useState<BrowserPlatform | null>(null);
 
   useEffect(() => {
+    document.title = 'FoodE | Food Delivery';
     const platform = getBrowserPlatform();
     setBrowserPlatform(platform);
 

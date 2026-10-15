@@ -5,7 +5,8 @@
     "version": "0.0.1",
     "web": {
       "bundler": "metro",
-      "output": "single"
+      "output": "single",
+      "favicon": "./foode-round.png"
     },
     "plugins": [
       "expo-image"
