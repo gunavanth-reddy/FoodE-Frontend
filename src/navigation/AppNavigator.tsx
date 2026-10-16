@@ -128,10 +128,77 @@ export const navigationRef =
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
+const WEB_SCREEN_TITLES: Record<string, string> = {
+  Splash: 'Order Food',
+  VideoIntro: 'Welcome',
+  Login: 'Sign In',
+  Register: 'Create Account',
+  ForgotPassword: 'Reset Password',
+  Main: 'Food Delivery',
+  Home: 'Home',
+  Restaurants: 'Restaurants',
+  Search: 'Search',
+  Favorites: 'Favorites',
+  Cart: 'Your Cart',
+  Checkout: 'Checkout',
+  Payment: 'Payment',
+  OrderSuccess: 'Order Confirmed',
+  Orders: 'My Orders',
+  Profile: 'Profile',
+  PersonalInfo: 'Personal Information',
+  EditProfile: 'Edit Profile',
+  Address: 'Delivery Address',
+  RestaurantDetails: 'Restaurant',
+  CategoryFoods: 'Menu',
+  Notifications: 'Notifications',
+  NotificationSettings: 'Notification Settings',
+  Review: 'Write a Review',
+  Language: 'Language',
+  HelpCenter: 'Help Center',
+  PrivacyPolicy: 'Privacy Policy',
+  Terms: 'Terms and Conditions',
+  About: 'About FoodE',
+  RestaurantOwner: 'Restaurant Dashboard',
+  AdminDashboard: 'Admin Dashboard',
+  AdminUsers: 'Manage Users',
+  AdminRestaurants: 'Manage Restaurants',
+  AdminOrders: 'Manage Orders',
+  AdminReviews: 'Manage Reviews',
+  AdminRestaurantAnalytics: 'Restaurant Analytics',
+  AdminBroadcast: 'Broadcast Message',
+  RestaurantDashboard: 'Restaurant Dashboard',
+  RestaurantOrders: 'Restaurant Orders',
+  RestaurantMenu: 'Restaurant Menu',
+  AddFood: 'Add Menu Item',
+  EditFood: 'Edit Menu Item',
+  RestaurantNotifications: 'Restaurant Notifications',
+  RestaurantReviews: 'Restaurant Reviews',
+  DeliverySlots: 'Delivery Slots',
+};
+
+const updateWebPageTitle = (state?: any) => {
+  if (typeof document === 'undefined') return;
+
+  let activeState = state;
+  let activeRoute = activeState?.routes?.[activeState.index ?? 0];
+  while (activeRoute?.state) {
+    activeState = activeRoute.state;
+    activeRoute = activeState.routes?.[activeState.index ?? 0];
+  }
+
+  const title = activeRoute
+    ? WEB_SCREEN_TITLES[activeRoute.name] ?? activeRoute.name
+    : 'Food Delivery';
+  document.title = `${title} | FoodE`;
+};
+
 const AppNavigator = () => {
   return (
     <React.Fragment>
-      <NavigationContainer ref={navigationRef}>
+      <NavigationContainer
+        ref={navigationRef}
+        onReady={() => updateWebPageTitle(navigationRef.getRootState())}
+        onStateChange={state => updateWebPageTitle(state)}>
         <Stack.Navigator
           initialRouteName="Splash"
           screenOptions={{

@@ -20,7 +20,6 @@ import {SafeAreaView} from 'react-native-safe-area-context';
 
 import {
   ArrowLeft,
-  Camera,
   Clock,
   Plus,
 } from 'phosphor-react-native';
@@ -39,6 +38,9 @@ import {
   CreateFoodData,
 } from '../services/foodService';
 import AsyncImage from '../../../components/images/AsyncImage';
+import FoodImagePicker, {
+  FoodImageAsset,
+} from '../components/FoodImagePicker';
 
 // =====================================================
 // AUTH
@@ -95,8 +97,8 @@ const AddFoodScreen = ({
   const [preparationTime, setPreparationTime] =
     useState('20');
 
-  const [image, setImage] =
-    useState('');
+  const [imageUri, setImageUri] = useState('');
+  const [imageAsset, setImageAsset] = useState<FoodImageAsset | undefined>();
 
   const [isVegetarian, setIsVegetarian] =
     useState(false);
@@ -330,9 +332,6 @@ const AddFoodScreen = ({
           description:
             description.trim(),
 
-          image:
-            image.trim(),
-
           price:
             Number(price),
 
@@ -366,6 +365,7 @@ const AddFoodScreen = ({
           await createFood(
             token,
             foodData,
+            imageAsset,
           );
 
         console.log(
@@ -731,31 +731,12 @@ const AddFoodScreen = ({
           title="Food Image"
         />
 
-        <View style={styles.imagePreviewCard}>
-          <AsyncImage
-            source={image.trim() || undefined}
-            style={styles.selectedImage}
-            kind="food"
-            placeholder={
-              <View style={styles.imagePlaceholder}>
-                <Camera size={36} color="#FF7A00" weight="duotone" />
-                <Text style={styles.imagePlaceholderText}>No image selected</Text>
-              </View>
-            }
-          />
-
-        </View>
-
-        <Text style={styles.helperText}>
-          Paste a publicly accessible image URL to preview the food image.
-        </Text>
-
-        <InputField
-          label="Food Image URL (optional)"
-          value={image}
-          onChangeText={setImage}
-          placeholder="https://example.com/food.jpg"
-          autoCapitalize="none"
+        <FoodImagePicker
+          imageUri={imageUri || undefined}
+          onImageSelected={asset => {
+            setImageAsset(asset);
+            setImageUri(asset.uri);
+          }}
         />
 
         {/* =========================================
@@ -835,7 +816,7 @@ const AddFoodScreen = ({
             }>
 
             <AsyncImage
-              source={image.trim() || undefined}
+              source={imageUri || undefined}
               style={styles.previewImageContent}
               kind="food"
             />

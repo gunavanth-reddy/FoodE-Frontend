@@ -29,6 +29,11 @@
     "web": {
       "bundler": "metro",
       "output": "single",
+      "name": "FoodE",
+      "shortName": "FoodE",
+      "description": "Discover campus restaurants, explore menus, and order your favorite meals with FoodE.",
+      "themeColor": "#FF6B00",
+      "lang": "en",
       "favicon": "./foode-round.png"
     },
     "plugins": [

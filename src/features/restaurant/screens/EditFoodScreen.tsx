@@ -1,4 +1,5 @@
 import React, {
+  useCallback,
   useEffect,
   useState,
 } from 'react';
@@ -6,6 +7,7 @@ import React, {
 import {
   ActivityIndicator,
   Alert,
+  Image,
   ScrollView,
   StyleSheet,
   Text,
@@ -27,6 +29,9 @@ import {
 } from '../services/foodService';
 
 import {useAuth} from '../../../context/AuthContext';
+import FoodImagePicker, {
+  FoodImageAsset,
+} from '../components/FoodImagePicker';
 
 import {
   ArrowLeft,
@@ -124,8 +129,8 @@ const EditFoodScreen = ({
   const [preparationTime, setPreparationTime] =
     useState('');
 
-  const [image, setImage] =
-    useState('');
+  const [imageUri, setImageUri] = useState('');
+  const [imageAsset, setImageAsset] = useState<FoodImageAsset | undefined>();
 
   const [isVegetarian, setIsVegetarian] =
     useState(false);
@@ -194,9 +199,10 @@ const EditFoodScreen = ({
         : '20',
     );
 
-    setImage(
+    setImageUri(
       food.image || '',
     );
+    setImageAsset(undefined);
 
     // Prefer the explicit foodType field; fall back to isVegetarian
     // for older food records.
@@ -229,18 +235,13 @@ const EditFoodScreen = ({
       );
     }
 
-  }, [food]);
+  }, [food, navigation]);
 
   // ===================================================
   // LOAD CATEGORIES
   // ===================================================
 
-  useEffect(() => {
-    loadCategories();
-  }, [token]);
-
-  const loadCategories =
-    async () => {
+  const loadCategories = useCallback(async () => {
 
       try {
 
@@ -266,15 +267,8 @@ const EditFoodScreen = ({
           activeCategories,
         );
 
-        if (
-          !selectedCategory &&
-          activeCategories.length >
-            0
-        ) {
-
-          setSelectedCategory(
-            activeCategories[0]._id,
-          );
+        if (activeCategories.length > 0) {
+          setSelectedCategory(current => current || activeCategories[0]._id);
         }
 
       } catch (error: any) {
@@ -294,7 +288,11 @@ const EditFoodScreen = ({
 
         setLoading(false);
       }
-    };
+  }, [token]);
+
+  useEffect(() => {
+    loadCategories();
+  }, [loadCategories]);
 
   // ===================================================
   // VALIDATION
@@ -476,9 +474,6 @@ const EditFoodScreen = ({
           description:
             description.trim(),
 
-          image:
-            image.trim(),
-
           price:
             Number(price),
 
@@ -504,6 +499,7 @@ const EditFoodScreen = ({
             token,
             food._id,
             foodData,
+            imageAsset,
           );
 
         console.log(
@@ -812,21 +808,13 @@ const EditFoodScreen = ({
           title="Food Image"
         />
 
-        <InputField
-          label="Image URL"
-          value={image}
-          onChangeText={setImage}
-          placeholder="https://example.com/food.jpg"
-          autoCapitalize="none"
+        <FoodImagePicker
+          imageUri={imageUri || undefined}
+          onImageSelected={asset => {
+            setImageAsset(asset);
+            setImageUri(asset.uri);
+          }}
         />
-
-        <Text
-          style={
-            styles.helperText
-          }>
-          You can provide an image URL for now.
-          Image upload can be added later.
-        </Text>
 
         {/* =========================================
             FOOD TYPE
@@ -900,11 +888,19 @@ const EditFoodScreen = ({
               styles.previewImage
             }>
 
-            <ForkKnife
-              size={32}
-              color="#FF7A00"
-              weight="duotone"
-            />
+            {imageUri ? (
+              <Image
+                source={{uri: imageUri}}
+                style={styles.previewImageContent}
+                resizeMode="cover"
+              />
+            ) : (
+              <ForkKnife
+                size={32}
+                color="#FF7A00"
+                weight="duotone"
+              />
+            )}
 
           </View>
 
@@ -1439,6 +1435,12 @@ const styles =
       alignItems: 'center',
       justifyContent:
         'center',
+    },
+
+    previewImageContent: {
+      width: '100%',
+      height: '100%',
+      borderRadius: 16,
     },
 
     previewInfo: {

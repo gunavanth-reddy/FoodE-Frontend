@@ -3,6 +3,7 @@
 // =====================================================
 
 import API_BASE_URL from '../../../config/api';
+import type {ImagePickerAsset} from 'expo-image-picker';
 
 // =====================================================
 // TYPES
@@ -334,8 +335,6 @@ export interface CreateFoodData {
   name: string;
   description?: string;
 
-  image?: string;
-
   price: number;
   discountedPrice?: number | null;
   category: string;
@@ -343,6 +342,67 @@ export interface CreateFoodData {
   foodType?: 'veg' | 'non-veg';
   isVegetarian?: boolean;
 }
+
+const createFoodFormData = async (
+  foodData: CreateFoodData | Partial<CreateFoodData>,
+  imageAsset?: ImagePickerAsset,
+): Promise<FormData> => {
+  const formData = new FormData();
+  Object.entries(foodData).forEach(([key, value]) => {
+    if (value !== undefined) {
+      formData.append(key, value === null ? '' : String(value));
+    }
+  });
+
+  if (imageAsset) {
+    const mimeType = imageAsset.mimeType || 'image/jpeg';
+    const extension =
+      mimeType === 'image/png' ? 'png' : mimeType === 'image/webp' ? 'webp' : 'jpg';
+    const fileName =
+      imageAsset.fileName || `food-image-${Date.now()}.${extension}`;
+    if (imageAsset.uri.startsWith('blob:') || imageAsset.uri.startsWith('data:')) {
+      const imageBlob = await fetch(imageAsset.uri).then(response => response.blob());
+      formData.append('image', imageBlob, fileName);
+    } else {
+      formData.append(
+        'image',
+        {uri: imageAsset.uri, name: fileName, type: mimeType} as any,
+      );
+    }
+  }
+
+  return formData;
+};
+
+const sendFoodUpload = (
+  url: string,
+  method: 'POST' | 'PUT',
+  token: string,
+  body: FormData,
+  timeout = 60000,
+): Promise<Response> =>
+  new Promise((resolve, reject) => {
+    const request = new XMLHttpRequest();
+    request.open(method, url);
+    request.timeout = timeout;
+    request.setRequestHeader('Accept', 'application/json');
+    request.setRequestHeader('Authorization', `Bearer ${token}`);
+    request.onload = () => {
+      const result = {
+        ok: request.status >= 200 && request.status < 300,
+        status: request.status,
+        json: async () => JSON.parse(request.responseText || '{}'),
+      } as Response;
+      resolve(result);
+    };
+    request.onerror = () => reject(new Error('Network request failed'));
+    request.ontimeout = () => {
+      const error = new Error('Request timed out. Please try again.');
+      error.name = 'AbortError';
+      reject(error);
+    };
+    request.send(body);
+  });
 
 // =====================================================
 // =====================================================
@@ -353,24 +413,19 @@ export interface CreateFoodData {
 export const createFood = async (
   token: string,
   foodData: CreateFoodData,
+  imageAsset?: ImagePickerAsset,
 ): Promise<Food> => {
   if (!token) {
     throw new Error('Authentication token is missing');
   }
 
   try {
-    const response = await fetchWithTimeout(
+    const body = await createFoodFormData(foodData, imageAsset);
+    const response = await sendFoodUpload(
       `${API_BASE_URL}/foods`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Accept: 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(foodData),
-      },
-      60000,
+      'POST',
+      token,
+      body,
     );
 
     const data = (await response.json()) as FoodResponse;
@@ -400,6 +455,7 @@ export const updateFood = async (
   token: string,
   foodId: string,
   foodData: Partial<CreateFoodData>,
+  imageAsset?: ImagePickerAsset,
 ): Promise<Food> => {
   if (!token) {
     throw new Error('Authentication token is missing');
@@ -410,18 +466,12 @@ export const updateFood = async (
   }
 
   try {
-    const response = await fetchWithTimeout(
+    const body = await createFoodFormData(foodData, imageAsset);
+    const response = await sendFoodUpload(
       `${API_BASE_URL}/foods/${foodId}`,
-      {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          Accept: 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(foodData),
-      },
-      60000,
+      'PUT',
+      token,
+      body,
     );
 
     const data = (await response.json()) as FoodResponse;

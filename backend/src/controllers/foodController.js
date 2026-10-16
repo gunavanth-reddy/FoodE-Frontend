@@ -42,7 +42,6 @@ const createFood = async (req, res) => {
     const {
       name,
       description,
-      image,
       price,
       discountedPrice,
       category,
@@ -50,6 +49,13 @@ const createFood = async (req, res) => {
       foodType,
       isVegetarian,
     } = req.body;
+
+    if (Object.prototype.hasOwnProperty.call(req.body, "image")) {
+      return res.status(400).json({
+        success: false,
+        message: "Food images must be uploaded as an image file",
+      });
+    }
 
     // =================================================
     // VALIDATION
@@ -220,7 +226,7 @@ const createFood = async (req, res) => {
     // CLOUDINARY IMAGE
     // =================================================
 
-    let finalImage = image || "";
+    let finalImage = "";
 
     if (req.file) {
       const uploadedImage =
@@ -388,7 +394,6 @@ const updateFood = async (req, res) => {
     const {
       name,
       description,
-      image,
       price,
       discountedPrice,
       category,
@@ -396,6 +401,13 @@ const updateFood = async (req, res) => {
       foodType,
       isVegetarian,
     } = req.body;
+
+    if (Object.prototype.hasOwnProperty.call(req.body, "image")) {
+      return res.status(400).json({
+        success: false,
+        message: "Food images must be uploaded as an image file",
+      });
+    }
 
     // =================================================
     // NAME
@@ -448,11 +460,6 @@ const updateFood = async (req, res) => {
 
       food.image =
         uploadedImage.url;
-    } else if (image !== undefined) {
-      food.image =
-        typeof image === "string"
-          ? image.trim()
-          : "";
     }
 
     // =================================================
