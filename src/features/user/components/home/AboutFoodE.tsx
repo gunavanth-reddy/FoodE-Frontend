@@ -59,7 +59,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: 8,
     paddingBottom: 8,
-    backgroundColor: '#F7F8FA',
   },
 
   divider: {
