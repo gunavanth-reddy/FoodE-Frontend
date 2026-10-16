@@ -41,9 +41,9 @@ import AsyncImage from '../../../components/images/AsyncImage';
 import {useAuth} from '../../../context/AuthContext';
 
 import {
-  launchImageLibrary,
-  Asset,
-} from 'react-native-image-picker';
+  ImagePickerAsset,
+  launchImageLibraryAsync,
+} from 'expo-image-picker';
 
 import {
   ArrowLeft,
@@ -106,10 +106,10 @@ const RestaurantDetailsScreen: React.FC<Props> = ({
   // ===================================================
 
   const [logo, setLogo] =
-    useState<string | Asset>('');
+    useState<string | ImagePickerAsset>('');
 
   const [coverImage, setCoverImage] =
-    useState<string | Asset>('');
+    useState<string | ImagePickerAsset>('');
 
   // ===================================================
   // CONTACT
@@ -169,22 +169,13 @@ const RestaurantDetailsScreen: React.FC<Props> = ({
   ) => {
     try {
       const result =
-        await launchImageLibrary({
-          mediaType: 'photo',
-          selectionLimit: 1,
+        await launchImageLibraryAsync({
+          mediaTypes: ['images'],
+          allowsMultipleSelection: false,
           quality: 1,
         });
 
-      if (result.didCancel) {
-        return;
-      }
-
-      if (result.errorCode) {
-        Alert.alert(
-          'Image Picker Error',
-          result.errorMessage ||
-            'Unable to select image.',
-        );
+      if (result.canceled) {
         return;
       }
 
@@ -218,7 +209,7 @@ const RestaurantDetailsScreen: React.FC<Props> = ({
   // ===================================================
 
   const getImageUri = (
-    image: string | Asset,
+    image: string | ImagePickerAsset,
   ): string => {
     if (typeof image === 'string') {
       return image;

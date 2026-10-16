@@ -1,5 +1,4 @@
 import React from 'react';
-
 import {
   FlatList,
   Pressable,
@@ -8,15 +7,15 @@ import {
   View,
 } from 'react-native';
 
+import {
+  Clock,
+  Leaf,
+  ArrowRight,
+  ForkKnife,
+} from 'phosphor-react-native';
+
 import FoodCard from './FoodCard';
-
 import {Food} from '../../../../restaurant/services/foodService';
-
-import {useFavorites} from '../../../../../context/FavoritesContext';
-
-// =====================================================
-// TYPES
-// =====================================================
 
 interface FoodListProps {
   title: string;
@@ -27,10 +26,6 @@ interface FoodListProps {
   onAddPress?: (food: Food) => void;
 }
 
-// =====================================================
-// FOOD LIST
-// =====================================================
-
 const FoodList: React.FC<FoodListProps> = ({
   title,
   data,
@@ -39,35 +34,56 @@ const FoodList: React.FC<FoodListProps> = ({
   onFoodPress,
   onAddPress,
 }) => {
-  const {
-    isFoodFavorite,
-    toggleFoodFavorite,
-  } = useFavorites();
-
-  // ===================================================
-  // EMPTY DATA
-  // ===================================================
-
   if (!data || data.length === 0) {
     return null;
   }
 
-  // ===================================================
-  // RENDER
-  // ===================================================
+  const getSectionIcon = () => {
+    const normalizedTitle = title.toLowerCase();
+
+    if (normalizedTitle.includes('20 minute') || normalizedTitle.includes('under 20')) {
+      return <Clock size={17} color="#FF7A00" weight="fill" />;
+    }
+
+    if (normalizedTitle.includes('non-veg') || normalizedTitle.includes('non veg')) {
+      return <ForkKnife size={17} color="#E53935" weight="fill" />;
+    }
+
+    if (normalizedTitle.includes('veg')) {
+      return <Leaf size={17} color="#269B58" weight="fill" />;
+    }
+
+    if (normalizedTitle.includes('restaurant')) {
+      return <ForkKnife size={17} color="#FF7A00" weight="bold" />;
+    }
+
+    return <ForkKnife size={17} color={accentColor} weight="bold" />;
+  };
+
+  const getSectionColor = () => {
+    const normalizedTitle = title.toLowerCase();
+
+    if (normalizedTitle.includes('non-veg') || normalizedTitle.includes('non veg')) {
+      return '#E53935';
+    }
+
+    if (normalizedTitle.includes('veg')) {
+      return '#269B58';
+    }
+
+    return accentColor;
+  };
+
+  const sectionColor = getSectionColor();
 
   return (
     <View style={styles.container}>
-      {/* HEADER */}
-
+      {/* SECTION HEADER */}
       <View style={styles.header}>
         <View style={styles.leftSection}>
-          <View
-            style={[
-              styles.accentBar,
-              {backgroundColor: '#FF7A00'},
-            ]}
-          />
+          <View style={styles.iconContainer}>
+            {getSectionIcon()}
+          </View>
 
           <Text
             style={styles.title}
@@ -84,15 +100,20 @@ const FoodList: React.FC<FoodListProps> = ({
               styles.seeAllButton,
               pressed && styles.pressed,
             ]}>
-            <Text style={styles.seeAll}>
-              See All
+            <Text style={[styles.seeAll, {color: sectionColor}]}>
+              See all
             </Text>
+
+            <ArrowRight
+              size={14}
+              color={sectionColor}
+              weight="bold"
+            />
           </Pressable>
         )}
       </View>
 
       {/* FOOD CARDS */}
-
       <FlatList
         horizontal
         data={data}
@@ -102,9 +123,6 @@ const FoodList: React.FC<FoodListProps> = ({
             food={item}
             onPress={() => onFoodPress?.(item)}
             onAdd={onAddPress ? () => onAddPress(item) : undefined}
-            isFavorite={isFoodFavorite(item._id)}
-            onFavoritePress={() => toggleFoodFavorite(item)}
-            showFavorite
           />
         )}
         showsHorizontalScrollIndicator={false}
@@ -121,13 +139,9 @@ const FoodList: React.FC<FoodListProps> = ({
 
 export default FoodList;
 
-// =====================================================
-// STYLES
-// =====================================================
-
 const styles = StyleSheet.create({
   container: {
-    marginTop: 18,
+    marginTop: 13,
   },
 
   header: {
@@ -135,7 +149,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 16,
-    marginBottom: 10,
+    marginBottom: 7,
   },
 
   leftSection: {
@@ -145,29 +159,33 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
 
-  accentBar: {
-    width: 4,
-    height: 19,
-    borderRadius: 20,
-    marginRight: 9,
+  iconContainer: {
+    width: 23,
+    height: 23,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 7,
   },
 
   title: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#1F2937',
-    letterSpacing: 0.2,
+    flexShrink: 1,
+    fontSize: 15,
+    fontWeight: '800',
+    color: '#202127',
+    letterSpacing: -0.2,
   },
 
   seeAllButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
     paddingVertical: 4,
-    paddingHorizontal: 2,
+    paddingLeft: 5,
   },
 
   seeAll: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#FF7A00',
+    fontSize: 11,
+    fontWeight: '700',
   },
 
   pressed: {
@@ -177,6 +195,6 @@ const styles = StyleSheet.create({
   list: {
     paddingLeft: 16,
     paddingRight: 8,
-    paddingBottom: 6,
+    paddingBottom: 4,
   },
 });

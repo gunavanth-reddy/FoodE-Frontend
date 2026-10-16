@@ -1,5 +1,5 @@
 import {SafeAreaView} from 'react-native-safe-area-context';
-import React, {useEffect, useState} from 'react';
+import React, {useCallback, useEffect, useState} from 'react';
 import {
   ActivityIndicator,
   ScrollView,
@@ -80,96 +80,107 @@ const CategoryFoodsScreen = () => {
   // DELIVERY TIME HELPER
   // ===================================================
 
-  const getDeliveryMinutes = (food: Food): number | null => {
-    const item = food as any;
+  const getDeliveryMinutes = useCallback(
+    (food: Food): number | null => {
+      const item = food as any;
 
-    const possibleValues = [
-      item.deliveryTime,
-      item.deliveryMinutes,
-      item.restaurant?.deliveryTime,
-    ];
+      const possibleValues = [
+        item.deliveryTime,
+        item.deliveryMinutes,
+        item.restaurant?.deliveryTime,
+      ];
 
-    for (const value of possibleValues) {
-      if (typeof value === 'number') {
-        return value;
-      }
+      for (const value of possibleValues) {
+        if (typeof value === 'number') {
+          return value;
+        }
 
-      if (typeof value === 'string') {
-        const numbers = value.match(/\d+/g);
+        if (typeof value === 'string') {
+          const numbers = value.match(/\d+/g);
 
-        if (numbers && numbers.length > 0) {
-          const parsed = Number(numbers[0]);
+          if (numbers && numbers.length > 0) {
+            const parsed = Number(numbers[0]);
 
-          if (Number.isFinite(parsed)) {
-            return parsed;
+            if (Number.isFinite(parsed)) {
+              return parsed;
+            }
+          }
+        }
+
+        if (
+          typeof value === 'object' &&
+          value !== null
+        ) {
+          const min = value.min;
+
+          if (
+            typeof min === 'number' &&
+            Number.isFinite(min)
+          ) {
+            return min;
           }
         }
       }
 
-      if (
-        typeof value === 'object' &&
-        value !== null
-      ) {
-        const min = value.min;
-
-        if (
-          typeof min === 'number' &&
-          Number.isFinite(min)
-        ) {
-          return min;
-        }
-      }
-    }
-
-    return null;
-  };
+      return null;
+    },
+    [],
+  );
 
   // ===================================================
   // FILTER FOODS
   // ===================================================
 
-  const filterFoods = (data: Food[]): Food[] => {
-    let result = data.filter(
-      food => food.isAvailable === true,
-    );
+  const filterFoods = useCallback(
+    (data: Food[]): Food[] => {
+      let result = data.filter(
+        food => food.isAvailable === true,
+      );
 
     // -----------------------------
     // UNDER 20 MINUTES
     // -----------------------------
 
-    if (isUnder20) {
-      result = result.filter(food => {
-        const minutes = getDeliveryMinutes(food);
+      if (isUnder20) {
+        result = result.filter(food => {
+          const minutes = getDeliveryMinutes(food);
 
-        return (
-          minutes !== null &&
-          minutes < 20
-        );
-      });
-    }
+          return (
+            minutes !== null &&
+            minutes < 20
+          );
+        });
+      }
 
     // -----------------------------
     // VEG
     // -----------------------------
 
-    if (isVeg) {
-      result = result.filter(
-        food => food.isVegetarian === true,
-      );
-    }
+      if (isVeg) {
+        result = result.filter(
+          food => food.isVegetarian === true,
+        );
+      }
 
     // -----------------------------
     // NON-VEG
     // -----------------------------
 
-    if (isNonVeg) {
-      result = result.filter(
-        food => food.isVegetarian !== true,
-      );
-    }
+      if (isNonVeg) {
+        result = result.filter(
+          food => food.isVegetarian !== true,
+        );
+      }
 
-    return result;
-  };
+      return result;
+    },
+    [
+      getDeliveryMinutes,
+      isNonVeg,
+      isUnder20,
+      isVeg,
+    ],
+  );
 
   // ===================================================
   // FETCH FOODS
@@ -225,7 +236,14 @@ const CategoryFoodsScreen = () => {
     };
 
     loadFoods();
-  }, [categoryName]);
+  }, [
+    categoryName,
+    filterFoods,
+    isAll,
+    isNonVeg,
+    isUnder20,
+    isVeg,
+  ]);
 
   // ===================================================
   // FOOD PRESS

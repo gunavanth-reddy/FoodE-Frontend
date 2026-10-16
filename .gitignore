@@ -38,6 +38,7 @@ local.properties
 
 # node.js
 #
+venv/
 node_modules/
 npm-debug.log
 yarn-error.log
@@ -77,3 +78,6 @@ yarn-error.log
 
 # Others
 dist/
+/android/
+/ios/
+GoogleService-Info.plist

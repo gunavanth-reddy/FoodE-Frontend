@@ -1,5 +1,4 @@
 import React, {useState} from 'react';
-
 import {
   Alert,
   Pressable,
@@ -8,11 +7,7 @@ import {
   View,
 } from 'react-native';
 
-import {
-  Clock,
-  Heart,
-  Star,
-} from 'phosphor-react-native';
+import {Clock, Heart} from 'phosphor-react-native';
 
 import {Food} from '../../../../restaurant/services/foodService';
 import {useCart} from '../../../../../context/CartContext';
@@ -22,20 +17,24 @@ interface FoodCardProps {
   food: Food;
   onPress?: () => void;
   onAdd?: () => void;
-  showFavorite?: boolean;
+  showAddButton?: boolean;
   isFavorite?: boolean;
   onFavoritePress?: () => void;
-  showAddButton?: boolean;
+  showFavorite?: boolean;
 }
+
+const ORANGE = '#FF6B00';
+const DARK_ORANGE = '#E85D04';
+const LIGHT_ORANGE = '#FFF7F0';
 
 const FoodCard: React.FC<FoodCardProps> = ({
   food,
   onPress,
   onAdd,
-  showFavorite = true,
+  showAddButton = true,
   isFavorite = false,
   onFavoritePress,
-  showAddButton = true,
+  showFavorite = false,
 }) => {
   const {addItem, loading: cartLoading} = useCart();
   const [adding, setAdding] = useState(false);
@@ -47,16 +46,17 @@ const FoodCard: React.FC<FoodCardProps> = ({
     originalPrice?: number | string | null;
     basePrice?: number | string | null;
     sellingPrice?: number | string | null;
-    reviewCount?: number | string | null;
-    totalReviews?: number | string | null;
-    reviewsCount?: number | string | null;
+    preparationTime?: number | string | null;
+    foodType?: string;
+    isVegetarian?: boolean;
   };
 
   const toValidPrice = (value: unknown): number => {
-    if (value === null || value === undefined || value === '') return 0;
+    if (value === null || value === undefined || value === '') {
+      return 0;
+    }
 
     const parsed = Number(value);
-
     return Number.isFinite(parsed) && parsed > 0 ? parsed : 0;
   };
 
@@ -75,48 +75,33 @@ const FoodCard: React.FC<FoodCardProps> = ({
 
   const displayPrice = hasDiscount ? discountedPrice : originalPrice;
 
-  // Prefer the explicit foodType so a stale isVegetarian=true
-  // cannot incorrectly display a Non-Veg item as Veg.
+  const foodType = foodRecord.foodType?.toLowerCase();
+
   const isVeg =
-    food.foodType === 'veg'
+    foodType === 'veg'
       ? true
-      : food.foodType === 'non-veg'
+      : foodType === 'non-veg'
         ? false
-        : food.isVegetarian === true;
+        : foodRecord.isVegetarian === true;
 
-  const ratingValue = Number(food.rating);
-  const hasRating = Number.isFinite(ratingValue) && ratingValue > 0;
-  const rating = hasRating ? ratingValue.toFixed(1) : '';
-
-  const reviewCount = Number(
-    foodRecord.reviewCount ??
-      foodRecord.totalReviews ??
-      foodRecord.reviewsCount ??
-      0,
-  );
-
-  const formattedReviews =
-    reviewCount >= 1000
-      ? `${(reviewCount / 1000)
-          .toFixed(reviewCount >= 10000 ? 0 : 1)
-          .replace(/\.0$/, '')}k`
-      : `${Math.max(0, reviewCount)}`;
+  const preparationTime = foodRecord.preparationTime;
 
   const handleAdd = async () => {
-    // On the Home screen, ADD opens the item's restaurant so the user
-    // can choose options and add it from the restaurant menu.
     if (onAdd) {
       onAdd();
       return;
     }
 
-    if (adding || cartLoading) return;
+    if (adding || cartLoading) {
+      return;
+    }
 
     try {
       setAdding(true);
       await addItem(food, 1);
     } catch (error) {
       console.log('FoodCard add error:', error);
+
       Alert.alert(
         'Unable to Add',
         'Something went wrong while adding this food to your cart.',
@@ -126,8 +111,6 @@ const FoodCard: React.FC<FoodCardProps> = ({
     }
   };
 
-  const handleFavorite = () => onFavoritePress?.();
-
   return (
     <Pressable
       style={({pressed}) => [
@@ -136,30 +119,47 @@ const FoodCard: React.FC<FoodCardProps> = ({
       ]}
       onPress={onPress}
       disabled={!onPress}>
-
-      {/* Image with clean floating badges */}
+      {/* Food Image */}
       <View style={styles.imageContainer}>
-
         <AsyncImage
           source={hasImage ? food.image : undefined}
           style={styles.image}
           kind="food"
         />
 
-        {!!food.preparationTime && (
-          <View style={styles.timeBadge}>
-            <Clock
-              size={10}
-              color="#FFFFFF"
-              weight="fill"
+        {showFavorite && onFavoritePress && (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={
+              isFavorite
+                ? 'Remove food from favorites'
+                : 'Add food to favorites'
+            }
+            style={styles.favoriteButton}
+            onPress={event => {
+              event.stopPropagation();
+              onFavoritePress();
+            }}>
+            <Heart
+              size={17}
+              color={isFavorite ? ORANGE : '#4A4039'}
+              weight={isFavorite ? 'fill' : 'regular'}
             />
+          </Pressable>
+        )}
+
+        {/* Preparation Time */}
+        {!!preparationTime && (
+          <View style={styles.timeBadge}>
+            <Clock size={12} color="#FFFFFF" weight="fill" />
 
             <Text style={styles.timeText}>
-              {food.preparationTime} min
+              {preparationTime} min
             </Text>
           </View>
         )}
 
+        {/* Veg / Non-Veg Indicator */}
         <View
           style={[
             styles.foodTypeBadge,
@@ -167,7 +167,6 @@ const FoodCard: React.FC<FoodCardProps> = ({
               borderColor: isVeg ? '#16A34A' : '#DC2626',
             },
           ]}>
-
           <View
             style={[
               styles.foodTypeDot,
@@ -176,70 +175,17 @@ const FoodCard: React.FC<FoodCardProps> = ({
               },
             ]}
           />
-
         </View>
-
-        {showFavorite && (
-          <Pressable
-            hitSlop={8}
-            style={({pressed}) => [
-              styles.favoriteButton,
-              pressed && styles.buttonPressed,
-            ]}
-            onPress={handleFavorite}
-            disabled={!onFavoritePress}>
-
-            <Heart
-              size={14}
-              color={isFavorite ? '#EF4444' : '#343A40'}
-              weight={isFavorite ? 'fill' : 'regular'}
-            />
-
-          </Pressable>
-        )}
-
       </View>
 
-      {/* Details */}
+      {/* Food Details */}
       <View style={styles.content}>
-
-        <Text
-          numberOfLines={1}
-          style={styles.name}>
+        <Text numberOfLines={1} style={styles.name}>
           {food.name}
         </Text>
 
-        {(hasRating || reviewCount > 0) && (
-          <View style={styles.ratingRow}>
-
-            {hasRating && (
-              <>
-                <Star
-                  size={11}
-                  color="#F5B301"
-                  weight="fill"
-                />
-
-                <Text style={styles.ratingText}>
-                  {rating}
-                </Text>
-              </>
-            )}
-
-            {reviewCount > 0 && (
-              <Text style={styles.reviewText}>
-                ({formattedReviews}{' '}
-                {reviewCount === 1 ? 'Review' : 'Reviews'})
-              </Text>
-            )}
-
-          </View>
-        )}
-
         <View style={styles.bottomRow}>
-
           <View style={styles.priceContainer}>
-
             <Text style={styles.price}>
               ₹{displayPrice || '—'}
             </Text>
@@ -249,7 +195,6 @@ const FoodCard: React.FC<FoodCardProps> = ({
                 ₹{originalPrice}
               </Text>
             )}
-
           </View>
 
           {showAddButton && (
@@ -266,18 +211,13 @@ const FoodCard: React.FC<FoodCardProps> = ({
                 handleAdd();
               }}
               disabled={!onAdd && (adding || cartLoading)}>
-
               <Text style={styles.addText}>
                 {adding ? '...' : 'ADD +'}
               </Text>
-
             </Pressable>
           )}
-
         </View>
-
       </View>
-
     </Pressable>
   );
 };
@@ -288,30 +228,44 @@ const styles = StyleSheet.create({
   card: {
     width: 154,
     marginRight: 10,
-    backgroundColor: '#FFF8F1',
-    borderRadius: 14,
+    backgroundColor: LIGHT_ORANGE,
+    borderRadius: 15,
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: '#FFD7B5',
-    shadowColor: '#111827',
-    shadowOpacity: 0.09,
-    shadowRadius: 8,
+    borderColor: '#FFDCC2',
+    shadowColor: DARK_ORANGE,
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
     shadowOffset: {
       width: 0,
       height: 3,
     },
-    elevation: 3,
+    elevation: 2,
   },
 
   cardPressed: {
-    opacity: 0.94,
+    opacity: 0.96,
     transform: [{scale: 0.985}],
   },
 
   imageContainer: {
-    height: 94,
-    position: 'relative',
-    backgroundColor: '#F3F4F6',
+    width: '100%',
+    height: 112,
+    backgroundColor: '#FFEBDD',
+    overflow: 'hidden',
+  },
+
+  favoriteButton: {
+    position: 'absolute',
+    top: 7,
+    left: 7,
+    width: 29,
+    height: 29,
+    borderRadius: 15,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FFFFFF',
+    zIndex: 2,
   },
 
   image: {
@@ -321,137 +275,95 @@ const styles = StyleSheet.create({
 
   timeBadge: {
     position: 'absolute',
-    top: 8,
-    left: 8,
+    top: 7,
+    left: 7,
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 7,
     paddingVertical: 5,
-    borderRadius: 20,
-    backgroundColor: 'rgba(20, 24, 28, 0.78)',
+    borderRadius: 12,
+    backgroundColor: 'rgba(45, 32, 23, 0.84)',
   },
 
   timeText: {
     color: '#FFFFFF',
-    fontSize: 10,
+    fontSize: 9,
     fontWeight: '700',
     marginLeft: 4,
   },
 
   foodTypeBadge: {
     position: 'absolute',
-    top: 8,
-    right: 47,
-    width: 23,
-    height: 23,
+    top: 7,
+    right: 7,
+    width: 21,
+    height: 21,
     borderRadius: 6,
-    backgroundColor: '#FFFCF8',
-    borderWidth: 1.4,
-    justifyContent: 'center',
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1.5,
     alignItems: 'center',
+    justifyContent: 'center',
   },
 
   foodTypeDot: {
-    width: 10,
-    height: 10,
+    width: 9,
+    height: 9,
     borderRadius: 5,
-  },
-
-  favoriteButton: {
-    position: 'absolute',
-    top: 7,
-    right: 8,
-    width: 29,
-    height: 29,
-    borderRadius: 15,
-    backgroundColor: 'rgba(255,255,255,0.96)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    elevation: 2,
-    shadowColor: '#000000',
-    shadowOpacity: 0.12,
-    shadowRadius: 3,
-    shadowOffset: {
-      width: 0,
-      height: 1,
-    },
-  },
-
-  buttonPressed: {
-    opacity: 0.7,
   },
 
   content: {
     paddingHorizontal: 9,
-    paddingTop: 7,
-    paddingBottom: 8,
+    paddingTop: 8,
+    paddingBottom: 9,
+    backgroundColor: LIGHT_ORANGE,
   },
 
   name: {
-    color: '#2A211B',
-    fontSize: 12.5,
+    color: '#3D281B',
+    fontSize: 12,
     fontWeight: '800',
     letterSpacing: 0.1,
   },
 
-  ratingRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 4,
-  },
-
-  ratingText: {
-    marginLeft: 4,
-    color: '#343A40',
-    fontSize: 10.5,
-    fontWeight: '700',
-  },
-
-  reviewText: {
-    marginLeft: 3,
-    color: '#858B94',
-    fontSize: 10,
-    flexShrink: 1,
-  },
-
   bottomRow: {
-    marginTop: 9,
+    marginTop: 8,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    gap: 5,
   },
 
   priceContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     flexShrink: 1,
+    gap: 3,
   },
 
   price: {
-    color: '#171A1F',
-    fontSize: 15,
+    color: DARK_ORANGE,
+    fontSize: 14,
     fontWeight: '800',
   },
 
   oldPrice: {
-    marginLeft: 4,
-    color: '#9CA3AF',
-    fontSize: 10,
+    color: '#AD9382',
+    fontSize: 9,
     textDecorationLine: 'line-through',
   },
 
   addButton: {
-    minWidth: 52,
-    paddingHorizontal: 9,
+    minWidth: 51,
+    paddingHorizontal: 8,
     paddingVertical: 7,
     borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#FF7A00',
+    backgroundColor: ORANGE,
   },
 
   addButtonPressed: {
-    opacity: 0.82,
+    backgroundColor: DARK_ORANGE,
     transform: [{scale: 0.97}],
   },
 

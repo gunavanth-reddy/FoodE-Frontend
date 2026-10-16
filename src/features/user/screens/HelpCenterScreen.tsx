@@ -9,7 +9,6 @@ import {
   View,
   TouchableOpacity,
   useWindowDimensions,
-  Platform,
 } from 'react-native';
 
 import {

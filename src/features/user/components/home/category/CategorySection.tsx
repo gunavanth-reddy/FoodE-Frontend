@@ -1,13 +1,23 @@
 import React, {useState} from 'react';
-import {FlatList, StyleSheet, Text, View} from 'react-native';
+import {
+  FlatList,
+  StyleSheet,
+  Text,
+  View,
+  Pressable,
+} from 'react-native';
 import {ArrowRight, Sparkle} from 'phosphor-react-native';
 import {useNavigation} from '@react-navigation/native';
 import {NativeStackNavigationProp} from '@react-navigation/native-stack';
+
 import {RootStackParamList} from '../../../../../navigation/AppNavigator';
 import CategoryCard from './CategoryCard';
 import {categories} from './categoryData';
 
-type CategoryNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Main'>;
+type CategoryNavigationProp = NativeStackNavigationProp<
+  RootStackParamList,
+  'Main'
+>;
 
 const CategorySection: React.FC = () => {
   const navigation = useNavigation<CategoryNavigationProp>();
@@ -15,6 +25,7 @@ const CategorySection: React.FC = () => {
 
   const handleCategoryPress = (item: (typeof categories)[number]) => {
     setSelected(item.id);
+
     navigation.navigate('CategoryFoods', {
       categoryName: item.id === 'all' ? 'All' : item.name,
     });
@@ -22,21 +33,36 @@ const CategorySection: React.FC = () => {
 
   return (
     <View style={styles.container}>
+      {/* Section heading */}
       <View style={styles.headingRow}>
         <View style={styles.headingLeft}>
           <View style={styles.headingIcon}>
-            <Sparkle size={15} color="#FF7A00" weight="fill" />
+            <Sparkle size={17} color="#FF6B00" weight="fill" />
           </View>
-          <View>
+
+          <View style={styles.headingTextContainer}>
             <Text style={styles.title}>Explore categories</Text>
-            <Text style={styles.subtitle}>Pick a mood, find your food</Text>
+            <Text style={styles.subtitle}>
+              Find something delicious today
+            </Text>
           </View>
         </View>
-        <View style={styles.scrollHint}>
-          <ArrowRight size={15} color="#8A8F98" weight="bold" />
-        </View>
+
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Scroll through food categories"
+          style={({pressed}) => [
+            styles.scrollHint,
+            pressed && styles.scrollHintPressed,
+          ]}
+          onPress={() => {
+            // Category navigation remains handled by individual cards.
+          }}>
+          <ArrowRight size={16} color="#FF6B00" weight="bold" />
+        </Pressable>
       </View>
 
+      {/* Horizontally scrolling categories */}
       <FlatList
         horizontal
         data={categories}
@@ -52,6 +78,9 @@ const CategorySection: React.FC = () => {
         contentContainerStyle={styles.list}
         decelerationRate="fast"
         bounces={false}
+        overScrollMode="never"
+        initialNumToRender={6}
+        removeClippedSubviews={false}
       />
     </View>
   );
@@ -61,52 +90,74 @@ export default CategorySection;
 
 const styles = StyleSheet.create({
   container: {
-    marginTop: 4,
-    marginBottom: 7,
+    marginTop: 8,
+    marginBottom: 10,
   },
+
   headingRow: {
     paddingHorizontal: 20,
-    marginBottom: 11,
+    marginBottom: 15,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
   },
+
   headingLeft: {
     flexDirection: 'row',
     alignItems: 'center',
   },
+
   headingIcon: {
-    width: 34,
-    height: 34,
-    borderRadius: 12,
-    backgroundColor: '#FFF3E8',
+    width: 38,
+    height: 38,
+    borderRadius: 14,
+    backgroundColor: '#FFF0E4',
+    borderWidth: 1,
+    borderColor: '#FFE2CD',
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 9,
+    marginRight: 11,
   },
+
+  headingTextContainer: {
+    justifyContent: 'center',
+  },
+
   title: {
-    fontSize: 16,
-    fontWeight: '900',
-    color: '#17171B',
+    fontSize: 17,
+    fontWeight: '800',
+    color: '#211B17',
+    letterSpacing: -0.45,
   },
+
   subtitle: {
-    fontSize: 10,
-    fontWeight: '600',
-    color: '#8A8F98',
-    marginTop: 2,
+    fontSize: 11,
+    fontWeight: '500',
+    color: '#96908A',
+    marginTop: 3,
+    letterSpacing: 0.1,
   },
+
   scrollHint: {
-    width: 28,
-    height: 28,
-    borderRadius: 10,
-    backgroundColor: '#F4F5F6',
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#FFF2E8',
+    borderWidth: 1,
+    borderColor: '#FFE4D0',
     alignItems: 'center',
     justifyContent: 'center',
   },
+
+  scrollHintPressed: {
+    transform: [{scale: 0.92}],
+    opacity: 0.8,
+  },
+
   list: {
     paddingHorizontal: 20,
     paddingRight: 24,
-    paddingTop: 1,
-    paddingBottom: 7,
+    paddingTop: 2,
+    paddingBottom: 10,
   },
 });

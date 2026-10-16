@@ -1,5 +1,5 @@
 import React from 'react';
-import {ChefHat, CheckCircle} from 'phosphor-react-native';
+import {ChefHat} from 'phosphor-react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {
   Animated,

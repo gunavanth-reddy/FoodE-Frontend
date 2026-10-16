@@ -8,7 +8,6 @@ import {
   Text,
   TouchableOpacity,
   View,
-  Platform,
   useWindowDimensions,
 } from 'react-native';
 

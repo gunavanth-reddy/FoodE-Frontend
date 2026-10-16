@@ -496,11 +496,6 @@ const HomeScreen: React.FC = () => {
       <StatusBar backgroundColor="#FF7A00" barStyle="light-content" hidden={false} translucent={false} />
 
       <View style={styles.body}>
-        {/* Static app bar: remains visible while page content scrolls. */}
-        <View style={styles.headerContainer}>
-          <Header />
-        </View>
-
         <ScrollView
           showsVerticalScrollIndicator={false}
           bounces
@@ -515,6 +510,11 @@ const HomeScreen: React.FC = () => {
               tintColor="#F47721"
             />
           }>
+
+          {/* The brand/location header scrolls naturally with the feed. */}
+          <View style={styles.headerContainer}>
+            <Header />
+          </View>
 
           {/* Search */}
           <View style={styles.searchContainer}>
@@ -722,28 +722,31 @@ export default HomeScreen;
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#F47721',
+    backgroundColor: '#FFF8F2',
   },
 
   body: {
     flex: 1,
-    backgroundColor: '#F7F8FA',
+    backgroundColor: '#FFF9F4',
   },
 
   scrollContent: {
-    paddingBottom: 12,
+    paddingBottom: 28,
   },
 
   headerContainer: {
     width: '100%',
     backgroundColor: '#F47721',
-    zIndex: 1,
+    borderBottomLeftRadius: 24,
+    borderBottomRightRadius: 24,
+    overflow: 'hidden',
+    marginBottom: 10,
   },
 
   searchContainer: {
-    backgroundColor: '#F7F8FA',
+    backgroundColor: '#FFF9F4',
     paddingTop: 2,
-    paddingBottom: 4,
+    paddingBottom: 10,
   },
 
   foodSectionWrapper: {

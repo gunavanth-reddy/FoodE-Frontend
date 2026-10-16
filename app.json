@@ -3,13 +3,51 @@
     "name": "FoodE",
     "slug": "foode",
     "version": "0.0.1",
+    "orientation": "portrait",
+    "icon": "./foode-round.png",
+    "ios": {
+      "bundleIdentifier": "com.foode",
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSAppTransportSecurity": {
+          "NSAllowsArbitraryLoads": false,
+          "NSAllowsLocalNetworking": true
+        }
+      }
+    },
+    "android": {
+      "package": "com.foode",
+      "googleServicesFile": "./google-services.json",
+      "permissions": [
+        "android.permission.POST_NOTIFICATIONS"
+      ],
+      "adaptiveIcon": {
+        "foregroundImage": "./foode-round.png",
+        "backgroundColor": "#FFFFFF"
+      }
+    },
     "web": {
       "bundler": "metro",
       "output": "single",
       "favicon": "./foode-round.png"
     },
     "plugins": [
-      "expo-image"
+      "expo-dev-client",
+      "@react-native-firebase/app",
+      "@react-native-firebase/messaging",
+      "expo-image",
+      "expo-image-picker",
+      "react-native-video",
+      "@react-native-vector-icons/ionicons",
+      [
+        "expo-build-properties",
+        {
+          "ios": {
+            "useFrameworks": "dynamic"
+          }
+        }
+      ],
+      "./plugins/with-immersive-android"
     ]
   }
 }

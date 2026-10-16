@@ -8,7 +8,6 @@ import {createNativeStackNavigator} from '@react-navigation/native-stack';
 import {Alert as NativeAlert} from 'react-native';
 
 import FoodEAlertHost, {FoodEAlert} from '../utils/FoodEAlert';
-import {useAuth} from '../context/AuthContext';
 import {UserOrder} from '../features/user/services/orderService';
 
 // Auth / Intro
@@ -91,7 +90,9 @@ export type RootStackParamList = {
   AdminBroadcast: undefined;
 
   // Restaurant and category
-  RestaurantDetails: {restaurant: any};
+  RestaurantDetails:
+    | {restaurant: any}
+    | {restaurantId: string};
   CategoryFoods: {categoryName: string};
 
   // Cart and checkout
@@ -128,8 +129,6 @@ export const navigationRef =
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
 const AppNavigator = () => {
-  const {user, loading} = useAuth();
-
   return (
     <React.Fragment>
       <NavigationContainer ref={navigationRef}>

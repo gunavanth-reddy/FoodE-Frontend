@@ -1,22 +1,15 @@
-import React from 'react';
-
-import {SafeAreaView} from 'react-native-safe-area-context';
-
+import React, {useCallback} from 'react';
 import {
   ScrollView,
   StatusBar,
   StyleSheet,
   View,
 } from 'react-native';
-
-import AppScreen from '../../../components/layout/AppScreen';
+import {SafeAreaView} from 'react-native-safe-area-context';
 
 import {useAuth} from '../../../context/AuthContext';
 
-import {
-  COLORS,
-  SPACING,
-} from '../components/profile/styles';
+import {SPACING} from '../components/profile/styles';
 
 import ProfileHeader from '../components/profile/components/header';
 
@@ -26,9 +19,7 @@ import {
 } from '../components/profile/components/profileCard';
 
 import {QuickActionGrid} from '../components/profile/components/quickActions';
-
 import {MenuSection} from '../components/profile/components/menu';
-
 import Footer from '../components/profile/components/footer';
 
 import {
@@ -37,38 +28,48 @@ import {
   ABOUT_MENU,
 } from '../components/profile/constants';
 
-const ProfileScreen = ({navigation}: any) => {
-  const {
-    isLoggedIn,
-    user,
-    logout,
-  } = useAuth();
+const BACKGROUND = '#F7F8FA';
 
-  const handleLogout = async () => {
+const ProfileScreen = ({navigation}: any) => {
+  const {isLoggedIn, user, logout} = useAuth();
+
+  const handleLogout = useCallback(async () => {
     await logout();
-  };
+  }, [logout]);
+
+  const handleLogin = useCallback(() => {
+    navigation.navigate('Login');
+  }, [navigation]);
 
   return (
-    <SafeAreaView style={{flex: 1, backgroundColor: COLORS.background}} edges={['top', 'left', 'right']}>
-      <StatusBar backgroundColor="#FFFFFF" barStyle="dark-content" hidden={false} translucent={false} />
+    <SafeAreaView
+      style={styles.safeArea}
+      edges={['top', 'left', 'right']}>
+      <StatusBar
+        backgroundColor={BACKGROUND}
+        barStyle="dark-content"
+        hidden={false}
+        translucent={false}
+      />
 
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.container}
         showsVerticalScrollIndicator={false}
-        bounces={true}>
+        bounces={false}
+        overScrollMode="never">
 
-        {/* Profile Header */}
-        <ProfileHeader />
+        {/* Header */}
+        <View style={styles.header}>
+          <ProfileHeader />
+        </View>
 
-        {/* User Profile */}
+        {/* Profile Card */}
         <View style={styles.profileCard}>
           {isLoggedIn ? (
             <UserProfileCard user={user} />
           ) : (
-            <GuestProfileCard
-              onLoginPress={() => navigation.navigate('Login')}
-            />
+            <GuestProfileCard onLoginPress={handleLogin} />
           )}
         </View>
 
@@ -80,7 +81,7 @@ const ProfileScreen = ({navigation}: any) => {
           />
         </View>
 
-        {/* Account Section */}
+        {/* Account */}
         <View style={styles.section}>
           <MenuSection
             title="Account"
@@ -88,7 +89,7 @@ const ProfileScreen = ({navigation}: any) => {
           />
         </View>
 
-        {/* Support Section */}
+        {/* Support */}
         <View style={styles.section}>
           <MenuSection
             title="Support"
@@ -96,7 +97,7 @@ const ProfileScreen = ({navigation}: any) => {
           />
         </View>
 
-        {/* About Section */}
+        {/* About */}
         <View style={styles.section}>
           <MenuSection
             title="About"
@@ -120,8 +121,14 @@ const ProfileScreen = ({navigation}: any) => {
 export default ProfileScreen;
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: BACKGROUND,
+  },
+
   scrollView: {
     flex: 1,
+    backgroundColor: BACKGROUND,
   },
 
   container: {
@@ -129,18 +136,28 @@ const styles = StyleSheet.create({
     paddingHorizontal: SPACING.screenHorizontal,
     paddingTop: SPACING.xs,
     paddingBottom: SPACING.lg,
-    backgroundColor: '#F7F8FA',
+    backgroundColor: BACKGROUND,
+  },
+
+  header: {
+    marginBottom: SPACING.xs,
   },
 
   profileCard: {
-    marginTop: SPACING.sm,
+    marginTop: SPACING.xs,
+    borderRadius: 20,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: '#F0E5DD',
+    backgroundColor: '#FFFFFF',
   },
 
   section: {
-    marginTop: SPACING.sm,
+    marginTop: SPACING.md,
   },
 
   footer: {
-    marginTop: SPACING.sm,
+    marginTop: SPACING.md,
+    paddingTop: SPACING.xs,
   },
 });

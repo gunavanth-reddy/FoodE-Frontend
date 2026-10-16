@@ -1,4 +1,5 @@
-import React from 'react';
+import React, {memo, useCallback} from 'react';
+
 import {
   StyleSheet,
   Text,
@@ -21,6 +22,20 @@ interface MenuItemCardProps {
   onPress?: (item: MenuItem) => void;
 }
 
+const COLORS = {
+  orange: '#FF7A00',
+  orangeDark: '#E96800',
+  orangeLight: '#FFF1E5',
+  background: '#FFFFFF',
+  text: '#24201D',
+  secondary: '#77716B',
+  muted: '#A39B94',
+  border: '#F0E9E3',
+  green: '#168548',
+  red: '#C62828',
+  white: '#FFFFFF',
+};
+
 const MenuItemCard: React.FC<MenuItemCardProps> = ({
   item,
   onPress,
@@ -34,21 +49,38 @@ const MenuItemCard: React.FC<MenuItemCardProps> = ({
 
   const quantity = getQuantity(item.id);
 
+  const handleAdd = useCallback(() => {
+    addItem(item);
+  }, [addItem, item]);
+
+  const handleIncrease = useCallback(() => {
+    increase(item.id);
+  }, [increase, item.id]);
+
+  const handleDecrease = useCallback(() => {
+    decrease(item.id);
+  }, [decrease, item.id]);
+
+  const handleCardPress = useCallback(() => {
+    onPress?.(item);
+  }, [onPress, item]);
+
   return (
     <TouchableOpacity
-      activeOpacity={0.9}
+      activeOpacity={0.97}
       style={styles.container}
-      onPress={() => onPress?.(item)}>
+      onPress={handleCardPress}>
 
+      {/* LEFT: FOOD DETAILS */}
       <View style={styles.content}>
-        {/* VEG / NON-VEG */}
+        {/* Veg / Non-veg indicator */}
         <View
           style={[
             styles.foodType,
             {
               borderColor: item.isVeg
-                ? '#16A34A'
-                : '#B91C1C',
+                ? COLORS.green
+                : COLORS.red,
             },
           ]}>
           <View
@@ -56,45 +88,51 @@ const MenuItemCard: React.FC<MenuItemCardProps> = ({
               styles.foodDot,
               {
                 backgroundColor: item.isVeg
-                  ? '#16A34A'
-                  : '#B91C1C',
+                  ? COLORS.green
+                  : COLORS.red,
               },
             ]}
           />
         </View>
 
-        {/* NAME */}
-        <Text style={styles.name}>
+        {/* Food name */}
+        <Text
+          numberOfLines={2}
+          style={styles.name}>
           {item.name}
         </Text>
 
-        {/* RATING */}
+        {/* Rating */}
         <View style={styles.ratingRow}>
           <Star
-            size={12}
+            size={13}
             weight="fill"
-            color="#FF7A00"
+            color={COLORS.orange}
           />
 
           <Text style={styles.rating}>
-            {item.rating.toFixed(1)}
+            {typeof item.rating === 'number'
+              ? item.rating.toFixed(1)
+              : 'New'}
           </Text>
         </View>
 
-        {/* PRICE */}
+        {/* Price */}
         <Text style={styles.price}>
           ₹{item.price}
         </Text>
 
-        {/* DESCRIPTION */}
-        <Text
-          numberOfLines={3}
-          style={styles.description}>
-          {item.description}
-        </Text>
+        {/* Description */}
+        {!!item.description && (
+          <Text
+            numberOfLines={2}
+            style={styles.description}>
+            {item.description}
+          </Text>
+        )}
       </View>
 
-      {/* IMAGE + CART CONTROLS */}
+      {/* RIGHT: IMAGE AND CART BUTTON */}
       <View style={styles.imageSection}>
         <AsyncImage
           source={item.image}
@@ -102,25 +140,39 @@ const MenuItemCard: React.FC<MenuItemCardProps> = ({
           kind="food"
         />
 
+        {/* ADD BUTTON */}
         {quantity === 0 ? (
           <TouchableOpacity
-            activeOpacity={0.8}
+            activeOpacity={0.85}
             style={styles.addButton}
-            onPress={() => addItem(item)}>
+            onPress={handleAdd}
+            accessibilityRole="button"
+            accessibilityLabel={`Add ${item.name} to cart`}>
+
+            <Plus
+              size={15}
+              weight="bold"
+              color={COLORS.white}
+            />
+
             <Text style={styles.addText}>
               ADD
             </Text>
           </TouchableOpacity>
         ) : (
+          /* QUANTITY CONTROLLER */
           <View style={styles.quantityContainer}>
             <TouchableOpacity
-              style={styles.actionButton}
-              onPress={() => decrease(item.id)}
-              activeOpacity={0.8}>
+              style={styles.quantityButton}
+              onPress={handleDecrease}
+              activeOpacity={0.7}
+              accessibilityRole="button"
+              accessibilityLabel={`Remove one ${item.name}`}>
+
               <Minus
-                size={20}
+                size={15}
                 weight="bold"
-                color="#FF7A00"
+                color={COLORS.orange}
               />
             </TouchableOpacity>
 
@@ -129,13 +181,16 @@ const MenuItemCard: React.FC<MenuItemCardProps> = ({
             </Text>
 
             <TouchableOpacity
-              style={styles.actionButton}
-              onPress={() => increase(item.id)}
-              activeOpacity={0.8}>
+              style={styles.quantityButton}
+              onPress={handleIncrease}
+              activeOpacity={0.7}
+              accessibilityRole="button"
+              accessibilityLabel={`Add one more ${item.name}`}>
+
               <Plus
-                size={20}
+                size={15}
                 weight="bold"
-                color="#FF7A00"
+                color={COLORS.orange}
               />
             </TouchableOpacity>
           </View>
@@ -145,140 +200,176 @@ const MenuItemCard: React.FC<MenuItemCardProps> = ({
   );
 };
 
-export default MenuItemCard;
+export default memo(MenuItemCard);
 
 const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    backgroundColor: '#FFFAF5',
-    borderWidth: 1,
-    borderColor: '#FFE0C2',
-    marginHorizontal: 20,
-    marginBottom: 16,
-    padding: 18,
+    alignItems: 'center',
+    backgroundColor: COLORS.background,
+    marginHorizontal: 16,
+    marginBottom: 12,
+    padding: 13,
     borderRadius: 18,
+    borderWidth: 1,
+    borderColor: COLORS.border,
 
-    shadowColor: '#000',
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
+    shadowColor: '#3D2412',
     shadowOffset: {
       width: 0,
       height: 3,
     },
-    elevation: 3,
+    shadowOpacity: 0.045,
+    shadowRadius: 8,
+    elevation: 2,
   },
 
   content: {
     flex: 1,
-    paddingRight: 16,
+    minWidth: 0,
+    paddingRight: 12,
+    justifyContent: 'center',
   },
 
   foodType: {
-    width: 18,
-    height: 18,
-    borderWidth: 1.5,
-    justifyContent: 'center',
+    width: 17,
+    height: 17,
+    borderWidth: 1.4,
+    borderRadius: 4,
     alignItems: 'center',
-    marginBottom: 10,
+    justifyContent: 'center',
+    marginBottom: 8,
   },
 
   foodDot: {
-    width: 8,
-    height: 8,
+    width: 7,
+    height: 7,
     borderRadius: 4,
   },
 
   name: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#111827',
+    fontSize: 16,
+    lineHeight: 21,
+    fontWeight: '800',
+    color: COLORS.text,
+    letterSpacing: -0.25,
   },
 
   ratingRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 8,
+    alignSelf: 'flex-start',
+    marginTop: 7,
   },
 
   rating: {
-    marginLeft: 5,
-    color: '#C85C00',
+    fontSize: 11,
     fontWeight: '700',
+    color: COLORS.secondary,
+    marginLeft: 4,
   },
 
   price: {
-    marginTop: 10,
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#111827',
+    marginTop: 8,
+    fontSize: 17,
+    fontWeight: '900',
+    color: COLORS.text,
+    letterSpacing: -0.3,
   },
 
   description: {
-    marginTop: 10,
-    color: '#6B7280',
-    fontSize: 14,
-    lineHeight: 22,
+    marginTop: 6,
+    fontSize: 11,
+    lineHeight: 16,
+    fontWeight: '400',
+    color: COLORS.secondary,
   },
 
   imageSection: {
+    width: 116,
     alignItems: 'center',
+    alignSelf: 'center',
+    paddingBottom: 12,
   },
 
   image: {
-    width: 120,
-    height: 120,
-    borderRadius: 16,
+    width: 116,
+    height: 112,
+    borderRadius: 14,
+    backgroundColor: '#F7F2ED',
   },
 
   addButton: {
     position: 'absolute',
-    bottom: -10,
-    backgroundColor: '#FF7A00',
-    borderWidth: 1,
-    borderColor: '#FF7A00',
-    borderRadius: 10,
-    paddingHorizontal: 26,
-    paddingVertical: 8,
+    bottom: -1,
+    minWidth: 94,
+    height: 36,
+    paddingHorizontal: 15,
+
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+
+    backgroundColor: COLORS.orange,
+    borderRadius: 11,
+    borderWidth: 2,
+    borderColor: COLORS.white,
+
+    shadowColor: COLORS.orangeDark,
+    shadowOffset: {
+      width: 0,
+      height: 3,
+    },
+    shadowOpacity: 0.2,
+    shadowRadius: 5,
     elevation: 4,
   },
 
   addText: {
-    color: '#FFFFFF',
-    fontWeight: '800',
-    fontSize: 14,
+    color: COLORS.white,
+    fontSize: 12,
+    fontWeight: '900',
+    letterSpacing: 0.8,
+    marginLeft: 5,
   },
 
   quantityContainer: {
     position: 'absolute',
-    bottom: -10,
+    bottom: -1,
 
+    minWidth: 104,
+    height: 36,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
 
-    width: 110,
-    height: 42,
+    backgroundColor: COLORS.white,
+    borderWidth: 1.5,
+    borderColor: COLORS.orange,
+    borderRadius: 11,
 
-    backgroundColor: '#FFFCF8',
-
-    borderWidth: 1,
-    borderColor: '#FF7A00',
-
-    borderRadius: 10,
-
-    elevation: 4,
+    shadowColor: COLORS.orangeDark,
+    shadowOffset: {
+      width: 0,
+      height: 3,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
 
-  actionButton: {
-    width: 34,
-    justifyContent: 'center',
+  quantityButton: {
+    width: 33,
+    height: '100%',
     alignItems: 'center',
+    justifyContent: 'center',
   },
 
   quantityText: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#111827',
+    minWidth: 22,
+    textAlign: 'center',
+    fontSize: 14,
+    fontWeight: '900',
+    color: COLORS.orangeDark,
   },
 });

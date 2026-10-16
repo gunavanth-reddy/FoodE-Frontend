@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {memo, useCallback} from 'react';
 
 import {
   FlatList,
@@ -8,329 +8,211 @@ import {
   View,
 } from 'react-native';
 
-import {useNavigation} from '@react-navigation/native';
-
-import {
-  NativeStackNavigationProp,
-} from '@react-navigation/native-stack';
+import {CaretRight, Storefront} from 'phosphor-react-native';
 
 import RestaurantCard from './RestaurantCard';
 
-import {
-  Restaurant,
-} from './restaurantData';
-
-import {useAuth} from '../../../../../context/AuthContext';
-import {useFavorites} from '../../../../../context/FavoritesContext';
-import {FoodEAlert} from '../../../../../utils/FoodEAlert';
-
-import {
-  RootStackParamList,
-} from '../../../../../navigation/AppNavigator';
-
-// =====================================================
-// TYPES
-// =====================================================
+import {Restaurant} from './restaurantData';
 
 interface RestaurantListProps {
   title: string;
-
   data: Restaurant[];
-
-  onRestaurantPress: (
-    restaurant: Restaurant,
-  ) => void;
-
+  onRestaurantPress: (restaurant: Restaurant) => void;
   onSeeAll?: () => void;
 }
 
-// =====================================================
-// NAVIGATION
-// =====================================================
+const ORANGE = '#FF7A00';
 
-type RestaurantNavigationProp =
-  NativeStackNavigationProp<
-    RootStackParamList
-  >;
-
-// =====================================================
-// RESTAURANT LIST
-// =====================================================
-
-const RestaurantList: React.FC<
-  RestaurantListProps
-> = ({
+const RestaurantList: React.FC<RestaurantListProps> = ({
   title,
   data,
   onRestaurantPress,
   onSeeAll,
 }) => {
-  // ===================================================
-  // NAVIGATION
-  // ===================================================
-
-  const navigation =
-    useNavigation<RestaurantNavigationProp>();
-
-  // ===================================================
-  // AUTH
-  // ===================================================
-
-  const {isLoggedIn} = useAuth();
-
-  // ===================================================
-  // FAVORITES
-  // ===================================================
-
-  const {
-    isRestaurantFavorite,
-    toggleRestaurantFavorite,
-  } = useFavorites();
-
-  // ===================================================
-  // GET ID
-  // ===================================================
-
-  const getRestaurantId = (
-    restaurant: Restaurant,
-  ): string => {
-    const item =
-      restaurant as Restaurant & {
+  const getRestaurantId = useCallback(
+    (restaurant: Restaurant): string => {
+      const item = restaurant as Restaurant & {
         _id?: string;
         id?: string;
       };
 
-    return String(
-      item._id ||
-        item.id ||
-        '',
-    );
-  };
+      return String(item._id || item.id || '');
+    },
+    [],
+  );
 
-  // ===================================================
-  // FAVORITE BUTTON
-  // ===================================================
+  const renderRestaurant = useCallback(
+    ({item}: {item: Restaurant}) => (
+      <RestaurantCard
+        restaurant={item}
+        onPress={() => onRestaurantPress(item)}
+      />
+    ),
+    [onRestaurantPress],
+  );
 
-  const handleFavoritePress = (restaurant: Restaurant) => {
-    if (!isLoggedIn) {
-      FoodEAlert.alert(
-        'Login Required',
-        'Please login to save restaurants to your favorites.',
-        [
-          {text: 'Cancel', style: 'cancel'},
-          {text: 'Login', onPress: () => navigation.navigate('Login')},
-        ],
-      );
-      return;
-    }
-
-    toggleRestaurantFavorite(restaurant);
-  };
-
-  // ===================================================
-  // EMPTY
-  // ===================================================
-
-  if (data.length === 0) {
+  if (!data.length) {
     return null;
   }
 
-  // ===================================================
-  // RENDER
-  // ===================================================
-
   return (
-    <View
-      style={styles.container}>
+    <View style={styles.container}>
+      {/* Section heading */}
+      <View style={styles.header}>
+        <View style={styles.headingContent}>
+          <View style={styles.iconContainer}>
+            <Storefront
+              size={21}
+              color={ORANGE}
+              weight="duotone"
+            />
+          </View>
 
-      {/* =================================================
-          HEADER
-      ================================================= */}
+          <View style={styles.headingTextContainer}>
+            <Text style={styles.eyebrow}>
+              MADE FOR YOUR CRAVINGS
+            </Text>
 
-      <View
-        style={styles.header}>
-
-        <View
-          style={styles.leftSection}>
-
-          <View
-            style={styles.accentBar}
-          />
-
-          <Text
-            style={styles.title}
-            numberOfLines={1}>
-            {title}
-          </Text>
-
+            <Text style={styles.title} numberOfLines={1}>
+              {title}
+            </Text>
+          </View>
         </View>
-
-        {/* =================================================
-            SEE ALL
-        ================================================= */}
 
         {onSeeAll && (
           <Pressable
             onPress={onSeeAll}
-            hitSlop={8}
+            hitSlop={10}
+            accessibilityRole="button"
+            accessibilityLabel={`See all ${title}`}
             style={({pressed}) => [
               styles.seeAllButton,
-              pressed &&
-                styles.pressed,
+              pressed && styles.pressed,
             ]}>
+            <Text style={styles.seeAllText}>See all</Text>
 
-            <Text
-              style={styles.seeAll}>
-              See All
-            </Text>
-
+            <CaretRight
+              size={15}
+              color={ORANGE}
+              weight="bold"
+            />
           </Pressable>
         )}
-
       </View>
 
-      {/* =================================================
-          RESTAURANT LIST
-      ================================================= */}
-
+      {/* Restaurant cards */}
       <FlatList
         data={data}
-
-        keyExtractor={item =>
-          getRestaurantId(item)
-        }
-
+        keyExtractor={getRestaurantId}
+        renderItem={renderRestaurant}
         scrollEnabled={false}
-
-        showsVerticalScrollIndicator={
-          false
-        }
-
-        contentContainerStyle={
-          styles.list
-        }
-
-        renderItem={({item}) => (
-          <RestaurantCard
-            restaurant={item}
-
-            onPress={() =>
-              onRestaurantPress(
-                item,
-              )
-            }
-
-            isFavorite={
-              isRestaurantFavorite(
-                item,
-              )
-            }
-
-            onFavoritePress={() =>
-              handleFavoritePress(
-                item,
-              )
-            }
-          />
-        )}
-
-        removeClippedSubviews
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.list}
+        removeClippedSubviews={false}
       />
 
+      {/* Bottom separator */}
+      <View style={styles.bottomAccent}>
+        <View style={styles.bottomAccentLine} />
+      </View>
     </View>
   );
 };
 
-export default RestaurantList;
+export default memo(RestaurantList);
 
-// =====================================================
-// STYLES
-// =====================================================
+const styles = StyleSheet.create({
+  container: {
+    marginTop: 24,
+    marginBottom: 8,
+  },
 
-const styles =
-  StyleSheet.create({
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    marginBottom: 16,
+  },
 
-    container: {
-      marginTop: 30,
-    },
+  headingContent: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginRight: 10,
+  },
 
-    // =================================================
-    // HEADER
-    // =================================================
+  iconContainer: {
+    width: 43,
+    height: 43,
+    borderRadius: 15,
+    backgroundColor: '#FFF0E2',
+    borderWidth: 1,
+    borderColor: '#FFE3CA',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
 
-    header: {
-      flexDirection: 'row',
+  headingTextContainer: {
+    flex: 1,
+  },
 
-      justifyContent:
-        'space-between',
+  eyebrow: {
+    fontSize: 9,
+    fontWeight: '800',
+    letterSpacing: 1.35,
+    color: ORANGE,
+    marginBottom: 3,
+  },
 
-      alignItems: 'center',
+  title: {
+    fontSize: 22,
+    lineHeight: 28,
+    fontWeight: '800',
+    color: '#201A16',
+    letterSpacing: -0.65,
+  },
 
-      paddingHorizontal: 20,
+  seeAllButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 9,
+    paddingLeft: 11,
+    paddingRight: 8,
+    borderRadius: 12,
+    backgroundColor: '#FFF1E5',
+    borderWidth: 1,
+    borderColor: '#FFE3CC',
+  },
 
-      marginBottom: 18,
-    },
+  seeAllText: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: ORANGE,
+    marginRight: 3,
+  },
 
-    leftSection: {
-      flex: 1,
+  pressed: {
+    opacity: 0.65,
+    transform: [{scale: 0.97}],
+  },
 
-      flexDirection: 'row',
+  list: {
+    paddingHorizontal: 16,
+    paddingBottom: 4,
+  },
 
-      alignItems: 'center',
+  bottomAccent: {
+    alignItems: 'center',
+    marginTop: 12,
+  },
 
-      marginRight: 12,
-    },
-
-    accentBar: {
-      width: 4,
-
-      height: 22,
-
-      borderRadius: 20,
-
-      backgroundColor:
-        '#FF7A00',
-
-      marginRight: 10,
-    },
-
-    title: {
-      fontSize: 22,
-
-      fontWeight: '700',
-
-      color: '#1F2937',
-    },
-
-    // =================================================
-    // SEE ALL
-    // =================================================
-
-    seeAllButton: {
-      paddingVertical: 4,
-
-      paddingHorizontal: 2,
-    },
-
-    seeAll: {
-      fontSize: 14,
-
-      fontWeight: '600',
-
-      color: '#FF7A00',
-    },
-
-    pressed: {
-      opacity: 0.6,
-    },
-
-    // =================================================
-    // LIST
-    // =================================================
-
-    list: {
-      paddingHorizontal: 16,
-
-      paddingBottom: 10,
-    },
-  });
+  bottomAccentLine: {
+    width: 42,
+    height: 3,
+    borderRadius: 10,
+    backgroundColor: '#FFE0C3',
+  },
+});

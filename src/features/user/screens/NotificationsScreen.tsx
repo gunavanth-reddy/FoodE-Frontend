@@ -162,7 +162,7 @@ const NotificationsScreen: React.FC = () => {
   const {token} = useAuth();
 
   const horizontalPadding =
-    width < 360 ? 14 : 18;
+    width < 360 ? 12 : 14;
 
   const [
     notifications,

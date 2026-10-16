@@ -7,10 +7,13 @@ import React, {
 
 import {
   Animated,
+  Alert,
   FlatList,
   LayoutChangeEvent,
+  Linking,
   NativeScrollEvent,
   NativeSyntheticEvent,
+  ImageSourcePropType,
   StyleSheet,
   View,
 } from 'react-native';
@@ -18,27 +21,36 @@ import {
 import BannerCard from './BannerCard';
 
 const AUTO_SCROLL_INTERVAL = 3500;
+const WHATSAPP_CHANNEL_URL =
+  'https://whatsapp.com/channel/0029VbEDaijD38CV27uyGB0d';
+
+interface BannerItem {
+  id: string;
+  image: ImageSourcePropType;
+  link?: string;
+}
 
 // =====================================================
 // BANNER DATA
 // =====================================================
 
-const baseBannerData = [
+const baseBannerData: BannerItem[] = [
   {
     id: 'banner1',
-    image: require('../../../../../assets/images/categories/banner1.png'),
+    image: require('../../../../../assets/banners/banner1.png'),
   },
   {
     id: 'banner2',
-    image: require('../../../../../assets/images/categories/banner2.png'),
+    image: require('../../../../../assets/banners/banner2.png'),
   },
   {
     id: 'banner3',
-    image: require('../../../../../assets/images/categories/banner3.png'),
+    image: require('../../../../../assets/banners/banner3.png'),
   },
   {
     id: 'banner4',
-    image: require('../../../../../assets/images/categories/banner4.png'),
+    image: require('../../../../../assets/banners/banner4.png'),
+    link: WHATSAPP_CHANNEL_URL,
   },
 ];
 
@@ -164,6 +176,20 @@ const BannerCarousel: React.FC = () => {
     startAutoScroll();
   };
 
+  const handleBannerPress = useCallback((url?: string) => {
+    if (!url) {
+      return;
+    }
+
+    Linking.openURL(url).catch(error => {
+      console.error('FoodE: Unable to open banner link:', error);
+      Alert.alert(
+        'Unable to Open Link',
+        'Please try opening the WhatsApp channel again.',
+      );
+    });
+  }, []);
+
   // =====================================================
   // RENDER
   // =====================================================
@@ -181,7 +207,15 @@ const BannerCarousel: React.FC = () => {
           decelerationRate="fast"
           keyExtractor={(item, index) => `${item.id}-${index}`}
           renderItem={({item}) => (
-            <BannerCard image={item.image} width={containerWidth} />
+            <BannerCard
+              image={item.image}
+              width={containerWidth}
+              onPress={
+                item.link
+                  ? () => handleBannerPress(item.link)
+                  : undefined
+              }
+            />
           )}
           onScrollBeginDrag={stopAutoScroll}
           onMomentumScrollEnd={onMomentumScrollEnd}

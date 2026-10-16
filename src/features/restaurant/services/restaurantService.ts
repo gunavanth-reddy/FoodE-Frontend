@@ -2,7 +2,7 @@
 // RESTAURANT OWNER SERVICE - FoodE
 // =====================================================
 
-import {Asset} from 'react-native-image-picker';
+import {ImagePickerAsset} from 'expo-image-picker';
 import API_BASE_URL from '../../../config/api';
 
 // =====================================================
@@ -18,8 +18,8 @@ export interface RestaurantData {
   description?: string;
 
   // Images can be existing URLs or newly selected files
-  logo?: string | Asset;
-  coverImage?: string | Asset;
+  logo?: string | ImagePickerAsset;
+  coverImage?: string | ImagePickerAsset;
 
   phone: string;
   email?: string;
@@ -157,13 +157,13 @@ const buildRestaurantFormData = (
       }
 
       // Newly selected local image
-      const asset = value as Asset;
+      const asset = value as ImagePickerAsset;
 
       if (!asset.uri) {
         return;
       }
 
-      const mimeType = asset.type || 'image/jpeg';
+      const mimeType = asset.mimeType || 'image/jpeg';
 
       const extension =
         mimeType.split('/')[1] || 'jpg';

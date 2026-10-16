@@ -1,36 +1,22 @@
-import {AppRegistry} from 'react-native';
-
-import {
-  getMessaging,
-  setBackgroundMessageHandler,
-} from '@react-native-firebase/messaging';
-
+import {Platform} from 'react-native';
+import {registerRootComponent} from 'expo';
 import App from './App';
-import appConfig from './app.json';
 
-const appName = appConfig.expo.name;
+registerRootComponent(App);
 
-// =====================================================
-// FCM BACKGROUND MESSAGE HANDLER
-// =====================================================
+if (Platform.OS !== 'web') {
+  const {
+    getMessaging,
+    setBackgroundMessageHandler,
+  } = require('@react-native-firebase/messaging');
 
-const messaging = getMessaging();
-
-setBackgroundMessageHandler(
-  messaging,
-  async remoteMessage => {
-    console.log(
-      'FoodE: Background FCM notification received:',
-      remoteMessage,
-    );
-  },
-);
-
-// =====================================================
-// REGISTER APP
-// =====================================================
-
-AppRegistry.registerComponent(
-  appName,
-  () => App,
-);
+  setBackgroundMessageHandler(
+    getMessaging(),
+    async remoteMessage => {
+      console.log(
+        'FoodE: Background FCM notification received:',
+        remoteMessage,
+      );
+    },
+  );
+}

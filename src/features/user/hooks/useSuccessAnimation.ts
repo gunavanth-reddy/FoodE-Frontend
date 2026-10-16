@@ -68,7 +68,13 @@ const useSuccessAnimation = () => {
         }),
       ]),
     ]).start();
-  }, []);
+  }, [
+    buttonsOpacity,
+    buttonsTranslateY,
+    cardOpacity,
+    cardTranslateY,
+    titleOpacity,
+  ]);
 
   return {
     titleOpacity,

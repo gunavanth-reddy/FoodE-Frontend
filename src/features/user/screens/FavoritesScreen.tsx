@@ -2,7 +2,6 @@ import React, {useMemo, useState} from 'react';
 
 import {
   ActivityIndicator,
-  Alert,
   FlatList,
   StatusBar,
   StyleSheet,

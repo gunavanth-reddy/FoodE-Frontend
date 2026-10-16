@@ -40,7 +40,7 @@ const FloatingCircle = ({
         }),
       ]),
     ).start();
-  }, []);
+  }, [duration, translateY]);
 
   return (
     <Animated.View
