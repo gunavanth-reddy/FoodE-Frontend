@@ -2,9 +2,9 @@
   "expo": {
     "name": "FoodE",
     "slug": "foode",
-    "version": "0.0.1",
+    "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./foode-round.png",
+    "icon": "./foode-logo.jpg",
     "ios": {
       "bundleIdentifier": "com.foode",
       "supportsTablet": true,
@@ -17,12 +17,13 @@
     },
     "android": {
       "package": "com.foode",
+      "icon": "./foode-logo.jpg",
       "googleServicesFile": "./google-services.json",
       "permissions": [
         "android.permission.POST_NOTIFICATIONS"
       ],
       "adaptiveIcon": {
-        "foregroundImage": "./foode-round.png",
+        "foregroundImage": "./foode-logo.jpg",
         "backgroundColor": "#FFFFFF"
       }
     },
@@ -52,7 +53,8 @@
           }
         }
       ],
-      "./plugins/with-immersive-android"
+      "./plugins/with-immersive-android",
+      "./plugins/with-android-round-icons"
     ]
   }
 }

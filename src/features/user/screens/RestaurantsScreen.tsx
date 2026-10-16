@@ -14,7 +14,6 @@ import {MagnifyingGlass, Warning} from 'phosphor-react-native';
 import {useNavigation} from '@react-navigation/native';
 
 import RestaurantCard from '../components/home/restaurant/RestaurantCard';
-import Header from '../components/home/header/Header';
 import type {Restaurant as RestaurantCardData} from '../components/home/restaurant/restaurantData';
 import {
   getRestaurants,
@@ -132,10 +131,7 @@ const RestaurantsScreen: React.FC = () => {
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
-      <StatusBar backgroundColor="#FF7A00" barStyle="light-content" />
-      <View style={styles.homeHeaderContainer}>
-        <Header />
-      </View>
+      <StatusBar backgroundColor="#FFF9F4" barStyle="dark-content" />
       {renderHeader()}
       <FlatList
         data={filteredRestaurants}
@@ -171,17 +167,10 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#FFF9F4',
   },
-  homeHeaderContainer: {
-    width: '100%',
-    backgroundColor: '#F47721',
-    borderBottomLeftRadius: 24,
-    borderBottomRightRadius: 24,
-    overflow: 'hidden',
-  },
   header: {
     paddingHorizontal: 20,
-    paddingTop: 12,
-    paddingBottom: 8,
+    paddingTop: 14,
+    paddingBottom: 12,
     backgroundColor: '#FFF9F4',
   },
   searchBox: {
@@ -190,7 +179,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 9,
-    marginTop: 14,
+    marginTop: 0,
     paddingHorizontal: 14,
     backgroundColor: '#FFFFFF',
     borderRadius: 14,

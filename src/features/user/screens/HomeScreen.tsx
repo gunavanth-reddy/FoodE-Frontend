@@ -15,6 +15,7 @@ import {
 } from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {
+  Storefront,
   Warning,
 } from 'phosphor-react-native';
 import {
@@ -43,6 +44,12 @@ import {
   Food,
   getAllFoods,
 } from '../../restaurant/services/foodService';
+import RestaurantList from '../components/home/restaurant/RestaurantList';
+import type {Restaurant as RestaurantCardData} from '../components/home/restaurant/restaurantData';
+import {
+  getRestaurants,
+  type Restaurant as ApiRestaurant,
+} from '../services/restaurantService';
 import AboutFoodE from '../components/home/AboutFoodE';
 
 type NavigationProp =
@@ -59,6 +66,10 @@ type NavigationProp =
 const HomeScreen: React.FC = () => {
   const navigation =
     useNavigation<NavigationProp>();
+
+  const [restaurants, setRestaurants] = useState<RestaurantCardData[]>([]);
+  const [loadingRestaurants, setLoadingRestaurants] = useState(true);
+  const [restaurantError, setRestaurantError] = useState<string | null>(null);
 
   const [
     foods,
@@ -79,6 +90,30 @@ const HomeScreen: React.FC = () => {
     refreshing,
     setRefreshing,
   ] = useState(false);
+
+  const loadRestaurants = useCallback(async () => {
+    try {
+      setRestaurantError(null);
+      const results = await getRestaurants();
+      const cards = results.map((restaurant: ApiRestaurant) => ({
+        ...restaurant,
+        _id: String(restaurant._id || restaurant.id || ''),
+        id: restaurant.id || restaurant._id,
+        image: restaurant.coverImage || restaurant.image || restaurant.logo || '',
+        coverImage:
+          restaurant.coverImage || restaurant.image || restaurant.logo || '',
+        logo: restaurant.logo || '',
+        cuisine: restaurant.cuisines || restaurant.cuisine || [],
+        cuisines: restaurant.cuisines || restaurant.cuisine || [],
+      } as RestaurantCardData));
+      setRestaurants(cards);
+    } catch (error: any) {
+      console.log('Home restaurant error:', error);
+      setRestaurantError(error?.message || 'Unable to load restaurants.');
+    } finally {
+      setLoadingRestaurants(false);
+    }
+  }, []);
 
   const loadFoods =
     useCallback(async () => {
@@ -106,8 +141,9 @@ const HomeScreen: React.FC = () => {
 
   useFocusEffect(
     useCallback(() => {
+      loadRestaurants();
       loadFoods();
-    }, [loadFoods]),
+    }, [loadFoods, loadRestaurants]),
   );
 
   const onRefresh =
@@ -115,11 +151,16 @@ const HomeScreen: React.FC = () => {
       setRefreshing(true);
 
       try {
-        await loadFoods();
+        await Promise.all([loadFoods(), loadRestaurants()]);
       } finally {
         setRefreshing(false);
       }
-    }, [loadFoods]);
+    }, [loadFoods, loadRestaurants]);
+
+  const topRatedRestaurants = useMemo(
+    () => [...restaurants].sort((a, b) => (b.rating || 0) - (a.rating || 0)),
+    [restaurants],
+  );
 
   const under20Minutes =
     useMemo(() => {
@@ -215,6 +256,11 @@ const HomeScreen: React.FC = () => {
   const handleRetryFoods = () => {
     setLoadingFoods(true);
     loadFoods();
+  };
+
+  const handleRetryRestaurants = () => {
+    setLoadingRestaurants(true);
+    loadRestaurants();
   };
 
   return (
@@ -364,6 +410,47 @@ const HomeScreen: React.FC = () => {
             </>
           )}
 
+          {/* Restaurants */}
+          {loadingRestaurants ? (
+            <View style={styles.restaurantLoading}>
+              <ActivityIndicator size="small" color="#F47721" />
+              <Text style={styles.loadingText}>Loading restaurants...</Text>
+            </View>
+          ) : restaurantError ? (
+            <View style={styles.restaurantState}>
+              <View style={styles.stateIcon}>
+                <Storefront size={30} color="#F47721" weight="duotone" />
+              </View>
+              <Text style={styles.stateTitle}>Unable to load restaurants</Text>
+              <Text style={styles.stateText}>{restaurantError}</Text>
+              <TouchableOpacity
+                activeOpacity={0.8}
+                style={styles.retryButton}
+                onPress={handleRetryRestaurants}>
+                <Text style={styles.retryText}>Retry</Text>
+              </TouchableOpacity>
+            </View>
+          ) : restaurants.length === 0 ? (
+            <View style={styles.restaurantState}>
+              <View style={styles.stateIcon}>
+                <Storefront size={30} color="#F47721" weight="duotone" />
+              </View>
+              <Text style={styles.stateTitle}>No restaurants yet</Text>
+              <Text style={styles.stateText}>
+                Restaurants will appear here when they are available.
+              </Text>
+            </View>
+          ) : (
+            <RestaurantList
+              title="Restaurants"
+              data={topRatedRestaurants}
+              onSeeAll={() => navigation.navigate('Restaurants')}
+              onRestaurantPress={restaurant =>
+                navigation.navigate('RestaurantDetails', {restaurant})
+              }
+            />
+          )}
+
           {/* About FoodE */}
           <AboutFoodE />
 
@@ -424,6 +511,22 @@ const styles = StyleSheet.create({
   },
 
   foodState: {
+    marginHorizontal: 20,
+    marginVertical: 15,
+    paddingVertical: 30,
+    paddingHorizontal: 20,
+    backgroundColor: '#FFFCF8',
+    borderRadius: 18,
+    alignItems: 'center',
+  },
+
+  restaurantLoading: {
+    minHeight: 110,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  restaurantState: {
     marginHorizontal: 20,
     marginVertical: 15,
     paddingVertical: 30,
