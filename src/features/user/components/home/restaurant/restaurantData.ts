@@ -31,10 +31,10 @@ export interface Restaurant {
   // Restaurant information
   rating?: number;
   totalReviews?: number;
-  deliveryTime?: string;
+  deliveryTime?: string | {min?: number; max?: number};
   deliveryFee?: number;
   minimumOrder?: number;
-  priceForTwo?: string;
+  priceForTwo?: string | number;
 
   // Offers
   offer?: string;

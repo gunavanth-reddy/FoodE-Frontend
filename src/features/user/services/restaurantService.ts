@@ -148,12 +148,44 @@ const normalizeDeliveryTime = (
 const normalizeRestaurant = (
   restaurant: Restaurant,
 ): Restaurant => {
+  const images = restaurant.images as
+    | {
+        coverImage?: unknown;
+        logo?: unknown;
+        image?: unknown;
+      }
+    | undefined;
+
+  const getImageUrl = (value: unknown): string => {
+    if (typeof value === 'string') {
+      return value.trim();
+    }
+
+    if (value && typeof value === 'object') {
+      const image = value as {url?: unknown; uri?: unknown};
+      if (typeof image.url === 'string') {
+        return image.url.trim();
+      }
+      if (typeof image.uri === 'string') {
+        return image.uri.trim();
+      }
+    }
+
+    return '';
+  };
+
+  const logo =
+    getImageUrl(restaurant.logo) ||
+    getImageUrl(images?.logo);
+  const coverImage =
+    getImageUrl(restaurant.coverImage) ||
+    getImageUrl(images?.coverImage) ||
+    getImageUrl(restaurant.image) ||
+    getImageUrl(restaurant.imageUrl) ||
+    getImageUrl(images?.image) ||
+    logo;
   const restaurantImage =
-    restaurant.coverImage ||
-    restaurant.image ||
-    restaurant.imageUrl ||
-    restaurant.logo ||
-    '';
+    coverImage || logo;
 
   const cuisineValue =
     restaurant.cuisines ??
@@ -184,13 +216,9 @@ const normalizeRestaurant = (
     // Images
     image: restaurantImage,
 
-    coverImage:
-      restaurant.coverImage ||
-      restaurantImage,
+    coverImage,
 
-    logo:
-      restaurant.logo ||
-      '',
+    logo,
 
     // Cuisine
     cuisine:

@@ -15,7 +15,6 @@ import {
 } from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {
-  Storefront,
   Warning,
 } from 'phosphor-react-native';
 import {
@@ -44,13 +43,6 @@ import {
   Food,
   getAllFoods,
 } from '../../restaurant/services/foodService';
-import RestaurantList from '../components/home/restaurant/RestaurantList';
-import {
-  Restaurant,
-} from '../components/home/restaurant/restaurantData';
-import {
-  getRestaurants,
-} from '../services/restaurantService';
 import AboutFoodE from '../components/home/AboutFoodE';
 
 type NavigationProp =
@@ -67,21 +59,6 @@ type NavigationProp =
 const HomeScreen: React.FC = () => {
   const navigation =
     useNavigation<NavigationProp>();
-
-  const [
-    restaurants,
-    setRestaurants,
-  ] = useState<Restaurant[]>([]);
-
-  const [
-    loadingRestaurants,
-    setLoadingRestaurants,
-  ] = useState(true);
-
-  const [
-    restaurantError,
-    setRestaurantError,
-  ] = useState<string | null>(null);
 
   const [
     foods,
@@ -102,161 +79,6 @@ const HomeScreen: React.FC = () => {
     refreshing,
     setRefreshing,
   ] = useState(false);
-
-  const loadRestaurants =
-    useCallback(async () => {
-      try {
-        setRestaurantError(null);
-
-        const data =
-          await getRestaurants();
-
-        const formattedRestaurants: Restaurant[] =
-          data.map(restaurant => {
-            const raw =
-              restaurant as Restaurant & {
-                coverImage?: unknown;
-                logo?: unknown;
-                image?: unknown;
-                imageUrl?: unknown;
-                images?: {
-                  coverImage?: unknown;
-                  logo?: unknown;
-                  image?: unknown;
-                };
-                cuisine?: unknown;
-                cuisines?: unknown;
-              };
-
-            const getImageUrl = (
-              value: unknown,
-            ): string => {
-              if (typeof value === 'string') {
-                return value.trim();
-              }
-
-              if (
-                value &&
-                typeof value === 'object'
-              ) {
-                const imageObject =
-                  value as {
-                    url?: unknown;
-                    uri?: unknown;
-                  };
-
-                if (
-                  typeof imageObject.url ===
-                  'string'
-                ) {
-                  return imageObject.url.trim();
-                }
-
-                if (
-                  typeof imageObject.uri ===
-                  'string'
-                ) {
-                  return imageObject.uri.trim();
-                }
-              }
-
-              return '';
-            };
-
-            const restaurantImage =
-              getImageUrl(
-                raw.coverImage,
-              ) ||
-              getImageUrl(
-                raw.images?.coverImage,
-              ) ||
-              getImageUrl(
-                raw.image,
-              ) ||
-              getImageUrl(
-                raw.imageUrl,
-              ) ||
-              getImageUrl(
-                raw.images?.image,
-              ) ||
-              getImageUrl(
-                raw.logo,
-              ) ||
-              getImageUrl(
-                raw.images?.logo,
-              );
-
-            const rawCuisine =
-              raw.cuisine ??
-              raw.cuisines;
-
-            const cuisineText =
-              Array.isArray(rawCuisine)
-                ? rawCuisine
-                    .filter(Boolean)
-                    .join(' • ')
-                : typeof rawCuisine ===
-                  'string'
-                ? rawCuisine
-                : 'Multi Cuisine';
-
-            return {
-              ...restaurant,
-              _id: restaurant._id,
-              image: restaurantImage,
-              coverImage:
-                getImageUrl(
-                  raw.coverImage,
-                ) ||
-                getImageUrl(
-                  raw.images?.coverImage,
-                ) ||
-                restaurantImage,
-              logo:
-                getImageUrl(
-                  raw.logo,
-                ) ||
-                getImageUrl(
-                  raw.images?.logo,
-                ),
-              cuisine: cuisineText,
-              cuisines: cuisineText,
-              rating:
-                typeof restaurant.rating ===
-                'number'
-                  ? restaurant.rating
-                  : 0,
-              deliveryTime:
-                restaurant.deliveryTime ||
-                '20-30 min',
-              address:
-                restaurant.address ||
-                (restaurant as any).location ||
-                'SRM AP University, Neerukonda',
-              isOpen:
-                restaurant.isOpen !== false,
-              isActive:
-                restaurant.isActive !== false,
-            } as Restaurant;
-          });
-
-        setRestaurants(
-          formattedRestaurants,
-        );
-      } catch (error: any) {
-        console.log(
-          'Home restaurant error:',
-          error,
-        );
-
-        setRestaurantError(
-          error?.message ||
-          'Unable to load restaurants.',
-        );
-      } finally {
-        setLoadingRestaurants(false);
-      }
-    }, []);
 
   const loadFoods =
     useCallback(async () => {
@@ -284,9 +106,8 @@ const HomeScreen: React.FC = () => {
 
   useFocusEffect(
     useCallback(() => {
-      loadRestaurants();
       loadFoods();
-    }, [loadRestaurants, loadFoods]),
+    }, [loadFoods]),
   );
 
   const onRefresh =
@@ -294,17 +115,11 @@ const HomeScreen: React.FC = () => {
       setRefreshing(true);
 
       try {
-        await Promise.all([
-          loadRestaurants(),
-          loadFoods(),
-        ]);
+        await loadFoods();
       } finally {
         setRefreshing(false);
       }
-    }, [
-      loadRestaurants,
-      loadFoods,
-    ]);
+    }, [loadFoods]);
 
   const under20Minutes =
     useMemo(() => {
@@ -344,15 +159,6 @@ const HomeScreen: React.FC = () => {
       );
     }, [foods]);
 
-  const topRatedRestaurants =
-    useMemo(() => {
-      return [...restaurants].sort(
-        (a, b) =>
-          (b.rating || 0) -
-          (a.rating || 0),
-      );
-    }, [restaurants]);
-
   const handleOpenRestaurantFromFood =
     (food: Food) => {
       console.log(
@@ -371,99 +177,27 @@ const HomeScreen: React.FC = () => {
         foodRecord.restaurantId ??
         foodRecord.restaurantID;
 
-      let restaurantId:
-        | string
-        | undefined;
-
-      if (
-        restaurantRef &&
-        typeof restaurantRef ===
-          'object'
-      ) {
-        restaurantId =
-          restaurantRef._id;
-      }
-
-      if (
-        typeof restaurantRef ===
-        'string'
-      ) {
-        restaurantId =
-          restaurantRef;
-      }
-
-      let restaurant =
-        restaurants.find(
-          item =>
-            item._id ===
-            restaurantId,
-        );
-
-      if (
-        !restaurant &&
-        restaurantRef &&
-        typeof restaurantRef ===
-          'object'
-      ) {
-        restaurant =
-          restaurants.find(
-            item =>
-              item.name ===
-              restaurantRef.name,
-          );
-      }
-
-      if (restaurant) {
-        navigation.navigate(
-          'RestaurantDetails',
-          {restaurant},
-        );
-        return;
-      }
-
-      if (restaurantId) {
-        const foodRestaurantName =
-          (food as any).restaurantName ||
-          (
-            typeof restaurantRef === 'object'
-              ? restaurantRef.name
-              : undefined
-          );
-
-        navigation.navigate(
-          'RestaurantDetails',
-          {
-            restaurant: {
-              _id: String(restaurantId),
-              name:
-                typeof foodRestaurantName ===
-                  'string' &&
-                foodRestaurantName.trim()
-                  ? foodRestaurantName
-                  : 'Restaurant',
-            } as Restaurant,
-          },
-        );
-        return;
-      }
-
       if (
         restaurantRef &&
         typeof restaurantRef === 'object' &&
         (restaurantRef._id || restaurantRef.id)
       ) {
-        navigation.navigate(
-          'RestaurantDetails',
-          {
-            restaurant: {
-              ...restaurantRef,
-              _id: String(
-                restaurantRef._id ||
-                restaurantRef.id,
-              ),
-            } as Restaurant,
+        navigation.navigate('RestaurantDetails', {
+          restaurant: {
+            ...restaurantRef,
+            _id: String(restaurantRef._id || restaurantRef.id),
           },
-        );
+        });
+        return;
+      }
+
+      if (
+        typeof restaurantRef === 'string' &&
+        restaurantRef
+      ) {
+        navigation.navigate('RestaurantDetails', {
+          restaurantId: restaurantRef,
+        });
         return;
       }
 
@@ -481,11 +215,6 @@ const HomeScreen: React.FC = () => {
   const handleRetryFoods = () => {
     setLoadingFoods(true);
     loadFoods();
-  };
-
-  const handleRetryRestaurants = () => {
-    setLoadingRestaurants(true);
-    loadRestaurants();
   };
 
   return (
@@ -635,77 +364,6 @@ const HomeScreen: React.FC = () => {
             </>
           )}
 
-          {/* Restaurants */}
-          {loadingRestaurants ? (
-            <View style={styles.restaurantLoading}>
-              <ActivityIndicator
-                size="small"
-                color="#F47721"
-              />
-
-              <Text style={styles.loadingText}>
-                Loading restaurants...
-              </Text>
-            </View>
-          ) : restaurantError ? (
-            <View style={styles.restaurantState}>
-              <View style={styles.stateIcon}>
-                <Storefront
-                  size={30}
-                  color="#F47721"
-                  weight="duotone"
-                />
-              </View>
-
-              <Text style={styles.stateTitle}>
-                Unable to load restaurants
-              </Text>
-
-              <Text style={styles.stateText}>
-                {restaurantError}
-              </Text>
-
-              <TouchableOpacity
-                activeOpacity={0.8}
-                style={styles.retryButton}
-                onPress={handleRetryRestaurants}>
-                <Text style={styles.retryText}>
-                  Retry
-                </Text>
-              </TouchableOpacity>
-            </View>
-          ) : restaurants.length === 0 ? (
-            <View style={styles.restaurantState}>
-              <View style={styles.stateIcon}>
-                <Storefront
-                  size={30}
-                  color="#F47721"
-                  weight="duotone"
-                />
-              </View>
-
-              <Text style={styles.stateTitle}>
-                No restaurants yet
-              </Text>
-
-              <Text style={styles.stateText}>
-                Restaurants will appear here
-                when they are created.
-              </Text>
-            </View>
-          ) : (
-            <RestaurantList
-              title="Restaurants"
-              data={topRatedRestaurants}
-              onRestaurantPress={restaurant =>
-                navigation.navigate(
-                  'RestaurantDetails',
-                  {restaurant},
-                )
-              }
-            />
-          )}
-
           {/* About FoodE */}
           <AboutFoodE />
 
@@ -766,22 +424,6 @@ const styles = StyleSheet.create({
   },
 
   foodState: {
-    marginHorizontal: 20,
-    marginVertical: 15,
-    paddingVertical: 30,
-    paddingHorizontal: 20,
-    backgroundColor: '#FFFCF8',
-    borderRadius: 18,
-    alignItems: 'center',
-  },
-
-  restaurantLoading: {
-    minHeight: 110,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-
-  restaurantState: {
     marginHorizontal: 20,
     marginVertical: 15,
     paddingVertical: 30,

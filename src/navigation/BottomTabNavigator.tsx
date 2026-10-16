@@ -3,6 +3,7 @@ import React from 'react';
 import {createBottomTabNavigator} from '@react-navigation/bottom-tabs';
 
 import HomeScreen from '../features/user/screens/HomeScreen';
+import RestaurantsScreen from '../features/user/screens/RestaurantsScreen';
 import SearchScreen from '../features/user/screens/SearchScreen';
 import FavoritesScreen from '../features/user/screens/FavoritesScreen';
 import CartScreen from '../features/user/screens/CartScreen';
@@ -13,6 +14,7 @@ import CustomTabBar from './components/CustomTabBar';
 
 export type BottomTabParamList = {
   Home: undefined;
+  Restaurants: undefined;
   Search: undefined;
   Favorites: undefined;
   Cart: undefined;
@@ -35,7 +37,12 @@ const BottomTabNavigator = () => {
       }}
     >
       <Tab.Screen name="Home" component={HomeScreen} />
-      <Tab.Screen name="Search" component={SearchScreen} />
+      <Tab.Screen name="Restaurants" component={RestaurantsScreen} />
+      <Tab.Screen
+        name="Search"
+        component={SearchScreen}
+        options={{tabBarButton: () => null}}
+      />
 
       <Tab.Screen
         name="Favorites"

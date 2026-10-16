@@ -157,7 +157,11 @@ const RestaurantCard: React.FC<RestaurantCardProps> = ({
       <View
         style={styles.imageContainer}>
         <AsyncImage
-          source={restaurant.image}
+          source={
+            restaurant.coverImage ||
+            restaurant.image ||
+            restaurant.logo
+          }
           style={styles.image}
           kind="restaurant"
         />
@@ -199,24 +203,8 @@ const RestaurantCard: React.FC<RestaurantCardProps> = ({
           </Text>
         </View>
 
-        {/* Rating and food type */}
+        {/* Food type */}
         <View style={styles.imageBottom}>
-          <View style={styles.ratingBadge}>
-            <Star
-              size={14}
-              color="#FFFFFF"
-              weight="fill"
-            />
-
-            <Text style={styles.ratingText}>{rating}</Text>
-
-            {totalReviews > 0 && (
-              <Text style={styles.reviewText}>
-                ({totalReviews})
-              </Text>
-            )}
-          </View>
-
           <View
             style={[
               styles.foodTypeBadge,
@@ -245,6 +233,23 @@ const RestaurantCard: React.FC<RestaurantCardProps> = ({
               {isVeg ? 'VEG' : 'NON-VEG'}
             </Text>
           </View>
+        </View>
+
+        {/* Rating */}
+        <View style={styles.ratingBadge}>
+          <Star
+            size={14}
+            color="#FFFFFF"
+            weight="fill"
+          />
+
+          <Text style={styles.ratingText}>{rating}</Text>
+
+          {totalReviews > 0 && (
+            <Text style={styles.reviewText}>
+              ({totalReviews})
+            </Text>
+          )}
         </View>
       </View>
 
@@ -488,9 +493,12 @@ const styles = StyleSheet.create({
   },
 
   ratingBadge: {
+    position: 'absolute',
+    top: 13,
+    right: 13,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#18864B',
+    backgroundColor: 'rgba(17, 24, 39, 0.78)',
     borderRadius: 10,
     paddingHorizontal: 10,
     paddingVertical: 7,
@@ -506,7 +514,7 @@ const styles = StyleSheet.create({
   },
 
   reviewText: {
-    color: '#E7F6EB',
+    color: '#E5E7EB',
     fontSize: 10,
     fontWeight: '600',
     marginLeft: 4,
@@ -545,9 +553,34 @@ const styles = StyleSheet.create({
 
   content: {
     paddingHorizontal: 16,
-    paddingTop: 15,
+    paddingTop: 45,
     paddingBottom: 16,
     backgroundColor: '#FFFCF9',
+    position: 'relative',
+  },
+
+  logoContainer: {
+    position: 'absolute',
+    top: -35,
+    left: 16,
+    width: 70,
+    height: 70,
+    borderRadius: 18,
+    padding: 3,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#FFE0C7',
+    shadowColor: '#302015',
+    shadowOffset: {width: 0, height: 3},
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
+    elevation: 5,
+  },
+
+  logo: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 15,
   },
 
   nameRow: {

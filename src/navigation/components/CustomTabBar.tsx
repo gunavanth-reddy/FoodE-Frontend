@@ -12,7 +12,7 @@ import {BottomTabBarProps} from '@react-navigation/bottom-tabs';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {
   House,
-  MagnifyingGlass,
+  Storefront,
   ShoppingCart,
   Receipt,
   UserCircle,
@@ -26,7 +26,7 @@ const INACTIVE_COLOR = '#8A92A0';
 
 const tabs = [
   {name: 'Home', label: 'Home', Icon: House},
-  {name: 'Search', label: 'Explore', Icon: MagnifyingGlass},
+  {name: 'Restaurants', label: 'Restaurants', Icon: Storefront},
   {name: 'Cart', label: 'Cart', Icon: ShoppingCart},
   {name: 'Orders', label: 'Orders', Icon: Receipt},
   {name: 'Profile', label: 'Profile', Icon: UserCircle},
@@ -53,19 +53,21 @@ const CustomTabBar: React.FC<BottomTabBarProps> = ({
   const tabBounces = useRef(
     tabs.map(() => new Animated.Value(0)),
   ).current;
+  const activeTabIndex = tabs.findIndex(
+    tab => tab.name === state.routes[state.index]?.name,
+  );
 
   // Trigger bounce on tab switch
   useEffect(() => {
-    const currentTab = tabs[state.index];
-    if (currentTab && tabBounces[state.index]) {
-      tabBounces[state.index].setValue(0);
+    if (activeTabIndex >= 0 && tabBounces[activeTabIndex]) {
+      tabBounces[activeTabIndex].setValue(0);
       Animated.sequence([
-        Animated.timing(tabBounces[state.index], {
+        Animated.timing(tabBounces[activeTabIndex], {
           toValue: -6,
           duration: 140,
           useNativeDriver: true,
         }),
-        Animated.spring(tabBounces[state.index], {
+        Animated.spring(tabBounces[activeTabIndex], {
           toValue: 0,
           friction: 4,
           tension: 70,
@@ -73,7 +75,7 @@ const CustomTabBar: React.FC<BottomTabBarProps> = ({
         }),
       ]).start();
     }
-  }, [state.index, tabBounces]);
+  }, [activeTabIndex, tabBounces]);
 
   const handleTabPress = (tabName: string) => {
     if (

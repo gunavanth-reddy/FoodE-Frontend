@@ -168,7 +168,7 @@ const HelpCenterScreen: React.FC = () => {
               <Text
                 style={styles.contactValue}
                 selectable>
-                support@foode.app
+                foodeforus@gmail.com
               </Text>
             </View>
           </View>
