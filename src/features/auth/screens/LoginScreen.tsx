@@ -2,6 +2,7 @@ import React, {useEffect, useRef, useState} from 'react';
 import {
   Animated,
   Easing,
+  Linking,
   View,
   TouchableOpacity,
   KeyboardAvoidingView,
@@ -327,6 +328,21 @@ const LoginScreen = ({navigation}: any) => {
               </AppText>
             </TouchableOpacity>
 
+            <View style={styles.legalLinks}>
+              <AppText
+                style={styles.legalLink}
+                accessibilityRole="link"
+                onPress={() => Linking.openURL('https://foode.site/privacy-policy.html')}>
+                Privacy Policy
+              </AppText>
+              <AppText
+                style={styles.legalLink}
+                accessibilityRole="link"
+                onPress={() => Linking.openURL('https://foode.site/delete-account.html')}>
+                Request Account Deletion
+              </AppText>
+            </View>
+
             <AppText style={styles.version}>
               Version {APP_VERSION}
             </AppText>
@@ -546,6 +562,19 @@ const styles = StyleSheet.create({
     fontSize: 17,
     fontWeight: '800',
     textAlign: 'center',
+  },
+
+  legalLinks: {
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 16,
+  },
+
+  legalLink: {
+    color: '#7A3B0A',
+    fontSize: 13,
+    fontWeight: '700',
+    textDecorationLine: 'underline',
   },
 
   version: {

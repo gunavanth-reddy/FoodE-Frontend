@@ -3,6 +3,7 @@ import React from 'react';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {useNavigation} from '@react-navigation/native';
 import {
+  Linking,
   ScrollView,
   StatusBar,
   StyleSheet,
@@ -385,17 +386,39 @@ const PrivacyPolicyScreen: React.FC = () => {
 
           <Text style={styles.text}>
             For privacy questions, data correction requests,
-            or account-related concerns, contact the FoodE
-            team through the support channel provided in
-            the app.
+            or account deletion requests, contact FoodE at
+            foodeforus@gmail.com. You can also submit an
+            account deletion request without signing in at
+            https://foode.site/delete-account.html.
           </Text>
 
           <Text style={[styles.text, styles.paragraph]}>
-            FoodE does not use email as its account
-            registration method. This does not prevent
-            FoodE from adding a separate contact channel
-            in the future if needed.
+            Include the mobile number on your account so
+            support can verify and locate it. Never send
+            your password or one-time codes.
           </Text>
+
+          <TouchableOpacity
+            onPress={() =>
+              Linking.openURL('https://foode.site/privacy-policy.html')
+            }
+            accessibilityRole="link"
+            style={styles.publicPolicyLink}>
+            <Text style={styles.publicPolicyLinkText}>
+              Open the public FoodE Privacy Policy
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            onPress={() =>
+              Linking.openURL('https://foode.site/delete-account.html')
+            }
+            accessibilityRole="link"
+            style={styles.publicPolicyLink}>
+            <Text style={styles.publicPolicyLinkText}>
+              Request account deletion
+            </Text>
+          </TouchableOpacity>
         </View>
 
         {/* Footer */}
@@ -614,6 +637,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingTop: 4,
     paddingBottom: 8,
+  },
+
+  publicPolicyLink: {
+    alignSelf: 'flex-start',
+    marginTop: 12,
+    paddingVertical: 4,
+  },
+
+  publicPolicyLinkText: {
+    color: '#B84E00',
+    fontSize: 14,
+    fontWeight: '700',
+    textDecorationLine: 'underline',
   },
 
   footerTitle: {
