@@ -7,9 +7,9 @@
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:274366064930:android:6ee545d5f9283208381d7b",
+        "mobilesdk_app_id": "1:274366064930:android:d409a046377a6cb5381d7b",
         "android_client_info": {
-          "package_name": "com.foode"
+          "package_name": "com.foode.site"
         }
       },
       "oauth_client": [],

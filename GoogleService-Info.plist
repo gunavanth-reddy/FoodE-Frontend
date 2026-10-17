@@ -13,6 +13,6 @@
     <key>STORAGE_BUCKET</key>
     <string>foode-66adb.firebasestorage.app</string>
     <key>BUNDLE_ID</key>
-    <string>com.foode</string>
+    <string>com.foode.site</string>
 </dict>
 </plist>

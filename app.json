@@ -4,9 +4,10 @@
     "slug": "foode",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./foode-logo.jpg",
+    "icon": "./plugins/app-icons/Assets.xcassets/AppIcon.appiconset/1024.png",
     "ios": {
-      "bundleIdentifier": "com.foode",
+      "bundleIdentifier": "com.foode.site",
+      "icon": "./plugins/app-icons/AppIcon.icon",
       "supportsTablet": true,
       "infoPlist": {
         "NSAppTransportSecurity": {
@@ -16,14 +17,14 @@
       }
     },
     "android": {
-      "package": "com.foode",
-      "icon": "./foode-logo.jpg",
+      "package": "com.foode.site",
+      "icon": "./plugins/app-icons/android/mipmap-xxxhdpi/ic_launcher.png",
       "googleServicesFile": "./google-services.json",
       "permissions": [
         "android.permission.POST_NOTIFICATIONS"
       ],
       "adaptiveIcon": {
-        "foregroundImage": "./foode-logo.jpg",
+        "foregroundImage": "./plugins/app-icons/android/adaptive-foreground.png",
         "backgroundColor": "#FFFFFF"
       }
     },
@@ -35,7 +36,7 @@
       "description": "Discover campus restaurants, explore menus, and order your favorite meals with FoodE.",
       "themeColor": "#FF6B00",
       "lang": "en",
-      "favicon": "./foode-round.png"
+      "favicon": "./plugins/app-icons/Assets.xcassets/AppIcon.appiconset/1024.png"
     },
     "plugins": [
       "expo-dev-client",
@@ -54,7 +55,7 @@
         }
       ],
       "./plugins/with-immersive-android",
-      "./plugins/with-android-round-icons"
+      "./plugins/with-android-app-icons"
     ]
   }
 }
