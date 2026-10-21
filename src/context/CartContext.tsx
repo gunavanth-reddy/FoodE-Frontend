@@ -154,6 +154,7 @@ interface CartContextType {
   addItem: (
     item: any,
     quantity?: number,
+    force?: boolean,
   ) => Promise<boolean>;
 
   increase: (
@@ -592,6 +593,7 @@ export const CartProvider = ({
   const addItem = async (
     item: any,
     quantity = 1,
+    force = false,
   ): Promise<boolean> => {
 
     if (
@@ -645,6 +647,7 @@ export const CartProvider = ({
     // ===============================================
 
     if (
+      !force &&
       restaurant &&
       items.length > 0 &&
       newRestaurantId &&
@@ -662,7 +665,7 @@ export const CartProvider = ({
             onPress: async () => {
               const cleared = await clearCart();
               if (cleared !== false) {
-                await addItem(item, quantity);
+                await addItem(item, quantity, true);
               }
             },
           },
@@ -755,7 +758,7 @@ export const CartProvider = ({
               onPress: async () => {
                 const cleared = await clearCart();
                 if (cleared !== false) {
-                  await addItem(item, quantity);
+                  await addItem(item, quantity, true);
                 }
               },
             },

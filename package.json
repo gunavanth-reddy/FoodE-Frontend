@@ -4,7 +4,7 @@
   "private": true,
   "main": "index.js",
   "scripts": {
-    "android": "expo run:android",
+    "android": "expo run:android --device",
     "ios": "expo run:ios",
     "lint": "eslint .",
     "start": "expo start",

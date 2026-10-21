@@ -11,7 +11,9 @@ import API_BASE_URL from '../../../config/api';
 export type OrderStatus =
   | 'PLACED'
   | 'CONFIRMED'
-  | 'DELIVERED';
+  | 'READY_FOR_DELIVERY'
+  | 'DELIVERED'
+  | 'CANCELLED';
 
 // =====================================================
 // ORDER ITEM
@@ -430,13 +432,17 @@ const normalizeOrder = (
     total,
 
     status:
-      order?.status ===
-      'CONFIRMED'
+      order?.status === 'CONFIRMED'
         ? 'CONFIRMED'
-        : order?.status ===
-          'DELIVERED'
+        : order?.status === 'DELIVERED'
           ? 'DELIVERED'
-          : 'PLACED',
+          : order?.status ===
+              'READY_FOR_DELIVERY'
+            ? 'READY_FOR_DELIVERY'
+            : order?.status ===
+                'CANCELLED'
+              ? 'CANCELLED'
+              : 'PLACED',
   };
 };
 
@@ -777,3 +783,63 @@ export const getMyOrderById =
       throw error;
     }
   };
+
+// =====================================================
+// CANCEL ORDER (USER)
+// =====================================================
+
+export const cancelOrder = async (
+  token: string,
+  orderId: string,
+  reason?: string,
+): Promise<UserOrder> => {
+  if (!token) {
+    throw new Error('Authentication token is required.');
+  }
+
+  if (!orderId) {
+    throw new Error('Order ID is required.');
+  }
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 15000);
+
+  try {
+    const response = await fetch(`${API_BASE_URL}/orders/${orderId}/cancel`, {
+      method: 'PATCH',
+      headers: {
+        Accept: 'application/json',
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        reason: reason || 'Cancelled by customer',
+      }),
+      signal: controller.signal,
+    });
+
+    clearTimeout(timeoutId);
+
+    const data = (await response.json()) as {
+      success: boolean;
+      order?: UserOrder;
+      message?: string;
+    };
+
+    if (!response.ok) {
+      throw new Error(data.message || 'Failed to cancel order.');
+    }
+
+    if (!data.order) {
+      throw new Error('Updated order data was not returned.');
+    }
+
+    return normalizeOrder(data.order);
+  } catch (error: any) {
+    clearTimeout(timeoutId);
+    if (error?.name === 'AbortError') {
+      throw new Error('Cancel request timed out.');
+    }
+    throw error;
+  }
+};

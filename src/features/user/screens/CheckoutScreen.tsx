@@ -37,6 +37,7 @@ import {
   createOrder,
   DeliveryAddress,
 } from '../services/orderService';
+import SwipeToOrder from '../components/checkout/SwipeToOrder';
 
 // =====================================================
 // NAVIGATION
@@ -2016,55 +2017,6 @@ const CheckoutScreen = () => {
           </View>
         </View>
 
-        {/* PLACE ORDER */}
-
-        <Pressable
-          style={[
-            styles.placeOrderButton,
-            (
-              isPlacingOrder ||
-              loadingSlots ||
-              !selectedDeliverySlot
-            ) &&
-              styles.placeOrderDisabled,
-          ]}
-          onPress={
-            handlePlaceOrder
-          }
-          disabled={
-            isPlacingOrder ||
-            loadingSlots ||
-            !selectedDeliverySlot
-          }>
-
-          {isPlacingOrder ? (
-            <>
-              <ActivityIndicator
-                size="small"
-                color="#FFFFFF"
-              />
-
-              <Text
-                style={
-                  styles.placeOrderText
-                }>
-                Placing Order...
-              </Text>
-            </>
-          ) : (
-            <Text
-              style={
-                styles.placeOrderText
-              }>
-              {!selectedDeliverySlot
-                ? 'Select Delivery Time'
-                : `Place Order • ₹${grandTotal.toFixed(
-                    2,
-                  )}`}
-            </Text>
-          )}
-        </Pressable>
-
         <Text
           style={
             styles.footerNote
@@ -2074,6 +2026,32 @@ const CheckoutScreen = () => {
           Number 3.
         </Text>
       </ScrollView>
+
+      {/* FIXED BOTTOM SWIPE TO ORDER */}
+      <View style={styles.fixedBottomContainer}>
+        <SwipeToOrder
+          disabled={
+            isPlacingOrder ||
+            loadingSlots ||
+            !selectedDeliverySlot
+          }
+          loading={isPlacingOrder}
+          label={
+            !selectedDeliverySlot
+              ? 'Select Delivery Time'
+              : `Swipe to Order • ₹${grandTotal.toFixed(2)}`
+          }
+          onSwipeComplete={handlePlaceOrder}
+          onDisabledPress={() => {
+            if (!selectedDeliverySlot) {
+              FoodEAlert.alert(
+                'Select Delivery Time',
+                'Please choose an available delivery time slot above before swiping to order.',
+              );
+            }
+          }}
+        />
+      </View>
     </SafeAreaView>
   );
 };
@@ -2579,32 +2557,18 @@ const styles =
       color: '#FF5A00',
     },
 
-    // ================================================
-    // PLACE ORDER
-    // ================================================
-
-    placeOrderButton: {
-      marginHorizontal: 16,
-      marginTop: 25,
-      minHeight: 56,
-      borderRadius: 14,
-      backgroundColor: '#FF5A00',
-      alignItems: 'center',
-      justifyContent: 'center',
-      flexDirection: 'row',
-      paddingHorizontal: 18,
-    },
-
-    placeOrderDisabled: {
-      opacity: 0.55,
-    },
-
-    placeOrderText: {
-      fontSize: 16,
-      fontWeight: '800',
-      color: '#FFFFFF',
-      textAlign: 'center',
-      marginLeft: 8,
+    fixedBottomContainer: {
+      backgroundColor: '#FFFFFF',
+      paddingHorizontal: 16,
+      paddingTop: 12,
+      paddingBottom: 16,
+      borderTopWidth: 1,
+      borderTopColor: '#EEEEEE',
+      shadowColor: '#000',
+      shadowOffset: {width: 0, height: -3},
+      shadowOpacity: 0.06,
+      shadowRadius: 6,
+      elevation: 8,
     },
 
     // ================================================

@@ -35,6 +35,8 @@ import {
   CreditCard,
   Note,
   Package,
+  Bicycle,
+  XCircle,
 } from 'phosphor-react-native';
 
 import {
@@ -341,7 +343,9 @@ const RestaurantOrdersScreen: React.FC = () => {
 
       case 'ACTIVE':
         return orders.filter(
-          order => order.status === 'CONFIRMED',
+          order =>
+            order.status === 'CONFIRMED' ||
+            order.status === 'READY_FOR_DELIVERY',
         );
 
       case 'COMPLETED':
@@ -363,7 +367,9 @@ const RestaurantOrdersScreen: React.FC = () => {
   ).length;
 
   const activeOrders = orders.filter(
-    order => order.status === 'CONFIRMED',
+    order =>
+      order.status === 'CONFIRMED' ||
+      order.status === 'READY_FOR_DELIVERY',
   ).length;
 
   const completedOrders = orders.filter(
@@ -389,7 +395,11 @@ const RestaurantOrdersScreen: React.FC = () => {
     const actionText =
       status === 'CONFIRMED'
         ? 'confirm this order'
-        : 'mark this order as delivered';
+        : status === 'READY_FOR_DELIVERY'
+          ? 'mark this order as ready for delivery'
+          : status === 'DELIVERED'
+            ? 'mark this order as delivered'
+            : 'cancel this order';
 
     Alert.alert(
       'Update Order',
@@ -1052,85 +1062,147 @@ const OrderCard: React.FC<OrderCardProps> = ({
           status={order.status}
         />
 
-        {/* ===============================================
-            PLACED → CONFIRMED
-        =============================================== */}
+        <View style={styles.actionsContainer}>
+          {/* PLACED → CONFIRMED */}
+          {order.status === 'PLACED' && (
+            <TouchableOpacity
+              activeOpacity={0.8}
+              disabled={updating}
+              style={[
+                styles.confirmButton,
+                updating &&
+                  styles.disabledButton,
+              ]}
+              onPress={() =>
+                onUpdateStatus(
+                  order,
+                  'CONFIRMED',
+                )
+              }>
 
-        {order.status === 'PLACED' && (
-          <TouchableOpacity
-            activeOpacity={0.8}
-            disabled={updating}
-            style={[
-              styles.confirmButton,
-              updating &&
-                styles.disabledButton,
-            ]}
-            onPress={() =>
-              onUpdateStatus(
-                order,
-                'CONFIRMED',
-              )
-            }>
-
-            {updating ? (
-              <ActivityIndicator
-                size="small"
-                color="#FFFFFF"
-              />
-            ) : (
-              <View style={styles.buttonContent}>
-                <Check
-                  size={16}
+              {updating ? (
+                <ActivityIndicator
+                  size="small"
                   color="#FFFFFF"
+                />
+              ) : (
+                <View style={styles.buttonContent}>
+                  <Check
+                    size={16}
+                    color="#FFFFFF"
+                    weight="bold"
+                  />
+                  <Text style={styles.confirmButtonText}>
+                    Confirm Order
+                  </Text>
+                </View>
+              )}
+            </TouchableOpacity>
+          )}
+
+          {/* CONFIRMED → READY_FOR_DELIVERY */}
+          {order.status === 'CONFIRMED' && (
+            <TouchableOpacity
+              activeOpacity={0.8}
+              disabled={updating}
+              style={[
+                styles.readyButton,
+                updating &&
+                  styles.disabledButton,
+              ]}
+              onPress={() =>
+                onUpdateStatus(
+                  order,
+                  'READY_FOR_DELIVERY',
+                )
+              }>
+
+              {updating ? (
+                <ActivityIndicator
+                  size="small"
+                  color="#FFFFFF"
+                />
+              ) : (
+                <View style={styles.buttonContent}>
+                  <Bicycle
+                    size={16}
+                    color="#FFFFFF"
+                    weight="bold"
+                  />
+                  <Text style={styles.readyButtonText}>
+                    Ready for Delivery
+                  </Text>
+                </View>
+              )}
+            </TouchableOpacity>
+          )}
+
+          {/* READY_FOR_DELIVERY → DELIVERED */}
+          {order.status === 'READY_FOR_DELIVERY' && (
+            <TouchableOpacity
+              activeOpacity={0.8}
+              disabled={updating}
+              style={[
+                styles.deliveredButton,
+                updating &&
+                  styles.disabledButton,
+              ]}
+              onPress={() =>
+                onUpdateStatus(
+                  order,
+                  'DELIVERED',
+                )
+              }>
+
+              {updating ? (
+                <ActivityIndicator
+                  size="small"
+                  color="#FFFFFF"
+                />
+              ) : (
+                <View style={styles.buttonContent}>
+                  <CheckCircle
+                    size={16}
+                    color="#FFFFFF"
+                    weight="bold"
+                  />
+                  <Text style={styles.deliveredButtonText}>
+                    Mark Delivered
+                  </Text>
+                </View>
+              )}
+            </TouchableOpacity>
+          )}
+
+          {/* RESTAURANT CAN CANCEL ANYTIME (unless already DELIVERED or CANCELLED) */}
+          {order.status !== 'DELIVERED' && order.status !== 'CANCELLED' && (
+            <TouchableOpacity
+              activeOpacity={0.8}
+              disabled={updating}
+              style={[
+                styles.cancelOrderButton,
+                updating &&
+                  styles.disabledButton,
+              ]}
+              onPress={() =>
+                onUpdateStatus(
+                  order,
+                  'CANCELLED',
+                )
+              }>
+              <View style={styles.buttonContent}>
+                <XCircle
+                  size={15}
+                  color="#DC2626"
                   weight="bold"
                 />
-                <Text style={styles.confirmButtonText}>
-                  Confirm Order
+                <Text style={styles.cancelOrderButtonText}>
+                  Cancel
                 </Text>
               </View>
-            )}
-          </TouchableOpacity>
-        )}
-
-        {/* ===============================================
-            CONFIRMED → DELIVERED
-        =============================================== */}
-
-        {order.status === 'CONFIRMED' && (
-          <TouchableOpacity
-            activeOpacity={0.8}
-            disabled={updating}
-            style={[
-              styles.deliveredButton,
-              updating &&
-                styles.disabledButton,
-            ]}
-            onPress={() =>
-              onUpdateStatus(
-                order,
-                'DELIVERED',
-              )
-            }>
-
-            {updating ? (
-              <ActivityIndicator
-                size="small"
-                color="#FFFFFF"
-              />
-            ) : (
-              <View style={styles.buttonContent}>
-                <CheckCircle
-                  size={16}
-                  color="#FFFFFF"
-                  weight="bold"
-                />
-                <Text style={styles.deliveredButtonText}>
-                  Mark Delivered
-                </Text>
-              </View>
-            )}
-          </TouchableOpacity>
-        )}
+            </TouchableOpacity>
+          )}
+        </View>
       </View>
     </View>
   );
@@ -1167,21 +1239,37 @@ const StatusBadge: React.FC<
       dot: '#4285F4',
     },
 
+    READY_FOR_DELIVERY: {
+      label: 'Ready for Delivery',
+      background: '#F3E8FF',
+      dot: '#7C3AED',
+    },
+
     DELIVERED: {
       label: 'Delivered',
       background: '#EAF8EF',
       dot: '#22A55A',
     },
+
+    CANCELLED: {
+      label: 'Cancelled',
+      background: '#FEE2E2',
+      dot: '#DC2626',
+    },
   };
 
   const config =
-    statusConfig[status];
+    statusConfig[status] || statusConfig.PLACED;
 
   const StatusIcon =
     status === 'PLACED'
       ? Package
       : status === 'CONFIRMED'
       ? Check
+      : status === 'READY_FOR_DELIVERY'
+      ? Bicycle
+      : status === 'CANCELLED'
+      ? XCircle
       : CheckCircle;
 
   return (
@@ -1719,15 +1807,21 @@ const styles = StyleSheet.create({
     gap: 6,
   },
 
+  actionsContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+
   // =====================================================
   // BUTTONS
   // =====================================================
 
   confirmButton: {
-    minWidth: 110,
+    minWidth: 100,
     minHeight: 38,
     backgroundColor: ORANGE,
-    paddingHorizontal: 14,
+    paddingHorizontal: 12,
     paddingVertical: 9,
     borderRadius: 11,
     alignItems: 'center',
@@ -1740,11 +1834,28 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
 
+  readyButton: {
+    minWidth: 120,
+    minHeight: 38,
+    backgroundColor: '#7C3AED',
+    paddingHorizontal: 12,
+    paddingVertical: 9,
+    borderRadius: 11,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  readyButtonText: {
+    color: '#FFFFFF',
+    fontSize: 10,
+    fontWeight: '800',
+  },
+
   deliveredButton: {
-    minWidth: 110,
+    minWidth: 105,
     minHeight: 38,
     backgroundColor: '#17171B',
-    paddingHorizontal: 14,
+    paddingHorizontal: 12,
     paddingVertical: 9,
     borderRadius: 11,
     alignItems: 'center',
@@ -1753,6 +1864,24 @@ const styles = StyleSheet.create({
 
   deliveredButtonText: {
     color: '#FFFFFF',
+    fontSize: 10,
+    fontWeight: '800',
+  },
+
+  cancelOrderButton: {
+    minHeight: 38,
+    paddingHorizontal: 10,
+    paddingVertical: 9,
+    borderRadius: 11,
+    borderWidth: 1,
+    borderColor: '#FECACA',
+    backgroundColor: '#FEF2F2',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  cancelOrderButtonText: {
+    color: '#DC2626',
     fontSize: 10,
     fontWeight: '800',
   },

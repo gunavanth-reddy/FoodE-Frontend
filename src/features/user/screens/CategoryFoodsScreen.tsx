@@ -158,7 +158,9 @@ const CategoryFoodsScreen = () => {
 
       if (isVeg) {
         result = result.filter(
-          food => food.isVegetarian === true,
+          food =>
+            food.foodType === 'veg' ||
+            food.isVegetarian === true,
         );
       }
 
@@ -168,7 +170,9 @@ const CategoryFoodsScreen = () => {
 
       if (isNonVeg) {
         result = result.filter(
-          food => food.isVegetarian !== true,
+          food =>
+            food.foodType === 'non-veg' ||
+            (!food.isVegetarian && food.foodType !== 'veg'),
         );
       }
 
@@ -416,7 +420,7 @@ const CategoryFoodsScreen = () => {
               styles.foodIndicator,
               {
                 borderColor:
-                  food.isVegetarian
+                  food.foodType === 'veg' || food.isVegetarian
                     ? '#16A34A'
                     : '#DC2626',
               },
@@ -426,7 +430,7 @@ const CategoryFoodsScreen = () => {
                 styles.foodDot,
                 {
                   backgroundColor:
-                    food.isVegetarian
+                    food.foodType === 'veg' || food.isVegetarian
                       ? '#16A34A'
                       : '#DC2626',
                 },

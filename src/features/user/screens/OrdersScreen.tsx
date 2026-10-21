@@ -28,12 +28,14 @@ import {
   Star,
   CaretRight,
   Receipt,
+  XCircle,
 } from 'phosphor-react-native';
 
 import {useAuth} from '../../../context/AuthContext';
 
 import {
   getMyOrders,
+  cancelOrder,
   UserOrder,
   OrderItem,
 } from '../services/orderService';
@@ -93,6 +95,9 @@ const OrdersScreen: React.FC = () => {
 
   const [refreshing, setRefreshing] =
     useState(false);
+
+  const [cancellingOrderId, setCancellingOrderId] =
+    useState<string | null>(null);
 
   // =====================================================
   // LOAD ORDERS
@@ -465,8 +470,14 @@ const OrdersScreen: React.FC = () => {
       case 'DELIVERED':
         return '#15803D';
 
+      case 'READY_FOR_DELIVERY':
+        return '#7C3AED';
+
       case 'CONFIRMED':
         return '#2563EB';
+
+      case 'CANCELLED':
+        return '#DC2626';
 
       case 'PLACED':
       default:
@@ -485,13 +496,63 @@ const OrdersScreen: React.FC = () => {
       case 'DELIVERED':
         return 'Delivered';
 
+      case 'READY_FOR_DELIVERY':
+        return 'Ready for Delivery';
+
       case 'CONFIRMED':
         return 'Confirmed';
+
+      case 'CANCELLED':
+        return 'Cancelled';
 
       case 'PLACED':
       default:
         return 'Placed';
     }
+  };
+
+  // =====================================================
+  // CANCEL ORDER
+  // =====================================================
+
+  const handleCancelOrder = (order: UserOrder) => {
+    if (order.status !== 'PLACED') {
+      Alert.alert(
+        'Cannot Cancel',
+        'This order has already been confirmed by the restaurant and cannot be cancelled.',
+      );
+      return;
+    }
+
+    Alert.alert(
+      'Cancel Order',
+      `Are you sure you want to cancel order #${order.orderNumber}?`,
+      [
+        {text: 'Keep Order', style: 'cancel'},
+        {
+          text: 'Cancel Order',
+          style: 'destructive',
+          onPress: async () => {
+            if (!token) return;
+            try {
+              setCancellingOrderId(order._id);
+              const updated = await cancelOrder(token, order._id);
+              setOrders(prev =>
+                prev.map(o => (o._id === order._id ? updated : o)),
+              );
+              Alert.alert('Order Cancelled', 'Your order has been cancelled.');
+            } catch (err: any) {
+              Alert.alert(
+                'Unable to Cancel',
+                err?.message || 'Please try again.',
+              );
+            } finally {
+              setCancellingOrderId(null);
+            }
+          },
+        },
+      ],
+    );
   };
 
   // =====================================================
@@ -972,6 +1033,33 @@ const OrdersScreen: React.FC = () => {
               }
             />
 
+          </TouchableOpacity>
+        )}
+
+        {/* =================================================
+            CANCEL (ONLY WHEN PLACED)
+        ================================================= */}
+
+        {item.status === 'PLACED' && (
+          <TouchableOpacity
+            activeOpacity={0.85}
+            disabled={cancellingOrderId === item._id}
+            onPress={() => handleCancelOrder(item)}
+            style={styles.cancelOrderButton}>
+            {cancellingOrderId === item._id ? (
+              <ActivityIndicator size="small" color="#DC2626" />
+            ) : (
+              <>
+                <XCircle
+                  size={16}
+                  color="#DC2626"
+                  weight="bold"
+                />
+                <Text style={styles.cancelOrderText}>
+                  Cancel Order
+                </Text>
+              </>
+            )}
           </TouchableOpacity>
         )}
 
@@ -1606,6 +1694,29 @@ const styles = StyleSheet.create({
   reviewChevron: {
     position: 'absolute',
     right: 13,
+  },
+
+  // ===================================================
+  // CANCEL ORDER
+  // ===================================================
+
+  cancelOrderButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 12,
+    backgroundColor: '#FEF2F2',
+    borderWidth: 1,
+    borderColor: '#FECACA',
+    borderRadius: 12,
+    paddingVertical: 11,
+  },
+
+  cancelOrderText: {
+    marginLeft: 7,
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#DC2626',
   },
 
   // ===================================================

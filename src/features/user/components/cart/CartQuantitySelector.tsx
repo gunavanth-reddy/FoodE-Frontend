@@ -1,6 +1,7 @@
-import React from 'react';
+import React, {useState} from 'react';
 
 import {
+  ActivityIndicator,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -33,6 +34,8 @@ const CartQuantitySelector: React.FC<
     getQuantity,
   } = useCart();
 
+  const [updating, setUpdating] = useState(false);
+
   const quantity =
     getQuantity(item.id);
 
@@ -40,21 +43,30 @@ const CartQuantitySelector: React.FC<
   // DECREASE
   // ===================================================
 
-  const handleDecrease = () => {
-    if (quantity <= 1) {
-      decrease(item.id);
-      return;
-    }
+  const handleDecrease = async () => {
+    if (updating) return;
 
-    decrease(item.id);
+    try {
+      setUpdating(true);
+      await decrease(item.id);
+    } finally {
+      setUpdating(false);
+    }
   };
 
   // ===================================================
   // INCREASE
   // ===================================================
 
-  const handleIncrease = () => {
-    increase(item.id);
+  const handleIncrease = async () => {
+    if (updating) return;
+
+    try {
+      setUpdating(true);
+      await increase(item.id);
+    } finally {
+      setUpdating(false);
+    }
   };
 
   // ===================================================
@@ -70,6 +82,7 @@ const CartQuantitySelector: React.FC<
 
       <TouchableOpacity
         activeOpacity={0.7}
+        disabled={updating}
         style={styles.button}
         onPress={handleDecrease}>
 
@@ -87,10 +100,17 @@ const CartQuantitySelector: React.FC<
       <View
         style={styles.quantityContainer}>
 
-        <Text
-          style={styles.quantity}>
-          {quantity}
-        </Text>
+        {updating ? (
+          <ActivityIndicator
+            size="small"
+            color="#FF7A00"
+          />
+        ) : (
+          <Text
+            style={styles.quantity}>
+            {quantity}
+          </Text>
+        )}
 
       </View>
 
@@ -100,6 +120,7 @@ const CartQuantitySelector: React.FC<
 
       <TouchableOpacity
         activeOpacity={0.7}
+        disabled={updating}
         style={styles.button}
         onPress={handleIncrease}>
 

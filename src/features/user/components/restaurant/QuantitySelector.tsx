@@ -38,9 +38,11 @@ const QuantitySelector: React.FC<QuantitySelectorProps> = ({
     getQuantity,
   } = useCart();
 
+  const [updating, setUpdating] = React.useState(false);
+
   const quantity = getQuantity(item.id);
 
-  const handleAddItem = () => {
+  const handleAddItem = async () => {
     if (onAdd) {
       onAdd();
       return;
@@ -66,35 +68,60 @@ const QuantitySelector: React.FC<QuantitySelectorProps> = ({
       return;
     }
 
-    addItem(item);
+    try {
+      setUpdating(true);
+      await addItem(item);
+    } finally {
+      setUpdating(false);
+    }
   };
 
-  const handleIncrease = () => {
+  const handleIncrease = async () => {
     if (!isLoggedIn) {
       navigation.navigate('Login');
       return;
     }
 
-    increase(item.id);
+    if (updating || adding) {
+      return;
+    }
+
+    try {
+      setUpdating(true);
+      await increase(item.id);
+    } finally {
+      setUpdating(false);
+    }
   };
 
-  const handleDecrease = () => {
+  const handleDecrease = async () => {
     if (!isLoggedIn) {
       navigation.navigate('Login');
       return;
     }
 
-    decrease(item.id);
+    if (updating || adding) {
+      return;
+    }
+
+    try {
+      setUpdating(true);
+      await decrease(item.id);
+    } finally {
+      setUpdating(false);
+    }
   };
+
+  const isBusy = adding || updating;
 
   if (quantity === 0) {
     return (
       <TouchableOpacity
-        disabled={adding}
+        disabled={isBusy}
         activeOpacity={0.8}
         style={styles.addButton}
         onPress={handleAddItem}>
-        {adding ? (
+        {isBusy ? (
           <ActivityIndicator size="small" color="#FF7A00" />
         ) : (
           <Text style={styles.addText}>ADD</Text>
@@ -106,6 +133,7 @@ const QuantitySelector: React.FC<QuantitySelectorProps> = ({
   return (
     <View style={styles.quantityContainer}>
       <TouchableOpacity
+        disabled={isBusy}
         style={styles.actionButton}
         onPress={handleDecrease}>
         <Text style={styles.actionText}>
@@ -113,11 +141,16 @@ const QuantitySelector: React.FC<QuantitySelectorProps> = ({
         </Text>
       </TouchableOpacity>
 
-      <Text style={styles.quantityText}>
-        {quantity}
-      </Text>
+      {isBusy ? (
+        <ActivityIndicator size="small" color="#FF7A00" />
+      ) : (
+        <Text style={styles.quantityText}>
+          {quantity}
+        </Text>
+      )}
 
       <TouchableOpacity
+        disabled={isBusy}
         style={styles.actionButton}
         onPress={handleIncrease}>
         <Text style={styles.actionText}>

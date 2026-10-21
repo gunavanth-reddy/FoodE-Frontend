@@ -203,37 +203,7 @@ const RestaurantCard: React.FC<RestaurantCardProps> = ({
           </Text>
         </View>
 
-        {/* Food type */}
-        <View style={styles.imageBottom}>
-          <View
-            style={[
-              styles.foodTypeBadge,
-              isVeg ? styles.vegBadge : styles.nonVegBadge,
-            ]}>
-            <View
-              style={[
-                styles.foodTypeDot,
-                {
-                  backgroundColor: isVeg
-                    ? COLORS.green
-                    : COLORS.red,
-                },
-              ]}
-            />
 
-            <Text
-              style={[
-                styles.foodTypeText,
-                {
-                  color: isVeg
-                    ? COLORS.green
-                    : COLORS.red,
-                },
-              ]}>
-              {isVeg ? 'VEG' : 'NON-VEG'}
-            </Text>
-          </View>
-        </View>
 
         {/* Rating */}
         <View style={styles.ratingBadge}>

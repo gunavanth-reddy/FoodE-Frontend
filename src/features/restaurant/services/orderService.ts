@@ -11,7 +11,9 @@ import API_BASE_URL from '../../../config/api';
 export type OrderStatus =
   | 'PLACED'
   | 'CONFIRMED'
-  | 'DELIVERED';
+  | 'READY_FOR_DELIVERY'
+  | 'DELIVERED'
+  | 'CANCELLED';
 
 // =====================================================
 // FOOD
@@ -344,7 +346,13 @@ const normalizeOrder = (
         ? 'CONFIRMED'
         : order?.status === 'DELIVERED'
           ? 'DELIVERED'
-          : 'PLACED',
+          : order?.status ===
+              'READY_FOR_DELIVERY'
+            ? 'READY_FOR_DELIVERY'
+            : order?.status ===
+                'CANCELLED'
+              ? 'CANCELLED'
+              : 'PLACED',
   };
 };
 
@@ -489,6 +497,7 @@ export const updateOrderStatus = async (
   token: string,
   orderId: string,
   status: OrderStatus,
+  reason?: string,
 ): Promise<RestaurantOrder> => {
   if (!token) {
     throw new Error(
@@ -512,7 +521,9 @@ export const updateOrderStatus = async (
   // by restaurant owner.
   const allowedStatuses: OrderStatus[] = [
     'CONFIRMED',
+    'READY_FOR_DELIVERY',
     'DELIVERED',
+    'CANCELLED',
   ];
 
   if (!allowedStatuses.includes(status)) {
@@ -549,6 +560,7 @@ export const updateOrderStatus = async (
 
           body: JSON.stringify({
             status,
+            reason: reason || undefined,
           }),
         },
       );
@@ -638,8 +650,24 @@ export const confirmOrder = async (
 };
 
 // =====================================================
+// READY FOR DELIVERY
+// CONFIRMED → READY_FOR_DELIVERY
+// =====================================================
+
+export const markOrderReady = async (
+  token: string,
+  orderId: string,
+): Promise<RestaurantOrder> => {
+  return updateOrderStatus(
+    token,
+    orderId,
+    'READY_FOR_DELIVERY',
+  );
+};
+
+// =====================================================
 // MARK ORDER DELIVERED
-// CONFIRMED → DELIVERED
+// CONFIRMED / READY_FOR_DELIVERY → DELIVERED
 // =====================================================
 
 export const markOrderDelivered =
@@ -653,3 +681,21 @@ export const markOrderDelivered =
       'DELIVERED',
     );
   };
+
+// =====================================================
+// CANCEL ORDER (RESTAURANT)
+// ANY STATUS → CANCELLED
+// =====================================================
+
+export const cancelRestaurantOrder = async (
+  token: string,
+  orderId: string,
+  reason?: string,
+): Promise<RestaurantOrder> => {
+  return updateOrderStatus(
+    token,
+    orderId,
+    'CANCELLED',
+    reason,
+  );
+};
