@@ -2,7 +2,7 @@
   "expo": {
     "name": "FoodE",
     "slug": "foode",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "orientation": "portrait",
     "icon": "./plugins/app-icons/Assets.xcassets/AppIcon.appiconset/1024.png",
     "ios": {
@@ -17,6 +17,7 @@
       }
     },
     "android": {
+      "versionCode": 2,
       "package": "com.foode.site",
       "icon": "./plugins/app-icons/android/mipmap-xxxhdpi/ic_launcher.png",
       "googleServicesFile": "./google-services.json",
