@@ -35,12 +35,17 @@ export default Avatar;
 const styles = StyleSheet.create({
   container: {
     overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: '#F0E7DF',
+    borderWidth: 2,
+    borderColor: '#FFE4D2',
     backgroundColor: '#FFFFFF',
+    shadowColor: '#FF5200',
+    shadowOffset: {width: 0, height: 2},
+    shadowOpacity: 0.1,
+    shadowRadius: 6,
+    elevation: 3,
   },
   placeholder: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#FFF2E8',
     alignItems: 'center',
     justifyContent: 'center',
   },

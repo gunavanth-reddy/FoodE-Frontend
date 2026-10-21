@@ -153,9 +153,8 @@ const RestaurantCard: React.FC<RestaurantCardProps> = ({
         isOpen ? 'View' : 'Closed restaurant'
       } ${restaurant.name || 'Restaurant'}`}>
 
-      {/* Restaurant image */}
-      <View
-        style={styles.imageContainer}>
+      {/* Restaurant banner image */}
+      <View style={styles.imageContainer}>
         <AsyncImage
           source={
             restaurant.coverImage ||
@@ -166,6 +165,7 @@ const RestaurantCard: React.FC<RestaurantCardProps> = ({
           kind="restaurant"
         />
 
+        {/* Favorite button */}
         {onFavoritePress && (
           <TouchableOpacity
             accessibilityRole="button"
@@ -180,7 +180,7 @@ const RestaurantCard: React.FC<RestaurantCardProps> = ({
               onFavoritePress();
             }}>
             <Heart
-              size={19}
+              size={18}
               color={isFavorite ? COLORS.orange : COLORS.text}
               weight={isFavorite ? 'fill' : 'regular'}
             />
@@ -190,31 +190,30 @@ const RestaurantCard: React.FC<RestaurantCardProps> = ({
         {/* Dark overlay for closed restaurants */}
         {!isOpen && <View style={styles.closedImageOverlay} />}
 
-        {/* Open/closed status */}
+        {/* Open/closed status badge (top-left) */}
         <View
           style={[
             styles.statusBadge,
             isOpen ? styles.openBadge : styles.closedBadge,
           ]}>
           <View style={styles.statusDot} />
-
           <Text style={styles.statusText}>
             {isOpen ? 'OPEN NOW' : 'CLOSED'}
           </Text>
         </View>
 
-
-
-        {/* Rating */}
-        <View style={styles.ratingBadge}>
+        {/* Rating badge (top-right) */}
+        <View
+          style={[
+            styles.ratingBadge,
+            onFavoritePress ? styles.ratingBadgeWithFavorite : null,
+          ]}>
           <Star
-            size={14}
+            size={13}
             color="#FFFFFF"
             weight="fill"
           />
-
           <Text style={styles.ratingText}>{rating}</Text>
-
           {totalReviews > 0 && (
             <Text style={styles.reviewText}>
               ({totalReviews})
@@ -223,133 +222,76 @@ const RestaurantCard: React.FC<RestaurantCardProps> = ({
         </View>
       </View>
 
-      {/* Restaurant details */}
+      {/* Restaurant details - compact below image */}
       <View style={styles.content}>
-        {/* Name and navigation indicator */}
-        <View style={styles.nameRow}>
-          <Text
-            numberOfLines={1}
-            style={styles.name}>
-            {restaurant.name || 'Restaurant'}
-          </Text>
+        <View style={styles.mainRow}>
+          <View style={styles.detailsCol}>
+            {/* Restaurant name in bold/uppercase */}
+            <Text
+              numberOfLines={1}
+              style={styles.name}>
+              {restaurant.name?.toUpperCase() || 'RESTAURANT'}
+            </Text>
 
+            {/* Address with delivery fee beside it */}
+            <View style={styles.locationAndFeeRow}>
+              <MapPin
+                size={14}
+                color={COLORS.secondary}
+                weight="fill"
+              />
+
+              <Text
+                numberOfLines={1}
+                style={styles.addressText}>
+                {restaurant.address || 'SRM University'}
+              </Text>
+
+              <Text style={styles.feeDot}>•</Text>
+
+              <Text
+                numberOfLines={1}
+                style={styles.deliveryFeeText}>
+                {restaurant.freeDelivery
+                  ? 'Free Delivery'
+                  : hasDeliveryFee
+                  ? `₹${restaurant.deliveryFee} delivery`
+                  : 'Free Delivery'}
+              </Text>
+            </View>
+          </View>
+
+          {/* Action indicator button on bottom-right */}
           <View style={styles.arrowContainer}>
             <CaretRight
-              size={17}
+              size={18}
               color={COLORS.orange}
               weight="bold"
             />
           </View>
         </View>
 
-        {/* Cuisine */}
-        <Text
-          numberOfLines={1}
-          style={styles.cuisine}>
-          {cuisine}
-        </Text>
-
-        {/* Delivery information */}
-        <View style={styles.deliveryInfo}>
-          <View style={styles.infoItem}>
-            <View style={styles.infoIcon}>
-              <Clock
-                size={14}
-                color={COLORS.orange}
-                weight="bold"
-              />
-            </View>
-
-            <Text style={styles.infoText}>
-              {deliveryTime}
-            </Text>
-          </View>
-
-          <View style={styles.infoDivider} />
-
-          <View style={styles.infoItem}>
-            <View style={styles.infoIcon}>
-              <Bicycle
-                size={15}
-                color={COLORS.orange}
-                weight="bold"
-              />
-            </View>
-
-            <Text
-              numberOfLines={1}
-              style={styles.infoText}>
-              {restaurant.freeDelivery
-                ? 'Free delivery'
-                : hasDeliveryFee
-                ? `₹${restaurant.deliveryFee} delivery`
-                : 'Delivery available'}
-            </Text>
-          </View>
-        </View>
-
-        {/* Address */}
-        {!!restaurant.address && (
-          <View style={styles.addressRow}>
-            <MapPin
-              size={13}
-              color={COLORS.muted}
+        {/* Optional offer chip if available */}
+        {showOffer && restaurant.offer ? (
+          <View style={styles.offerRow}>
+            <Tag
+              size={12}
+              color={COLORS.orangeDark}
               weight="fill"
             />
-
             <Text
               numberOfLines={1}
-              style={styles.address}>
-              {restaurant.address}
+              style={styles.offerText}>
+              {restaurant.offer}
             </Text>
           </View>
-        )}
+        ) : null}
 
-        {/* Offer and free-delivery chips */}
-        {((showDeliveryChip && restaurant.freeDelivery) ||
-          (showOffer && restaurant.offer)) && (
-          <View style={styles.chipsRow}>
-            {showDeliveryChip && restaurant.freeDelivery && (
-              <View style={styles.deliveryChip}>
-                <Bicycle
-                  size={13}
-                  color={COLORS.green}
-                  weight="bold"
-                />
-
-                <Text style={styles.deliveryChipText}>
-                  Free Delivery
-                </Text>
-              </View>
-            )}
-
-            {showOffer && restaurant.offer && (
-              <View style={styles.offerChip}>
-                <Tag
-                  size={13}
-                  color={COLORS.orangeDark}
-                  weight="fill"
-                />
-
-                <Text
-                  numberOfLines={1}
-                  style={styles.offerText}>
-                  {restaurant.offer}
-                </Text>
-              </View>
-            )}
-          </View>
-        )}
-
-        {/* Closed restaurant notice */}
+        {/* Closed notice */}
         {!isOpen && (
           <View style={styles.closedNotice}>
             <Text style={styles.closedNoticeText}>
-              Restaurant is closed
-            </Text>
-
-            <Text style={styles.closedSubtext}>
-              You cannot view this restaurant right now.
+              Restaurant is closed right now
             </Text>
           </View>
         )}
@@ -452,16 +394,6 @@ const styles = StyleSheet.create({
     letterSpacing: 0.65,
   },
 
-  imageBottom: {
-    position: 'absolute',
-    left: 13,
-    right: 13,
-    bottom: 13,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-
   ratingBadge: {
     position: 'absolute',
     top: 13,
@@ -490,232 +422,107 @@ const styles = StyleSheet.create({
     marginLeft: 4,
   },
 
-  foodTypeBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderRadius: 9,
-    paddingHorizontal: 9,
-    paddingVertical: 7,
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-  },
-
-  vegBadge: {
-    borderColor: '#B8E6C8',
-  },
-
-  nonVegBadge: {
-    borderColor: '#F4C0C0',
-  },
-
-  foodTypeDot: {
-    width: 7,
-    height: 7,
-    borderRadius: 4,
-    marginRight: 5,
-  },
-
-  foodTypeText: {
-    fontSize: 9,
-    fontWeight: '900',
-    letterSpacing: 0.45,
+  ratingBadgeWithFavorite: {
+    right: 54,
   },
 
   content: {
     paddingHorizontal: 16,
-    paddingTop: 45,
-    paddingBottom: 16,
-    backgroundColor: '#FFFCF9',
-    position: 'relative',
-  },
-
-  logoContainer: {
-    position: 'absolute',
-    top: -35,
-    left: 16,
-    width: 70,
-    height: 70,
-    borderRadius: 18,
-    padding: 3,
+    paddingTop: 14,
+    paddingBottom: 14,
     backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#FFE0C7',
-    shadowColor: '#302015',
-    shadowOffset: {width: 0, height: 3},
-    shadowOpacity: 0.15,
-    shadowRadius: 6,
-    elevation: 5,
   },
 
-  logo: {
-    width: '100%',
-    height: '100%',
-    borderRadius: 15,
-  },
-
-  nameRow: {
+  mainRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+
+  detailsCol: {
+    flex: 1,
+    marginRight: 12,
   },
 
   name: {
-    flex: 1,
-    fontSize: 19,
+    fontSize: 20,
     lineHeight: 25,
-    fontWeight: '800',
-    letterSpacing: -0.45,
-    color: '#302015',
+    fontWeight: '900',
+    letterSpacing: -0.3,
+    color: '#1B140E',
+  },
+
+  locationAndFeeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 5,
+  },
+
+  addressText: {
+    fontSize: 13,
+    lineHeight: 18,
+    color: '#685F58',
+    fontWeight: '500',
+    marginLeft: 4,
+    flexShrink: 1,
+    maxWidth: '56%',
+  },
+
+  feeDot: {
+    fontSize: 12,
+    color: '#A09790',
+    marginHorizontal: 6,
+  },
+
+  deliveryFeeText: {
+    fontSize: 13,
+    lineHeight: 18,
+    color: COLORS.orangeDark,
+    fontWeight: '700',
+    flexShrink: 0,
   },
 
   arrowContainer: {
-    width: 30,
-    height: 30,
-    borderRadius: 11,
-    backgroundColor: '#FFF0E3',
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: '#FFF2E8',
     borderWidth: 1,
-    borderColor: '#FFD4B3',
+    borderColor: '#FFDFC7',
     alignItems: 'center',
     justifyContent: 'center',
-    marginLeft: 8,
   },
 
-  cuisine: {
-    marginTop: 3,
-    fontSize: 12,
-    lineHeight: 18,
-    fontWeight: '500',
-    color: COLORS.secondary,
-  },
-
-  deliveryInfo: {
+  offerRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 13,
-    paddingVertical: 11,
-    paddingHorizontal: 10,
-    borderRadius: 14,
-    backgroundColor: '#FFF3E9',
-    borderWidth: 1,
-    borderColor: '#FFE0C7',
-  },
-
-  infoItem: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    minWidth: 0,
-  },
-
-  infoIcon: {
-    width: 26,
-    height: 26,
-    borderRadius: 9,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#FFD6B5',
-  },
-
-  infoText: {
-    flex: 1,
-    marginLeft: 7,
-    fontSize: 11,
-    lineHeight: 16,
-    color: '#4D4037',
-    fontWeight: '700',
-  },
-
-  infoDivider: {
-    width: 1,
-    height: 22,
-    backgroundColor: '#EADDD1',
-    marginHorizontal: 9,
-  },
-
-  addressRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 11,
-  },
-
-  address: {
-    flex: 1,
-    marginLeft: 6,
-    fontSize: 11,
-    lineHeight: 16,
-    color: COLORS.muted,
-    fontWeight: '500',
-  },
-
-  chipsRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    alignItems: 'center',
-    marginTop: 12,
-  },
-
-  deliveryChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 10,
-    paddingVertical: 7,
-    borderRadius: 9,
-    backgroundColor: COLORS.greenLight,
-    borderWidth: 1,
-    borderColor: '#D3EFDC',
-    marginRight: 7,
-    marginBottom: 3,
-  },
-
-  deliveryChipText: {
-    marginLeft: 5,
-    fontSize: 10,
-    fontWeight: '800',
-    color: COLORS.green,
-  },
-
-  offerChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    maxWidth: '100%',
-    paddingHorizontal: 11,
-    paddingVertical: 8,
-    borderRadius: 10,
-    backgroundColor: '#FFF0E3',
-    borderWidth: 1,
-    borderColor: '#FFC99F',
-    marginBottom: 3,
+    marginTop: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+    backgroundColor: '#FFF5ED',
+    alignSelf: 'flex-start',
   },
 
   offerText: {
-    flexShrink: 1,
-    marginLeft: 5,
-    fontSize: 10,
-    fontWeight: '800',
+    fontSize: 11,
+    fontWeight: '700',
     color: '#C6530A',
+    marginLeft: 4,
   },
 
   closedNotice: {
-    marginTop: 11,
+    marginTop: 8,
     paddingHorizontal: 10,
-    paddingVertical: 10,
-    borderRadius: 9,
-    backgroundColor: COLORS.redLight,
-    borderWidth: 1,
-    borderColor: '#F8DADA',
+    paddingVertical: 6,
+    borderRadius: 8,
+    backgroundColor: '#FEE2E2',
+    alignSelf: 'flex-start',
   },
 
   closedNoticeText: {
     color: COLORS.red,
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '800',
-  },
-
-  closedSubtext: {
-    color: '#9D4242',
-    fontSize: 10,
-    fontWeight: '500',
-    marginTop: 3,
   },
 });

@@ -5,14 +5,14 @@ export const QUICK_ACTIONS: QuickAction[] = [
     id: '1',
     title: 'Orders',
     icon: 'receipt-long',
-    color: '#3B82F6',
+    color: '#FF5200',
     route: 'Orders',
   },
   {
     id: '2',
     title: 'Favorites',
     icon: 'favorite-outline',
-    color: '#EF4444',
+    color: '#E11D48',
     route: 'Favorites',
   },
 ];

@@ -7,7 +7,7 @@ export const ACCOUNT_MENU: MenuItem[] = [
     title: 'Personal Information',
     subtitle: 'Manage your profile',
     icon: 'person-outline',
-    color: '#FF6B00',
+    color: '#FF5200',
     route: 'PersonalInfo',
   },
   {
@@ -15,7 +15,7 @@ export const ACCOUNT_MENU: MenuItem[] = [
     title: 'Saved Addresses',
     subtitle: 'Home, Work & Others',
     icon: 'location-on',
-    color: '#22C55E',
+    color: '#FF5200',
     route: 'Address',
   },
   {
@@ -23,7 +23,7 @@ export const ACCOUNT_MENU: MenuItem[] = [
     title: 'My Orders',
     subtitle: 'Track current & past orders',
     icon: 'receipt-long',
-    color: '#3B82F6',
+    color: '#FF5200',
     route: 'Orders',
   },
   {
@@ -31,7 +31,7 @@ export const ACCOUNT_MENU: MenuItem[] = [
     title: 'Favorites',
     subtitle: 'Saved restaurants & foods',
     icon: 'favorite-border',
-    color: '#EF4444',
+    color: '#E11D48',
     route: 'Favorites',
   },
   {
@@ -39,7 +39,7 @@ export const ACCOUNT_MENU: MenuItem[] = [
     title: 'Notifications',
     subtitle: 'Manage notification preferences',
     icon: 'notifications-none',
-    color: '#06B6D4',
+    color: '#FF5200',
     route: 'NotificationSettings',
   },
 ];
@@ -50,7 +50,7 @@ export const SUPPORT_MENU: MenuItem[] = [
     title: 'Help Center',
     subtitle: 'FAQs & Customer Support',
     icon: 'help-outline',
-    color: '#8B5CF6',
+    color: '#FF5200',
     route: 'HelpCenter',
   },
 ];
@@ -61,7 +61,7 @@ export const ABOUT_MENU: MenuItem[] = [
     title: 'Privacy Policy',
     subtitle: 'Read our privacy policy',
     icon: 'privacy-tip',
-    color: '#10B981',
+    color: '#756A61',
     route: 'PrivacyPolicy',
   },
   {
@@ -69,7 +69,7 @@ export const ABOUT_MENU: MenuItem[] = [
     title: 'Terms & Conditions',
     subtitle: 'Read our terms and conditions',
     icon: 'description',
-    color: '#F59E0B',
+    color: '#756A61',
     route: 'Terms',
   },
   {
@@ -77,7 +77,7 @@ export const ABOUT_MENU: MenuItem[] = [
     title: 'Language',
     subtitle: 'English',
     icon: 'language',
-    color: '#3B82F6',
+    color: '#756A61',
     route: 'Language',
   },
   {
@@ -85,7 +85,7 @@ export const ABOUT_MENU: MenuItem[] = [
     title: 'About FoodE',
     subtitle: `Version ${APP_VERSION}`,
     icon: 'info-outline',
-    color: '#6366F1',
+    color: '#FF5200',
     route: 'About',
   },
 ];

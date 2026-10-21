@@ -12,7 +12,7 @@ export default StyleSheet.create({
   subtitle: {marginTop: 3, color: COLORS.textSecondary, ...TYPOGRAPHY.caption},
   notificationButton: {
     width: 44, height: 44, borderRadius: 15, backgroundColor: COLORS.primaryLight,
-    justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: '#FFD0A8',
+    justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: '#FFDEC7',
   },
   badge: {
     position: 'absolute', top: 7, right: 7, width: 9, height: 9,

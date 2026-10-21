@@ -77,17 +77,17 @@ export default GuestProfileCard;
 const buttonStyles = StyleSheet.create({
   loginButton: {
     width: '100%',
-    minHeight: 54,
-    backgroundColor: '#FF6B00',
+    minHeight: 52,
+    backgroundColor: '#FF5200',
     borderRadius: 16,
     paddingHorizontal: 18,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginTop: 22,
+    marginTop: 20,
 
     elevation: 3,
-    shadowColor: '#FF6B00',
+    shadowColor: '#FF5200',
     shadowOffset: {
       width: 0,
       height: 4,

@@ -346,15 +346,16 @@ const RegisterScreen = ({navigation}: any) => {
             pointerEvents={
               isVerifying || isVerified ? 'none' : 'auto'
             }
-            style={
-              isVerifying || isVerified
-                ? styles.disabledButton
-                : undefined
-            }>
+            style={[
+              styles.buttonContainer,
+              (isVerifying || isVerified) && styles.disabledButton,
+            ]}>
             <AppButton
               title={
                 isVerifying
                   ? 'Verifying Student...'
+                  : isVerified
+                  ? 'Student Verified'
                   : 'Verify SRM AP Student'
               }
               onPress={handleVerifyStudent}
@@ -378,6 +379,9 @@ const RegisterScreen = ({navigation}: any) => {
               {verificationError}
             </AppText>
           )}
+
+          {/* Section Divider */}
+          <View style={styles.stepDivider} />
 
           {/* STEP 2: FOOD E ACCOUNT */}
           <View style={styles.sectionHeader}>
@@ -403,6 +407,7 @@ const RegisterScreen = ({navigation}: any) => {
                 placeholder="Enter your full name"
                 value={name}
                 editable={isVerified}
+                error={nameError}
                 onChangeText={text => {
                   setName(text);
                   setNameError('');
@@ -410,12 +415,6 @@ const RegisterScreen = ({navigation}: any) => {
                 leftIcon="person-outline"
                 autoCapitalize="words"
               />
-
-              {!!nameError && (
-                <AppText style={styles.errorText}>
-                  {nameError}
-                </AppText>
-              )}
             </View>
 
             {/* Mobile number */}
@@ -425,6 +424,7 @@ const RegisterScreen = ({navigation}: any) => {
                 placeholder="Enter your 10-digit mobile number"
                 value={phone}
                 editable={isVerified}
+                error={phoneError}
                 onChangeText={text => {
                   setPhone(text.replace(/\D/g, '').slice(0, 10));
                   setPhoneError('');
@@ -432,12 +432,6 @@ const RegisterScreen = ({navigation}: any) => {
                 leftIcon="call-outline"
                 keyboardType="phone-pad"
               />
-
-              {!!phoneError && (
-                <AppText style={styles.errorText}>
-                  {phoneError}
-                </AppText>
-              )}
             </View>
 
             {/* FoodE password */}
@@ -447,6 +441,7 @@ const RegisterScreen = ({navigation}: any) => {
                 placeholder="Create a password (minimum 8 characters)"
                 value={password}
                 editable={isVerified}
+                error={passwordError}
                 onChangeText={text => {
                   setPassword(text);
                   setPasswordError('');
@@ -455,12 +450,6 @@ const RegisterScreen = ({navigation}: any) => {
                 secureTextEntry
                 autoCapitalize="none"
               />
-
-              {!!passwordError && (
-                <AppText style={styles.errorText}>
-                  {passwordError}
-                </AppText>
-              )}
             </View>
           </View>
 
@@ -469,11 +458,10 @@ const RegisterScreen = ({navigation}: any) => {
             pointerEvents={
               isVerified && !isRegistering ? 'auto' : 'none'
             }
-            style={
-              !isVerified || isRegistering
-                ? styles.disabledButton
-                : undefined
-            }>
+            style={[
+              styles.buttonContainer,
+              (!isVerified || isRegistering) && styles.disabledButton,
+            ]}>
             <AppButton
               title={
                 isRegistering
@@ -641,12 +629,12 @@ const styles = StyleSheet.create({
     height: 5,
     borderRadius: 4,
     backgroundColor: '#E0E0E0',
-    marginBottom: 23,
+    marginBottom: 18,
   },
 
   // Main heading
   header: {
-    marginBottom: 22,
+    marginBottom: 20,
   },
 
   title: {
@@ -660,30 +648,41 @@ const styles = StyleSheet.create({
     color: '#777777',
     fontSize: 15,
     lineHeight: 21,
-    marginTop: 7,
+    marginTop: 6,
   },
 
   // Sections
   sectionHeader: {
-    marginTop: 3,
-    marginBottom: 12,
+    marginTop: 2,
+    marginBottom: 14,
   },
 
   sectionTitle: {
-    color: '#262626',
-    fontSize: 15,
+    color: '#1F1B18',
+    fontSize: 16,
     fontWeight: '800',
   },
 
   sectionSubtitle: {
     color: '#777777',
-    fontSize: 12,
+    fontSize: 13,
     lineHeight: 18,
-    marginTop: 4,
+    marginTop: 3,
   },
 
   field: {
-    marginBottom: 12,
+    marginBottom: 0,
+  },
+
+  buttonContainer: {
+    marginTop: 4,
+    marginBottom: 16,
+  },
+
+  stepDivider: {
+    height: 1,
+    backgroundColor: '#EFEBE6',
+    marginVertical: 18,
   },
 
   // Verification success
@@ -694,8 +693,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#F0FDF4',
     paddingVertical: 12,
     paddingHorizontal: 14,
-    marginTop: 12,
-    marginBottom: 18,
+    marginBottom: 16,
   },
 
   verifiedTitle: {
@@ -708,15 +706,16 @@ const styles = StyleSheet.create({
     color: '#166534',
     fontSize: 12,
     lineHeight: 18,
-    marginTop: 4,
+    marginTop: 3,
   },
 
   errorText: {
     color: '#DC2626',
     fontSize: 12,
     lineHeight: 18,
-    marginTop: 4,
-    marginBottom: 8,
+    marginTop: -6,
+    marginBottom: 14,
+    marginLeft: 4,
   },
 
   disabledFields: {
@@ -731,7 +730,8 @@ const styles = StyleSheet.create({
   loginButton: {
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 15,
+    paddingVertical: 10,
+    marginBottom: 12,
   },
 
   loginText: {
@@ -748,8 +748,8 @@ const styles = StyleSheet.create({
   // Bottom footer
   footer: {
     alignItems: 'center',
-    marginTop: 'auto',
-    paddingTop: 12,
+    paddingTop: 8,
+    paddingBottom: 24,
   },
 
   version: {

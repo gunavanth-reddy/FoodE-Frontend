@@ -20,10 +20,12 @@ export default Badge;
 const styles = StyleSheet.create({
   badge: {
     backgroundColor: COLORS.primaryLight,
-    paddingHorizontal: SPACING.md,
-    paddingVertical: 5,
-    borderRadius: 50,
-    alignSelf: 'flex-start',
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#FFDEC7',
+    alignSelf: 'center',
   },
 
   text: {
