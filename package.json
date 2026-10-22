@@ -4,14 +4,14 @@
   "private": true,
   "main": "index.js",
   "scripts": {
+    "start": "expo start",
     "android": "expo run:android --device",
     "ios": "expo run:ios",
-    "lint": "eslint .",
-    "start": "expo start",
     "web": "expo start --web",
     "build:web": "expo export --platform web",
-    "prebuild": "expo prebuild",
-    "prebuild:clean": "expo prebuild --clean",
+    "prebuild": "expo prebuild --platform android --no-clean",
+    "prebuild:clean": "expo prebuild --platform android --clean",
+    "lint": "eslint .",
     "test": "jest",
     "server": "json-server server/db.json --host 0.0.0.0 --port 3000"
   },
