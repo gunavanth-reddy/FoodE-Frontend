@@ -47,14 +47,6 @@ import {
 
 import {
   Camera,
-  ImageSquare,
-  Phone,
-  Envelope,
-  MapPin,
-  Clock,
-  CurrencyInr,
-  ForkKnife,
-  Plus,
   FloppyDisk,
 } from 'phosphor-react-native';
 

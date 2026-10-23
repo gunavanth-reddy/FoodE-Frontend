@@ -3,6 +3,7 @@
 // =====================================================
 
 import {ImagePickerAsset} from 'expo-image-picker';
+import {Platform} from 'react-native';
 import API_BASE_URL from '../../../config/api';
 
 // =====================================================
@@ -129,15 +130,15 @@ const parseResponse = async (
 // BUILD RESTAURANT FORMDATA
 // =====================================================
 
-const buildRestaurantFormData = (
+const buildRestaurantFormData = async (
   restaurantData: Partial<RestaurantData>,
-): FormData => {
+): Promise<FormData> => {
   const formData = new FormData();
 
-  Object.entries(restaurantData).forEach(([key, value]) => {
+  for (const [key, value] of Object.entries(restaurantData)) {
     // Skip only undefined and null values
     if (value === undefined || value === null) {
-      return;
+      continue;
     }
 
     // ===============================================
@@ -153,14 +154,14 @@ const buildRestaurantFormData = (
           formData.append(key, value);
         }
 
-        return;
+        continue;
       }
 
       // Newly selected local image
       const asset = value as ImagePickerAsset;
 
       if (!asset.uri) {
-        return;
+        continue;
       }
 
       const mimeType = asset.mimeType || 'image/jpeg';
@@ -170,6 +171,25 @@ const buildRestaurantFormData = (
 
       const fileName =
         asset.fileName || `${key}.${extension}`;
+
+      if (Platform.OS === 'web') {
+        // Browser FormData needs a Blob/File; the {uri, name, type} shape is
+        // only understood by React Native's native FormData implementation.
+        let fileBlob: Blob;
+        const browserFile = (asset as any).file as Blob | undefined;
+        if (browserFile) {
+          fileBlob = browserFile;
+        } else {
+          const imageResponse = await fetch(asset.uri);
+          if (!imageResponse.ok) {
+            throw new Error(`Unable to read selected ${key} image.`);
+          }
+          fileBlob = await imageResponse.blob();
+        }
+
+        formData.append(key, fileBlob, fileName);
+        continue;
+      }
 
       const imageFile = {
         uri: asset.uri,
@@ -182,7 +202,7 @@ const buildRestaurantFormData = (
       // logo and coverImage
       formData.append(key, imageFile as any);
 
-      return;
+      continue;
     }
 
     // ===============================================
@@ -191,7 +211,7 @@ const buildRestaurantFormData = (
 
     if (key === 'cuisines' && Array.isArray(value)) {
       formData.append(key, JSON.stringify(value));
-      return;
+      continue;
     }
 
     // ===============================================
@@ -199,7 +219,7 @@ const buildRestaurantFormData = (
     // ===============================================
 
     formData.append(key, String(value));
-  });
+  }
 
   return formData;
 };
@@ -244,8 +264,7 @@ export const createRestaurant = async (
   try {
     console.log('Creating restaurant...');
 
-    const formData =
-      buildRestaurantFormData(restaurantData);
+    const formData = await buildRestaurantFormData(restaurantData);
 
     const response = await fetchWithTimeout(
       `${API_BASE_URL}/restaurants`,
@@ -370,8 +389,7 @@ export const updateMyRestaurant = async (
   try {
     console.log('Updating restaurant...');
 
-    const formData =
-      buildRestaurantFormData(restaurantData);
+    const formData = await buildRestaurantFormData(restaurantData);
 
     const response = await fetchWithTimeout(
       `${API_BASE_URL}/restaurants/my`,
