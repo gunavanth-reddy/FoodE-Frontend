@@ -194,7 +194,7 @@ const SplashScreen = ({navigation}: any) => {
           },
         ]}>
         <Image
-          source={require('../../../assets/images/foode-splash.png')}
+          source={require('../../../assets/foode-splash.png')}
           style={styles.backgroundImage}
           resizeMode="cover"
           accessibilityLabel="FoodE branded splash screen"
