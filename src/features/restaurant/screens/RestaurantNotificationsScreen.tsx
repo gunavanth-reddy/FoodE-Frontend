@@ -487,7 +487,8 @@ const RestaurantNotificationsScreen =
     if (loading) {
       return (
         <SafeAreaView
-          style={styles.container}>
+          style={styles.container}
+          edges={['left', 'right']}>
 
           <View style={styles.loadingContainer}>
 
@@ -515,7 +516,8 @@ const RestaurantNotificationsScreen =
 
     return (
       <SafeAreaView
-        style={styles.container}>
+        style={styles.container}
+        edges={['left', 'right']}>
 
         <ScrollView
           showsVerticalScrollIndicator={false}
@@ -538,23 +540,6 @@ const RestaurantNotificationsScreen =
           {/* ========================================= */}
 
           <View style={styles.header}>
-
-            <View>
-
-              <Text
-                style={
-                  styles.smallText
-                }>
-                Restaurant
-              </Text>
-
-              <Text
-                style={styles.title}>
-                Notifications
-              </Text>
-
-            </View>
-
             {unreadCount > 0 && (
               <View
                 style={

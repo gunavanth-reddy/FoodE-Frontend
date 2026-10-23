@@ -454,7 +454,7 @@ const RestaurantOrdersScreen: React.FC = () => {
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.loadingContainer} edges={['top', 'left', 'right']}>
+      <SafeAreaView style={styles.loadingContainer} edges={['left', 'right']}>
         <StatusBar hidden={true} />
 
         <ActivityIndicator
@@ -476,7 +476,7 @@ const RestaurantOrdersScreen: React.FC = () => {
   return (
     <SafeAreaView
       style={styles.container}
-      edges={['top', 'left', 'right']}>
+      edges={['left', 'right']}>
       <StatusBar hidden={true} />
 
       <ScrollView
@@ -497,17 +497,12 @@ const RestaurantOrdersScreen: React.FC = () => {
             HEADER
         ================================================= */}
 
-        <View style={styles.header}>
-          <View>
-            <Text style={styles.smallText}>
-              Restaurant
-            </Text>
-
-            <Text style={styles.title}>
-              Orders
-            </Text>
-          </View>
-
+        <View style={styles.dateRefreshRow}>
+          <DateFilterCalendar
+            value={selectedDate}
+            onChange={handleDateChange}
+            style={styles.dateFilter}
+          />
           <TouchableOpacity
             activeOpacity={0.8}
             style={styles.refreshButton}
@@ -520,12 +515,6 @@ const RestaurantOrdersScreen: React.FC = () => {
             />
           </TouchableOpacity>
         </View>
-
-        <DateFilterCalendar
-          value={selectedDate}
-          onChange={handleDateChange}
-          style={styles.dateFilter}
-        />
 
         {/* =================================================
             SUMMARY
@@ -1373,6 +1362,14 @@ const styles = StyleSheet.create({
   },
   dateFilter: {
     marginHorizontal: 0,
+    marginTop: 12,
+    marginBottom: 12,
+    flexShrink: 1,
+  },
+  dateRefreshRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
   },
 
   smallText: {

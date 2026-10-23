@@ -65,7 +65,11 @@ const RestaurantOwnerNavigator =
       <Stack.Navigator
         initialRouteName="RestaurantDashboard"
         screenOptions={{
-          headerShown: false,
+          headerShown: true,
+          headerStyle: {backgroundColor: '#FFFFFF'},
+          headerTintColor: '#17171B',
+          headerTitleStyle: {fontWeight: '700'},
+          headerShadowVisible: false,
           animation:
             'slide_from_right',
         }}
@@ -80,6 +84,7 @@ const RestaurantOwnerNavigator =
           component={
             RestaurantDashboardScreen
           }
+          options={{title: 'Dashboard'}}
         />
 
         {/* =========================================
@@ -91,10 +96,7 @@ const RestaurantOwnerNavigator =
           component={
             RestaurantOrdersScreen
           }
-          options={{
-            headerShown: true,
-            headerTitle: '',
-          }}
+          options={{title: 'Orders'}}
         />
 
         {/* =========================================
@@ -106,10 +108,7 @@ const RestaurantOwnerNavigator =
           component={
             RestaurantMenuScreen
           }
-          options={{
-            headerShown: true,
-            headerTitle: '',
-          }}
+          options={{title: 'Menu'}}
         />
 
         {/* =========================================
@@ -121,6 +120,7 @@ const RestaurantOwnerNavigator =
           component={
             AddFoodScreen
           }
+          options={{title: 'Add Food'}}
         />
 
         {/* =========================================
@@ -132,6 +132,7 @@ const RestaurantOwnerNavigator =
           component={
             EditFoodScreen
           }
+          options={{title: 'Edit Food'}}
         />
 
         {/* =========================================
@@ -143,10 +144,7 @@ const RestaurantOwnerNavigator =
           component={
             RestaurantDetailsScreen
           }
-          options={{
-            headerShown: true,
-            headerTitle: '',
-          }}
+          options={{title: 'Restaurant Details'}}
         />
 
         {/* =========================================
@@ -158,10 +156,7 @@ const RestaurantOwnerNavigator =
           component={
             RestaurantReviewsScreen
           }
-          options={{
-            headerShown: true,
-            headerTitle: '',
-          }}
+          options={{title: 'Reviews'}}
         />
 
         {/* =========================================
@@ -173,6 +168,7 @@ const RestaurantOwnerNavigator =
           component={
             RestaurantNotificationsScreen
           }
+          options={{title: 'Notifications'}}
         />
 
         {/* =========================================
@@ -184,10 +180,7 @@ const RestaurantOwnerNavigator =
           component={
             DeliverySlotsScreen
           }
-          options={{
-            headerShown: true,
-            headerTitle: '',
-          }}
+          options={{title: 'Delivery Slots'}}
         />
 
       </Stack.Navigator>

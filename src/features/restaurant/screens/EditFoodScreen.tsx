@@ -33,11 +33,7 @@ import FoodImagePicker, {
   FoodImageAsset,
 } from '../components/FoodImagePicker';
 
-import {
-  ArrowLeft,
-  Clock,
-  ForkKnife,
-} from 'phosphor-react-native';
+import {Clock, ForkKnife} from 'phosphor-react-native';
 
 // =====================================================
 // TYPES
@@ -585,7 +581,7 @@ const EditFoodScreen = ({
 
   return (
     <SafeAreaView
-      edges={['top', 'left', 'right']}
+      edges={['left', 'right']}
       style={styles.container}>
 
       <ScrollView
@@ -599,53 +595,6 @@ const EditFoodScreen = ({
         {/* =========================================
             HEADER
         ========================================= */}
-
-        <View
-          style={
-            styles.header
-          }>
-
-          <TouchableOpacity
-            activeOpacity={0.7}
-            onPress={() =>
-              navigation.replace(
-                'RestaurantMenu',
-              )
-            }
-            style={
-              styles.backButton
-            }>
-
-            <ArrowLeft
-              size={22}
-              color="#17171B"
-              weight="bold"
-            />
-
-          </TouchableOpacity>
-
-          <View
-            style={
-              styles.headerText
-            }>
-
-            <Text
-              style={
-                styles.smallText
-              }>
-              Restaurant
-            </Text>
-
-            <Text
-              style={
-                styles.title
-              }>
-              Edit Food
-            </Text>
-
-          </View>
-
-        </View>
 
         {/* =========================================
             FOOD INFORMATION

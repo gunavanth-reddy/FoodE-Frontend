@@ -572,7 +572,7 @@ const RestaurantDashboardScreen = ({
     return (
       <SafeAreaView
         style={styles.loadingContainer}
-        edges={['top', 'left', 'right']}>
+        edges={['left', 'right']}>
         <StatusBar hidden={true} />
 
         <ActivityIndicator
@@ -598,7 +598,7 @@ const RestaurantDashboardScreen = ({
     return (
       <SafeAreaView
         style={styles.container}
-        edges={['top', 'left', 'right']}>
+        edges={['left', 'right']}>
         <StatusBar hidden={true} />
 
         <ScrollView
@@ -707,7 +707,7 @@ const RestaurantDashboardScreen = ({
   return (
     <SafeAreaView
       style={styles.container}
-      edges={['top', 'left', 'right']}>
+      edges={['left', 'right']}>
       <StatusBar hidden={true} />
 
       <ScrollView

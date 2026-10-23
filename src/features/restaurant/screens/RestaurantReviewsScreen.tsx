@@ -493,7 +493,7 @@ const RestaurantReviewsScreen =
     return (
       <SafeAreaView
         style={styles.container}
-        edges={["top", "left", "right"]}
+        edges={["left", "right"]}
       >
         <ScrollView
           showsVerticalScrollIndicator={
@@ -524,44 +524,6 @@ const RestaurantReviewsScreen =
           <View
             style={styles.header}
           >
-            <View>
-              <Text
-                style={
-                  styles.smallText
-                }
-              >
-                Restaurant
-              </Text>
-
-              <Text
-                style={
-                  styles.title
-                }
-              >
-                Reviews
-              </Text>
-            </View>
-
-            <View
-              style={
-                styles.ratingHeader
-              }
-            >
-              <View style={styles.ratingHeaderContent}>
-                <Star
-                  size={15}
-                  color="#725B00"
-                  weight="fill"
-                />
-                <Text
-                  style={
-                    styles.ratingHeaderValue
-                  }
-                >
-                  {averageRating.toFixed(1)}
-                </Text>
-              </View>
-            </View>
           </View>
 
           {/* LOADING */}

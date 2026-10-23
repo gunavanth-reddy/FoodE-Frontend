@@ -14,7 +14,6 @@ import AppTextInput from "../../../components/inputs/AppTextInput";
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {
   CalendarBlank,
-  CheckCircle,
   Clock,
   Plus,
   Trash,
@@ -379,7 +378,7 @@ const DeliverySlotsScreen: React.FC = () => {
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.loadingContainer} edges={['top', 'left', 'right']}>
+      <SafeAreaView style={styles.loadingContainer} edges={['left', 'right']}>
         <StatusBar hidden={true} />
         <ActivityIndicator size="large" color="#FF7A00" />
         <Text style={styles.loadingText}>Loading delivery schedule...</Text>
@@ -388,34 +387,13 @@ const DeliverySlotsScreen: React.FC = () => {
   }
 
   return (
-    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
+    <SafeAreaView style={styles.container} edges={['left', 'right']}>
       <StatusBar hidden={true} />
 
       <ScrollView
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled">
-        <View style={styles.header}>
-          <View style={styles.headerIcon}>
-            <CalendarBlank size={25} color="#FF7A00" weight="duotone" />
-          </View>
-          <View style={styles.headerText}>
-            <Text style={styles.eyebrow}>BOOKING SCHEDULE</Text>
-            <Text style={styles.title}>Delivery slots</Text>
-            <Text style={styles.subtitle}>
-              Set a date, start time, end time and booking cutoff.
-            </Text>
-          </View>
-        </View>
-
-        <View style={styles.infoCard}>
-          <CheckCircle size={20} color="#16A34A" weight="fill" />
-          <Text style={styles.infoText}>
-            Only active slots are available to customers. Booking closes
-            according to the cutoff you configure.
-          </Text>
-        </View>
-
         {deliverySlots.map((slot, index) => {
           const duration = calculateDuration(
             slot.startTime,
@@ -458,38 +436,40 @@ const DeliverySlotsScreen: React.FC = () => {
               </View>
               <Text style={styles.helper}>Format: YYYY-MM-DD</Text>
 
-              <Text style={styles.label}>Start time (24-hour format)</Text>
-              <View style={styles.inputRow}>
-                <Clock size={18} color="#FF7A00" />
-                <AppTextInput
-                  value={slot.startTime}
-                  onChangeText={value => updateStartTime(index, value)}
-                  placeholder="09:00"
-                  placeholderTextColor="#A0A4AC"
-                  style={styles.input}
-                  keyboardType="numbers-and-punctuation"
-                  maxLength={5}
-                />
-                <Text style={styles.helper}>
-                  {formatTime12(slot.startTime)}
-                </Text>
-              </View>
+              <View style={styles.timeFieldsRow}>
+                <View style={styles.timeField}>
+                  <Text style={styles.label}>Start time</Text>
+                  <View style={[styles.inputRow, styles.timeInputRow]}>
+                    <Clock size={18} color="#FF7A00" />
+                    <AppTextInput
+                      value={slot.startTime}
+                      onChangeText={value => updateStartTime(index, value)}
+                      placeholder="09:00"
+                      placeholderTextColor="#A0A4AC"
+                      style={[styles.input, styles.timeInput]}
+                      keyboardType="numbers-and-punctuation"
+                      maxLength={5}
+                    />
+                  </View>
+                  <Text style={styles.timeHelper}>{formatTime12(slot.startTime)}</Text>
+                </View>
 
-              <Text style={styles.label}>End time (24-hour format)</Text>
-              <View style={styles.inputRow}>
-                <Clock size={18} color="#FF7A00" />
-                <AppTextInput
-                  value={slot.endTime}
-                  onChangeText={value => updateEndTime(index, value)}
-                  placeholder="11:00"
-                  placeholderTextColor="#A0A4AC"
-                  style={styles.input}
-                  keyboardType="numbers-and-punctuation"
-                  maxLength={5}
-                />
-                <Text style={styles.helper}>
-                  {formatTime12(slot.endTime)}
-                </Text>
+                <View style={styles.timeField}>
+                  <Text style={styles.label}>End time</Text>
+                  <View style={[styles.inputRow, styles.timeInputRow]}>
+                    <Clock size={18} color="#FF7A00" />
+                    <AppTextInput
+                      value={slot.endTime}
+                      onChangeText={value => updateEndTime(index, value)}
+                      placeholder="11:00"
+                      placeholderTextColor="#A0A4AC"
+                      style={[styles.input, styles.timeInput]}
+                      keyboardType="numbers-and-punctuation"
+                      maxLength={5}
+                    />
+                  </View>
+                  <Text style={styles.timeHelper}>{formatTime12(slot.endTime)}</Text>
+                </View>
               </View>
 
               <View style={styles.durationCard}>
@@ -693,6 +673,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 13,
   },
+  timeFieldsRow: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  timeField: {
+    flex: 1,
+    minWidth: 0,
+  },
+  timeInputRow: {
+    paddingHorizontal: 11,
+  },
+  timeInput: {
+    paddingHorizontal: 8,
+  },
   input: {
     flex: 1,
     color: '#17171B',
@@ -702,7 +696,15 @@ const styles = StyleSheet.create({
     paddingVertical: 11,
   },
   helper: {
-    fontSize: 11,
+    fontSize: 9,
+    color: '#8A8F98',
+    fontWeight: '700',
+  },
+  timeHelper: {
+    marginTop: 4,
+    marginLeft: 2,
+    fontSize: 10,
+    lineHeight: 13,
     color: '#8A8F98',
     fontWeight: '700',
   },
@@ -771,7 +773,8 @@ const styles = StyleSheet.create({
   deleteButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    alignSelf: 'flex-start',
+    justifyContent: 'flex-end',
+    alignSelf: 'flex-end',
     marginTop: 15,
     paddingVertical: 6,
   },

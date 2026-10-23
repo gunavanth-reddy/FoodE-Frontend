@@ -1,6 +1,7 @@
 import React, {useEffect, useRef, useState} from 'react';
 import {
   Animated,
+  Alert,
   Easing,
   Linking,
   View,
@@ -23,6 +24,7 @@ import {APP_VERSION} from '../../../config/version';
 
 const ORANGE = '#FF5A00';
 const DARK = '#171717';
+const SUPPORT_EMAIL = 'foodeforus@gmail.com';
 
 const LoginScreen = ({navigation}: any) => {
   const {login} = useAuth();
@@ -41,6 +43,22 @@ const LoginScreen = ({navigation}: any) => {
     225,
     Math.min(screenHeight * 0.32, 290),
   );
+
+  const handleContactSupport = async () => {
+    const url = `mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent(
+      'FoodE Restaurant Partnership Inquiry',
+    )}`;
+
+    try {
+      if (await Linking.canOpenURL(url)) {
+        await Linking.openURL(url);
+      } else {
+        Alert.alert('Email unavailable', `Please contact FoodE support at ${SUPPORT_EMAIL}`);
+      }
+    } catch {
+      Alert.alert('Contact FoodE Support', `Please email ${SUPPORT_EMAIL}.`);
+    }
+  };
 
   useEffect(() => {
     const animation = Animated.loop(
@@ -320,9 +338,7 @@ const LoginScreen = ({navigation}: any) => {
 
             <TouchableOpacity
               activeOpacity={0.7}
-              onPress={() => {
-                // Add your existing FoodE support navigation here.
-              }}>
+              onPress={handleContactSupport}>
               <AppText style={styles.partnerLink}>
                 Contact FoodE Support
               </AppText>
@@ -565,16 +581,21 @@ const styles = StyleSheet.create({
   },
 
   legalLinks: {
+    width: '100%',
+    flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    justifyContent: 'center',
+    gap: 14,
     marginTop: 16,
   },
 
   legalLink: {
+    flexShrink: 1,
     color: '#7A3B0A',
     fontSize: 13,
     fontWeight: '700',
     textDecorationLine: 'underline',
+    textAlign: 'center',
   },
 
   version: {

@@ -126,6 +126,9 @@ const RestaurantMenuScreen = ({
   const [selectedCategory, setSelectedCategory] =
     useState('all');
 
+  const [activeMenuTab, setActiveMenuTab] =
+    useState<'food' | 'categories'>('food');
+
   // ===================================================
   // CATEGORY MODAL
   // ===================================================
@@ -793,7 +796,7 @@ const RestaurantMenuScreen = ({
     return (
       <SafeAreaView
         style={styles.loadingContainer}
-        edges={['top', 'left', 'right']}>
+        edges={['left', 'right']}>
         <StatusBar hidden={true} />
 
         <ActivityIndicator
@@ -818,7 +821,7 @@ const RestaurantMenuScreen = ({
   return (
     <SafeAreaView
       style={styles.container}
-      edges={['top', 'left', 'right']}>
+      edges={['left', 'right']}>
 
       <StatusBar hidden={true} />
 
@@ -848,47 +851,66 @@ const RestaurantMenuScreen = ({
         {/* HEADER */}
         {/* ========================================= */}
 
-        <View
+        {activeMenuTab === 'categories' && <View
           style={
             styles.header
           }>
-
-          <View>
-            <Text
-              style={
-                styles.headerSmall
-              }>
-              Restaurant
-            </Text>
-
-            <Text
-              style={
-                styles.headerTitle
-              }>
-              Menu
-            </Text>
-          </View>
-
           <TouchableOpacity
             activeOpacity={0.8}
-            onPress={
-              handleAddFood
-            }
-            style={
-              styles.addFoodButton
-            }>
+            onPress={handleAddCategory}
+            style={styles.categoryButton}>
 
             <View style={styles.buttonContent}>
-              <Plus size={17} color="#FFFFFF" weight="bold" />
-              <Text style={styles.addFoodButtonText}>
-                Add Food
+              <Plus size={17} color="#FF7A00" weight="bold" />
+              <Text style={styles.categoryButtonText}>
+                Add Category
               </Text>
             </View>
 
           </TouchableOpacity>
 
+        </View>}
+
+        <View style={styles.menuTabs} accessibilityRole="tablist">
+          <TouchableOpacity
+            activeOpacity={0.8}
+            onPress={() => setActiveMenuTab('food')}
+            style={[
+              styles.menuTab,
+              activeMenuTab === 'food' && styles.menuTabActive,
+            ]}
+            accessibilityRole="tab"
+            accessibilityState={{selected: activeMenuTab === 'food'}}>
+            <Text
+              style={[
+                styles.menuTabText,
+                activeMenuTab === 'food' && styles.menuTabTextActive,
+              ]}>
+              Food
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            activeOpacity={0.8}
+            onPress={() => setActiveMenuTab('categories')}
+            style={[
+              styles.menuTab,
+              activeMenuTab === 'categories' && styles.menuTabActive,
+            ]}
+            accessibilityRole="tab"
+            accessibilityState={{selected: activeMenuTab === 'categories'}}>
+            <Text
+              style={[
+                styles.menuTabText,
+                activeMenuTab === 'categories' && styles.menuTabTextActive,
+              ]}>
+              Categories
+            </Text>
+          </TouchableOpacity>
         </View>
 
+        {activeMenuTab === 'food' && (
+          <>
         {/* ========================================= */}
         {/* SEARCH */}
         {/* ========================================= */}
@@ -932,6 +954,38 @@ const RestaurantMenuScreen = ({
 
         </View>
 
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.categoryScroll}>
+          {categoryFilters.map(category => {
+            const active = selectedCategory === category.id;
+
+            return (
+              <TouchableOpacity
+                key={category.id}
+                activeOpacity={0.8}
+                onPress={() => setSelectedCategory(category.id)}
+                style={[
+                  styles.filterButton,
+                  active && styles.filterButtonActive,
+                ]}>
+                <Text
+                  style={[
+                    styles.filterText,
+                    active && styles.filterTextActive,
+                  ]}>
+                  {category.name}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
+          </>
+        )}
+
+        {activeMenuTab === 'categories' && (
+          <>
         {/* ========================================= */}
         {/* CATEGORY HEADER */}
         {/* ========================================= */}
@@ -942,10 +996,7 @@ const RestaurantMenuScreen = ({
           }>
 
           <View>
-            <Text
-              style={
-                styles.sectionTitle
-              }>
+            <Text style={styles.sectionTitle}>
               Categories
             </Text>
 
@@ -957,83 +1008,7 @@ const RestaurantMenuScreen = ({
             </Text>
           </View>
 
-          {/* IMPORTANT BUTTON */}
-
-          <TouchableOpacity
-            activeOpacity={0.7}
-            onPress={
-              handleAddCategory
-            }
-            style={
-              styles.categoryButton
-            }>
-
-            <View style={styles.buttonContent}>
-              <Plus size={15} color="#FF7A00" weight="bold" />
-              <Text style={styles.categoryButtonText}>
-                Category
-              </Text>
-            </View>
-
-          </TouchableOpacity>
-
         </View>
-
-        {/* ========================================= */}
-        {/* CATEGORY FILTER */}
-        {/* ========================================= */}
-
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={
-            false
-          }
-          contentContainerStyle={
-            styles.categoryScroll
-          }>
-
-          {categoryFilters.map(
-            category => {
-              const active =
-                selectedCategory ===
-                category.id;
-
-              return (
-                <TouchableOpacity
-                  key={
-                    category.id
-                  }
-                  activeOpacity={
-                    0.8
-                  }
-                  onPress={() =>
-                    setSelectedCategory(
-                      category.id,
-                    )
-                  }
-                  style={[
-                    styles.filterButton,
-                    active &&
-                      styles.filterButtonActive,
-                  ]}>
-
-                  <Text
-                    style={[
-                      styles.filterText,
-                      active &&
-                        styles.filterTextActive,
-                    ]}>
-                    {
-                      category.name
-                    }
-                  </Text>
-
-                </TouchableOpacity>
-              );
-            },
-          )}
-
-        </ScrollView>
 
         {/* ========================================= */}
         {/* CATEGORY MANAGEMENT */}
@@ -1147,7 +1122,11 @@ const RestaurantMenuScreen = ({
 
           </View>
         )}
+          </>
+        )}
 
+        {activeMenuTab === 'food' && (
+          <>
         {/* ========================================= */}
         {/* FOOD HEADER */}
         {/* ========================================= */}
@@ -1165,42 +1144,17 @@ const RestaurantMenuScreen = ({
               Food Items
             </Text>
 
-            <Text
-              style={
-                styles.foodHeaderSubtitle
-              }>
-              {
-                filteredFoods.length
-              }{' '}
-              items
-            </Text>
           </View>
 
-          <View
-            style={
-              styles.availableBadge
-            }>
-
-            <View
-              style={
-                styles.greenDot
-              }
-            />
-
-            <Text
-              style={
-                styles.availableText
-              }>
-              {
-                foods.filter(
-                  food =>
-                    food.isAvailable,
-                ).length
-              }{' '}
-              available
-            </Text>
-
-          </View>
+          <TouchableOpacity
+            activeOpacity={0.8}
+            onPress={handleAddFood}
+            style={styles.addFoodButtonSmall}>
+            <View style={styles.buttonContent}>
+              <Plus size={15} color="#FFFFFF" weight="bold" />
+              <Text style={styles.addFoodButtonText}>Add Food</Text>
+            </View>
+          </TouchableOpacity>
 
         </View>
 
@@ -1435,6 +1389,8 @@ const RestaurantMenuScreen = ({
 
           </View>
         )}
+          </>
+        )}
 
         <View
           style={
@@ -1646,6 +1602,37 @@ const styles =
       fontWeight: '800',
     },
 
+    menuTabs: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      padding: 4,
+      marginBottom: 18,
+      borderRadius: 8,
+      backgroundColor: '#FFF0E3',
+    },
+
+    menuTab: {
+      flex: 1,
+      minHeight: 38,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderRadius: 6,
+    },
+
+    menuTabActive: {
+      backgroundColor: '#FF7A00',
+    },
+
+    menuTabText: {
+      color: '#77716B',
+      fontSize: 13,
+      fontWeight: '700',
+    },
+
+    menuTabTextActive: {
+      color: '#FFFFFF',
+    },
+
     buttonContent: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -1794,6 +1781,13 @@ const styles =
         'space-between',
       alignItems: 'center',
       marginBottom: 14,
+    },
+
+    addFoodButtonSmall: {
+      backgroundColor: '#FF7A00',
+      paddingHorizontal: 12,
+      paddingVertical: 8,
+      borderRadius: 12,
     },
 
     foodHeaderTitle: {

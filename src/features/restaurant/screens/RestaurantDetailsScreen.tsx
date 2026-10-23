@@ -46,7 +46,6 @@ import {
 } from 'expo-image-picker';
 
 import {
-  ArrowLeft,
   Camera,
   ImageSquare,
   Phone,
@@ -54,7 +53,6 @@ import {
   MapPin,
   Clock,
   CurrencyInr,
-  Storefront,
   ForkKnife,
   Plus,
   FloppyDisk,
@@ -871,7 +869,7 @@ const RestaurantDetailsScreen: React.FC<Props> = ({
         style={
           styles.loadingContainer
         }
-        edges={['top', 'left', 'right']}>
+        edges={['left', 'right']}>
         <StatusBar hidden={true} />
 
         <ActivityIndicator
@@ -896,7 +894,7 @@ const RestaurantDetailsScreen: React.FC<Props> = ({
   return (
     <SafeAreaView
       style={styles.container}
-      edges={['top', 'left', 'right']}>
+      edges={['left', 'right']}>
       <StatusBar hidden={true} />
 
       <KeyboardAvoidingView
@@ -922,29 +920,8 @@ const RestaurantDetailsScreen: React.FC<Props> = ({
               HEADER
           ========================================= */}
 
-          <View
-            style={styles.header}>
-
-            <View style={styles.headerIcon}>
-              <Storefront
-                size={26}
-                color="#FF7A00"
-                weight="fill"
-              />
-            </View>
-
-            <View
-              style={
-                styles.headerText
-              }>
-
-              <Text
-                style={styles.title}>
-                {restaurant
-                  ? 'Edit Restaurant'
-                  : 'Create Restaurant'}
-              </Text>
-
+          <View style={styles.header}>
+            <View style={styles.headerText}>
               <Text
                 style={
                   styles.subtitle

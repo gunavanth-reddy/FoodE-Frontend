@@ -18,11 +18,7 @@ import AppTextInput from "../../../components/inputs/AppTextInput";
 
 import {SafeAreaView} from 'react-native-safe-area-context';
 
-import {
-  ArrowLeft,
-  Clock,
-  Plus,
-} from 'phosphor-react-native';
+import {Clock, Plus} from 'phosphor-react-native';
 
 // =====================================================
 // SERVICES
@@ -419,7 +415,7 @@ const AddFoodScreen = ({
     return (
       <SafeAreaView
         style={styles.loadingContainer}
-        edges={['top', 'left', 'right']}>
+        edges={['left', 'right']}>
 
         <StatusBar hidden={true} />
 
@@ -449,7 +445,7 @@ const AddFoodScreen = ({
     return (
       <SafeAreaView
         style={styles.emptyContainer}
-        edges={['top', 'left', 'right']}>
+        edges={['left', 'right']}>
 
         <StatusBar hidden={true} />
 
@@ -475,26 +471,6 @@ const AddFoodScreen = ({
           adding food.
         </Text>
 
-        <TouchableOpacity
-          activeOpacity={0.85}
-          onPress={() =>
-            navigation.replace(
-              'RestaurantMenu',
-            )
-          }
-          style={
-            styles.backButton
-          }>
-
-          <Text
-            style={
-              styles.backButtonText
-            }>
-            Go Back
-          </Text>
-
-        </TouchableOpacity>
-
       </SafeAreaView>
     );
   }
@@ -506,7 +482,7 @@ const AddFoodScreen = ({
   return (
     <SafeAreaView
       style={styles.container}
-      edges={['top', 'left', 'right']}>
+      edges={['left', 'right']}>
 
       <StatusBar hidden={true} />
 
@@ -522,53 +498,6 @@ const AddFoodScreen = ({
         {/* =========================================
             HEADER
         ========================================= */}
-
-        <View
-          style={
-            styles.header
-          }>
-
-          <TouchableOpacity
-            activeOpacity={0.7}
-            onPress={() =>
-              navigation.replace(
-                'RestaurantMenu',
-              )
-            }
-            style={
-              styles.backIconButton
-            }>
-
-            <ArrowLeft
-              size={22}
-              color="#17171B"
-              weight="bold"
-            />
-
-          </TouchableOpacity>
-
-          <View
-            style={
-              styles.headerText
-            }>
-
-            <Text
-              style={
-                styles.smallText
-              }>
-              Restaurant
-            </Text>
-
-            <Text
-              style={
-                styles.title
-              }>
-              Add Food
-            </Text>
-
-          </View>
-
-        </View>
 
         {/* =========================================
             FOOD INFORMATION
