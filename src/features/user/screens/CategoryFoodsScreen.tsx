@@ -81,57 +81,6 @@ const CategoryFoodsScreen = () => {
     categoryName.toLowerCase() === 'nonvegetarian';
 
   // ===================================================
-  // DELIVERY TIME HELPER
-  // ===================================================
-
-  const getDeliveryMinutes = useCallback(
-    (food: Food): number | null => {
-      const item = food as any;
-
-      const possibleValues = [
-        item.deliveryTime,
-        item.deliveryMinutes,
-        item.restaurant?.deliveryTime,
-      ];
-
-      for (const value of possibleValues) {
-        if (typeof value === 'number') {
-          return value;
-        }
-
-        if (typeof value === 'string') {
-          const numbers = value.match(/\d+/g);
-
-          if (numbers && numbers.length > 0) {
-            const parsed = Number(numbers[0]);
-
-            if (Number.isFinite(parsed)) {
-              return parsed;
-            }
-          }
-        }
-
-        if (
-          typeof value === 'object' &&
-          value !== null
-        ) {
-          const min = value.min;
-
-          if (
-            typeof min === 'number' &&
-            Number.isFinite(min)
-          ) {
-            return min;
-          }
-        }
-      }
-
-      return null;
-    },
-    [],
-  );
-
-  // ===================================================
   // FILTER FOODS
   // ===================================================
 
@@ -146,14 +95,11 @@ const CategoryFoodsScreen = () => {
     // -----------------------------
 
       if (isUnder20) {
-        result = result.filter(food => {
-          const minutes = getDeliveryMinutes(food);
-
-          return (
-            minutes !== null &&
-            minutes < 20
-          );
-        });
+        result = result.filter(
+          food =>
+            typeof food.preparationTime === 'number' &&
+            food.preparationTime <= 20,
+        );
       }
 
     // -----------------------------
@@ -177,7 +123,6 @@ const CategoryFoodsScreen = () => {
       return result;
     },
     [
-      getDeliveryMinutes,
       isNonVeg,
       isUnder20,
       isVeg,

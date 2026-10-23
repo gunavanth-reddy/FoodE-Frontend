@@ -4,9 +4,8 @@ import {
   StyleSheet,
   Text,
   View,
-  Pressable,
 } from 'react-native';
-import {ArrowRight, Sparkle} from 'phosphor-react-native';
+import {SquaresFour} from 'phosphor-react-native';
 import {useNavigation} from '@react-navigation/native';
 import {NativeStackNavigationProp} from '@react-navigation/native-stack';
 
@@ -37,7 +36,7 @@ const CategorySection: React.FC = () => {
       <View style={styles.headingRow}>
         <View style={styles.headingLeft}>
           <View style={styles.headingIcon}>
-            <Sparkle size={17} color="#FF6B00" weight="fill" />
+            <SquaresFour size={18} color="#FF6B00" weight="fill" />
           </View>
 
           <View style={styles.headingTextContainer}>
@@ -48,18 +47,6 @@ const CategorySection: React.FC = () => {
           </View>
         </View>
 
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Scroll through food categories"
-          style={({pressed}) => [
-            styles.scrollHint,
-            pressed && styles.scrollHintPressed,
-          ]}
-          onPress={() => {
-            // Category navigation remains handled by individual cards.
-          }}>
-          <ArrowRight size={16} color="#FF6B00" weight="bold" />
-        </Pressable>
       </View>
 
       {/* Horizontally scrolling categories */}
@@ -136,22 +123,6 @@ const styles = StyleSheet.create({
     color: '#96908A',
     marginTop: 3,
     letterSpacing: 0.1,
-  },
-
-  scrollHint: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: '#FFF2E8',
-    borderWidth: 1,
-    borderColor: '#FFE4D0',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-
-  scrollHintPressed: {
-    transform: [{scale: 0.92}],
-    opacity: 0.8,
   },
 
   list: {
