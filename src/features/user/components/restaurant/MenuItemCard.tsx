@@ -120,8 +120,8 @@ const MenuItemCard: React.FC<MenuItemCardProps> = ({
             <ActivityIndicator size="small" color="#FF6B00" />
           ) : (
             <Heart
-              size={18}
-              color={isFavorite ? '#EF4444' : '#4A4039'}
+              size={20}
+              color={isFavorite ? '#EF4444' : '#FF6B00'}
               weight={isFavorite ? 'fill' : 'regular'}
             />
           )}
@@ -227,13 +227,12 @@ const styles = StyleSheet.create({
     top: 6,
     right: 6,
     zIndex: 2,
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: '#FFFFFF',
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: 'transparent',
     alignItems: 'center',
     justifyContent: 'center',
-    elevation: 3,
   },
 
   image: {

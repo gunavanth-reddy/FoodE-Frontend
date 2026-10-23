@@ -168,7 +168,8 @@ const styles = StyleSheet.create({
   addButton: {
     position: Platform.OS === 'web' ? 'relative' : 'absolute',
     bottom: Platform.OS === 'web' ? undefined : -10,
-    marginTop: Platform.OS === 'web' ? 8 : 0,
+    marginTop: Platform.OS === 'web' ? 6 : 0,
+    marginBottom: Platform.OS === 'web' ? -8 : 0,
     width: 90,
     height: 38,
     backgroundColor: '#FFFCF8',
@@ -189,7 +190,8 @@ const styles = StyleSheet.create({
   quantityContainer: {
     position: Platform.OS === 'web' ? 'relative' : 'absolute',
     bottom: Platform.OS === 'web' ? undefined : -10,
-    marginTop: Platform.OS === 'web' ? 8 : 0,
+    marginTop: Platform.OS === 'web' ? 6 : 0,
+    marginBottom: Platform.OS === 'web' ? -8 : 0,
     width: 100,
     height: 38,
     flexDirection: 'row',
