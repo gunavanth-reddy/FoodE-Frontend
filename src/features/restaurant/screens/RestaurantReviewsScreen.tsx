@@ -14,10 +14,10 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   TouchableOpacity,
   View,
-} from "react-native";
+} from 'react-native';
+import AppTextInput from "../../../components/inputs/AppTextInput";
 
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -702,7 +702,7 @@ const RestaurantReviewsScreen =
                   🔍
                 </Text>
 
-                <TextInput
+                <AppTextInput
                   value={search}
                   onChangeText={
                     setSearch
@@ -1174,7 +1174,7 @@ const ReviewCard: React.FC<
             styles.responseForm
           }
         >
-          <TextInput
+          <AppTextInput
             value={
               responseText
             }

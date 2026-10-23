@@ -10,10 +10,10 @@ import {
   StatusBar,
   StyleSheet,
   Text,
-  TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
+import AppTextInput from "../../../components/inputs/AppTextInput";
 
 import {useNavigation} from '@react-navigation/native';
 import {
@@ -199,7 +199,7 @@ const PersonalInfoScreen = () => {
               weight="regular"
             />
 
-            <TextInput
+            <AppTextInput
               style={styles.input}
               value={name}
               onChangeText={setName}
@@ -224,7 +224,7 @@ const PersonalInfoScreen = () => {
               weight="regular"
             />
 
-            <TextInput
+            <AppTextInput
               style={styles.input}
               value={phone}
               onChangeText={setPhone}
@@ -255,7 +255,7 @@ const PersonalInfoScreen = () => {
               weight="regular"
             />
 
-            <TextInput
+            <AppTextInput
               style={styles.input}
               value={email}
               onChangeText={setEmail}

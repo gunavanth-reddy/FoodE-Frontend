@@ -1,12 +1,12 @@
 import React, {useState} from 'react';
 import {
   View,
-  TextInput,
   Text,
   StyleSheet,
   TouchableOpacity,
   KeyboardTypeOptions,
 } from 'react-native';
+import AppTextInput from "./AppTextInput";
 
 import {
   Phone,
@@ -188,7 +188,7 @@ const AppInput = ({
 
         {renderLeftIcon()}
 
-        <TextInput
+        <AppTextInput
           placeholder={placeholder}
           placeholderTextColor="#999"
           value={value}

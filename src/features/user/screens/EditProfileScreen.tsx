@@ -10,11 +10,11 @@ import {
   StatusBar,
   StyleSheet,
   Text,
-  TextInput,
   TouchableOpacity,
   View,
   ActivityIndicator,
 } from 'react-native';
+import AppTextInput from "../../../components/inputs/AppTextInput";
 
 import Ionicons from '@react-native-vector-icons/ionicons/static';
 import {useNavigation} from '@react-navigation/native';
@@ -233,7 +233,7 @@ const EditProfileScreen: React.FC = () => {
                 color={COLORS.textSecondary}
               />
 
-              <TextInput
+              <AppTextInput
                 style={styles.input}
                 value={name}
                 onChangeText={setName}
@@ -261,7 +261,7 @@ const EditProfileScreen: React.FC = () => {
                 color={COLORS.textSecondary}
               />
 
-              <TextInput
+              <AppTextInput
                 style={styles.input}
                 value={phone}
                 onChangeText={setPhone}

@@ -1,10 +1,10 @@
 import React from 'react';
 import {
   View,
-  TextInput,
   StyleSheet,
   TouchableOpacity,
 } from 'react-native';
+import AppTextInput from "../inputs/AppTextInput";
 
 import {
   MagnifyingGlass,
@@ -39,7 +39,7 @@ const SearchBar = ({
         weight="regular"
       />
 
-      <TextInput
+      <AppTextInput
         value={value}
         onChangeText={onChangeText}
         placeholder={placeholder}

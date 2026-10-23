@@ -11,10 +11,10 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
+import AppTextInput from "../../../components/inputs/AppTextInput";
 
 import {SafeAreaView} from 'react-native-safe-area-context';
 
@@ -1111,7 +1111,7 @@ const InputField:
         {label}
       </Text>
 
-      <TextInput
+      <AppTextInput
         value={value}
         onChangeText={
           onChangeText

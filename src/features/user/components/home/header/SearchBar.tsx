@@ -2,10 +2,10 @@ import React from 'react';
 import {
   Pressable,
   StyleSheet,
-  TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
+import AppTextInput from "../../../../../components/inputs/AppTextInput";
 
 import {
   MagnifyingGlass,
@@ -46,7 +46,7 @@ const SearchBar: React.FC<SearchBarProps> = ({
         />
 
         {/* Input */}
-        <TextInput
+        <AppTextInput
           value={value}
           onChangeText={onChangeText}
           placeholder="Search for food, restaurants..."

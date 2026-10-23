@@ -12,10 +12,10 @@ import {
   StatusBar,
   StyleSheet,
   Text,
-  TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
+import AppTextInput from "../../../components/inputs/AppTextInput";
 
 import {SafeAreaView} from 'react-native-safe-area-context';
 
@@ -976,7 +976,7 @@ const RestaurantDetailsScreen: React.FC<Props> = ({
               Restaurant Name *
             </Text>
 
-            <TextInput
+            <AppTextInput
               value={name}
               onChangeText={setName}
               placeholder="e.g. FoodE Kitchen"
@@ -990,7 +990,7 @@ const RestaurantDetailsScreen: React.FC<Props> = ({
               Description
             </Text>
 
-            <TextInput
+            <AppTextInput
               value={description}
               onChangeText={
                 setDescription
@@ -1165,7 +1165,7 @@ const RestaurantDetailsScreen: React.FC<Props> = ({
               Phone *
             </Text>
 
-            <TextInput
+            <AppTextInput
               value={phone}
               onChangeText={setPhone}
               placeholder="Phone number"
@@ -1180,7 +1180,7 @@ const RestaurantDetailsScreen: React.FC<Props> = ({
               Email
             </Text>
 
-            <TextInput
+            <AppTextInput
               value={email}
               onChangeText={setEmail}
               placeholder="restaurant@example.com"
@@ -1212,7 +1212,7 @@ const RestaurantDetailsScreen: React.FC<Props> = ({
               Address *
             </Text>
 
-            <TextInput
+            <AppTextInput
               value={address}
               onChangeText={setAddress}
               placeholder="Restaurant address"
@@ -1227,7 +1227,7 @@ const RestaurantDetailsScreen: React.FC<Props> = ({
               City *
             </Text>
 
-            <TextInput
+            <AppTextInput
               value={city}
               onChangeText={setCity}
               placeholder="e.g. Amaravati"
@@ -1259,7 +1259,7 @@ const RestaurantDetailsScreen: React.FC<Props> = ({
               Minimum Delivery Time (minutes)
             </Text>
 
-            <TextInput
+            <AppTextInput
               value={
                 deliveryTimeMin
               }
@@ -1280,7 +1280,7 @@ const RestaurantDetailsScreen: React.FC<Props> = ({
               Maximum Delivery Time (minutes)
             </Text>
 
-            <TextInput
+            <AppTextInput
               value={
                 deliveryTimeMax
               }
@@ -1301,7 +1301,7 @@ const RestaurantDetailsScreen: React.FC<Props> = ({
               Delivery Fee (₹)
             </Text>
 
-            <TextInput
+            <AppTextInput
               value={deliveryFee}
               onChangeText={
                 setDeliveryFee
@@ -1325,7 +1325,7 @@ const RestaurantDetailsScreen: React.FC<Props> = ({
               Minimum Order (₹)
             </Text>
 
-            <TextInput
+            <AppTextInput
               value={
                 minimumOrder
               }
@@ -1360,7 +1360,7 @@ const RestaurantDetailsScreen: React.FC<Props> = ({
               Separate cuisines with commas.
             </Text>
 
-            <TextInput
+            <AppTextInput
               value={cuisines}
               onChangeText={
                 setCuisines
@@ -1392,7 +1392,7 @@ const RestaurantDetailsScreen: React.FC<Props> = ({
               Opening Time
             </Text>
 
-            <TextInput
+            <AppTextInput
               value={openingTime}
               onChangeText={value => setOpeningTime(to24Hour(value))}
               placeholder="10:00"
@@ -1408,7 +1408,7 @@ const RestaurantDetailsScreen: React.FC<Props> = ({
               Closing Time
             </Text>
 
-            <TextInput
+            <AppTextInput
               value={closingTime}
               onChangeText={value => setClosingTime(to24Hour(value))}
               placeholder="22:00"

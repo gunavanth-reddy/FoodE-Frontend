@@ -1,10 +1,11 @@
 import React from 'react';
 import {
+  Platform,
   StyleSheet,
-  TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
+import AppTextInput from "../../../../components/inputs/AppTextInput";
 
 import {
   MagnifyingGlass,
@@ -20,20 +21,28 @@ const RestaurantSearchBar: React.FC<RestaurantSearchBarProps> = ({
   value,
   onChangeText,
 }) => {
+  const [focused, setFocused] = React.useState(false);
+
   return (
-    <View style={styles.container}>
+    <View
+      style={[
+        styles.container,
+        Platform.OS === 'web' && focused && styles.containerFocused,
+      ]}>
       <MagnifyingGlass
         size={18}
         weight="regular"
         color="#9CA3AF"
       />
 
-      <TextInput
+      <AppTextInput
         value={value}
         onChangeText={onChangeText}
         placeholder="Search dishes..."
         placeholderTextColor="#9CA3AF"
         style={styles.input}
+        onFocus={() => setFocused(true)}
+        onBlur={() => setFocused(false)}
         autoCorrect={false}
         autoCapitalize="none"
         returnKeyType="search"
@@ -64,6 +73,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#FFFCF8',
     borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'transparent',
     paddingHorizontal: 13,
     paddingVertical: 8,
     shadowColor: '#000',
@@ -74,6 +85,10 @@ const styles = StyleSheet.create({
       height: 3,
     },
     elevation: 3,
+  },
+
+  containerFocused: {
+    borderColor: '#FF7A00',
   },
 
   input: {

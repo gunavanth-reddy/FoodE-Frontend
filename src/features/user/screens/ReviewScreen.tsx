@@ -7,10 +7,10 @@ import {
   StatusBar,
   StyleSheet,
   Text,
-  TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
+import AppTextInput from "../../../components/inputs/AppTextInput";
 
 import {
   NativeStackScreenProps,
@@ -661,7 +661,7 @@ const ReviewScreen: React.FC<Props> = ({
             experience.
           </Text>
 
-          <TextInput
+          <AppTextInput
             value={comment}
             onChangeText={setComment}
             placeholder="Write your review..."

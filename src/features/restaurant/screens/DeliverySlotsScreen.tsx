@@ -7,10 +7,10 @@ import {
   StyleSheet,
   Switch,
   Text,
-  TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
+import AppTextInput from "../../../components/inputs/AppTextInput";
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {
   CalendarBlank,
@@ -446,7 +446,7 @@ const DeliverySlotsScreen: React.FC = () => {
               <Text style={styles.label}>Date</Text>
               <View style={styles.inputRow}>
                 <CalendarBlank size={18} color="#FF7A00" />
-                <TextInput
+                <AppTextInput
                   value={slot.date}
                   onChangeText={value => updateSlot(index, {date: value})}
                   placeholder="YYYY-MM-DD"
@@ -461,7 +461,7 @@ const DeliverySlotsScreen: React.FC = () => {
               <Text style={styles.label}>Start time (24-hour format)</Text>
               <View style={styles.inputRow}>
                 <Clock size={18} color="#FF7A00" />
-                <TextInput
+                <AppTextInput
                   value={slot.startTime}
                   onChangeText={value => updateStartTime(index, value)}
                   placeholder="09:00"
@@ -478,7 +478,7 @@ const DeliverySlotsScreen: React.FC = () => {
               <Text style={styles.label}>End time (24-hour format)</Text>
               <View style={styles.inputRow}>
                 <Clock size={18} color="#FF7A00" />
-                <TextInput
+                <AppTextInput
                   value={slot.endTime}
                   onChangeText={value => updateEndTime(index, value)}
                   placeholder="11:00"
@@ -511,7 +511,7 @@ const DeliverySlotsScreen: React.FC = () => {
                     Minutes before the slot starts
                   </Text>
                 </View>
-                <TextInput
+                <AppTextInput
                   value={String(slot.cutoffMinutes)}
                   onChangeText={value =>
                     updateSlot(index, {

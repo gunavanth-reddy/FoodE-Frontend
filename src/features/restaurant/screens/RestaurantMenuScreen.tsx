@@ -13,10 +13,10 @@ import {
   StatusBar,
   StyleSheet,
   Text,
-  TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
+import AppTextInput from "../../../components/inputs/AppTextInput";
 
 import {SafeAreaView} from 'react-native-safe-area-context';
 
@@ -904,7 +904,7 @@ const RestaurantMenuScreen = ({
             weight="regular"
           />
 
-          <TextInput
+          <AppTextInput
             value={search}
             onChangeText={
               setSearch
@@ -1485,7 +1485,7 @@ const RestaurantMenuScreen = ({
               Create a category for your restaurant menu.
             </Text>
 
-            <TextInput
+            <AppTextInput
               value={
                 categoryName
               }

@@ -6,9 +6,9 @@ import {
   StatusBar,
   StyleSheet,
   Text,
-  TextInput,
   View,
 } from 'react-native';
+import AppTextInput from "../../../components/inputs/AppTextInput";
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {MagnifyingGlass, Warning} from 'phosphor-react-native';
 import {useNavigation} from '@react-navigation/native';
@@ -89,7 +89,7 @@ const RestaurantsScreen: React.FC = () => {
     <View style={styles.header}>
       <View style={styles.searchBox}>
         <MagnifyingGlass size={19} color="#858B95" />
-        <TextInput
+        <AppTextInput
           value={query}
           onChangeText={setQuery}
           placeholder="Search restaurants"

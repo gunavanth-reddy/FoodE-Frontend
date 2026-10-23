@@ -1,8 +1,17 @@
 import React, {useState} from 'react';
 import {
-  ActivityIndicator, Alert, KeyboardAvoidingView, Platform, ScrollView,
-  StatusBar, StyleSheet, Text, TextInput, TouchableOpacity, View,
+  ActivityIndicator,
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
+import AppTextInput from "../../../components/inputs/AppTextInput";
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {useNavigation} from '@react-navigation/native';
 import {ArrowLeft, BellRinging, CheckCircle, PaperPlaneTilt, UsersThree} from 'phosphor-react-native';
@@ -95,7 +104,7 @@ const AdminBroadcastScreen = () => {
 
           <View style={styles.formCard}>
             <Text style={styles.label}>NOTIFICATION TITLE</Text>
-            <TextInput
+            <AppTextInput
               value={title}
               onChangeText={setTitle}
               placeholder="Enter a title"
@@ -107,7 +116,7 @@ const AdminBroadcastScreen = () => {
             <Text style={styles.counter}>{title.length}/100</Text>
 
             <Text style={[styles.label, styles.messageLabel]}>MESSAGE</Text>
-            <TextInput
+            <AppTextInput
               value={message}
               onChangeText={setMessage}
               placeholder="Write your announcement..."

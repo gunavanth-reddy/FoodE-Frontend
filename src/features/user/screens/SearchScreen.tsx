@@ -10,10 +10,10 @@ import {
   StatusBar,
   StyleSheet,
   Text,
-  TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
+import AppTextInput from "../../../components/inputs/AppTextInput";
 
 import {SafeAreaView} from 'react-native-safe-area-context';
 
@@ -966,7 +966,7 @@ const SearchScreen = () => {
                 style={[styles.searchContainer, navigation.canGoBack() && {flex: 1}]}>
                 <MagnifyingGlass size={21} color="#888888" weight="regular" />
 
-              <TextInput
+              <AppTextInput
                 autoFocus
                 value={query}
                 onChangeText={setQuery}
