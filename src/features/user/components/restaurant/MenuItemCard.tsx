@@ -68,78 +68,74 @@ const MenuItemCard: React.FC<MenuItemCardProps> = ({
       onPress={handleAdd}
       disabled={adding}>
 
-      <View style={styles.mainRow}>
-        {/* Left Section */}
-        <View style={styles.content}>
-          {/* Veg / Non-Veg */}
+      {/* Left Section */}
+      <View style={styles.content}>
+        {/* Veg / Non-Veg */}
+        <View
+          style={[
+            styles.foodType,
+            {
+              borderColor: item.isVeg ? '#16A34A' : '#B91C1C',
+            },
+          ]}>
           <View
             style={[
-              styles.foodType,
+              styles.foodDot,
               {
-                borderColor: item.isVeg ? '#16A34A' : '#B91C1C',
+                backgroundColor: item.isVeg ? '#16A34A' : '#B91C1C',
               },
-            ]}>
-            <View
-              style={[
-                styles.foodDot,
-                {
-                  backgroundColor: item.isVeg ? '#16A34A' : '#B91C1C',
-                },
-              ]}
-            />
-          </View>
+            ]}
+          />
+        </View>
 
-          <Text style={styles.name}>{item.name}</Text>
+        {/* Name */}
+        <Text style={styles.name}>{item.name}</Text>
 
-          {/* Rating */}
-          <View style={styles.ratingRow}>
-            <Star size={14} color="#F59E0B" weight="fill" />
-            <Text style={styles.rating}>
-              {Number(item.rating ?? 0).toFixed(1)}
-            </Text>
-          </View>
-
-          {/* Price */}
-          <Text style={styles.price}>₹{item.price}</Text>
-
-          {/* Description */}
-          <Text numberOfLines={3} style={styles.description}>
-            {item.description}
+        {/* Rating */}
+        <View style={styles.ratingRow}>
+          <Star size={14} color="#F59E0B" weight="fill" />
+          <Text style={styles.rating}>
+            {Number(item.rating ?? 0).toFixed(1)}
           </Text>
         </View>
 
-        {/* Right Section */}
-        <View style={styles.imageSection}>
-          <AsyncImage
-            source={item?.image}
-            style={styles.image}
-            kind="food"
-          />
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={isFavorite ? 'Remove food from favorites' : 'Add food to favorites'}
-            style={styles.favoriteButton}
-            disabled={favoriteLoading}
-            onPress={handleFavoritePress}>
-            {favoriteLoading ? (
-              <ActivityIndicator size="small" color="#FF6B00" />
-            ) : (
-              <Heart
-                size={17}
-                color={isFavorite ? '#FF7A00' : '#4A4039'}
-                weight={isFavorite ? 'fill' : 'regular'}
-              />
-            )}
-          </Pressable>
-        </View>
+        {/* Price */}
+        <Text style={styles.price}>₹{item.price}</Text>
+
+        {/* Description */}
+        <Text numberOfLines={3} style={styles.description}>
+          {item.description}
+        </Text>
       </View>
 
-      <View style={styles.actionsRow}>
+      {/* Right Section */}
+      <View style={styles.imageSection}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={isFavorite ? 'Remove food from favorites' : 'Add food to favorites'}
+          style={styles.favoriteButton}
+          disabled={favoriteLoading}
+          onPress={handleFavoritePress}>
+          {favoriteLoading ? (
+            <ActivityIndicator size="small" color="#FF6B00" />
+          ) : (
+            <Heart
+              size={18}
+              color={isFavorite ? '#EF4444' : '#4A4039'}
+              weight={isFavorite ? 'fill' : 'regular'}
+            />
+          )}
+        </Pressable>
+        <AsyncImage
+          source={item?.image}
+          style={styles.image}
+          kind="food"
+        />
+
         <QuantitySelector
           item={item}
           onAdd={handleAdd}
           adding={adding}
-          inline
         />
       </View>
     </TouchableOpacity>
@@ -150,7 +146,8 @@ export default MenuItemCard;
 
 const styles = StyleSheet.create({
   container: {
-    flexDirection: 'column',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     backgroundColor: '#FFF8F1',
     marginHorizontal: 0,
     marginBottom: 6,
@@ -166,18 +163,6 @@ const styles = StyleSheet.create({
       height: 3,
     },
     elevation: 3,
-  },
-
-  mainRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-
-  actionsRow: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    alignItems: 'center',
-    marginTop: 8,
   },
 
   content: {
@@ -233,28 +218,28 @@ const styles = StyleSheet.create({
   },
 
   imageSection: {
-    width: 116,
     alignItems: 'center',
     position: 'relative',
   },
 
   favoriteButton: {
     position: 'absolute',
-    right: 7,
-    bottom: 7,
-    width: 29,
-    height: 29,
-    borderRadius: 15,
+    top: 6,
+    right: 6,
+    zIndex: 2,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#FFFFFF',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#FFFFFF',
-    zIndex: 2,
+    elevation: 3,
   },
 
   image: {
-    width: 116,
-    height: 112,
-    borderRadius: 14,
+    width: 92,
+    height: 92,
+    borderRadius: 12,
   },
 
   imagePlaceholder: {
