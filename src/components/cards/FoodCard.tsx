@@ -13,6 +13,7 @@ import Colors from '../../constants/colors';
 import API_BASE_URL from '../../config/api';
 import {Food} from '../../features/restaurant/services/foodService';
 import AsyncImage from '../images/AsyncImage';
+import {isFoodVegetarian} from '../../utils/foodClassification';
 
 interface FoodCardProps {
   food: Food;
@@ -47,9 +48,7 @@ const FoodCard: React.FC<FoodCardProps> = ({
     return `${API_BASE_URL}${raw.startsWith('/') ? '' : '/'}${raw}`;
   }, [food?.image]);
 
-  const isVeg = food.foodType
-    ? food.foodType === 'veg'
-    : food.isVegetarian === true;
+  const isVeg = isFoodVegetarian(food);
 
   const displayPrice =
     typeof food.discountedPrice === 'number' &&

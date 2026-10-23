@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 
 import {useAuth} from './AuthContext';
+import {navigationRef} from '../navigation/navigationRef';
 
 // =====================================================
 // API
@@ -604,6 +605,12 @@ export const CartProvider = ({
       Alert.alert(
         'Login Required',
         'Please login to add food to your cart.',
+        [
+          {
+            text: 'Login Now',
+            onPress: () => navigationRef.navigate('Login'),
+          },
+        ],
       );
 
       return false;

@@ -164,8 +164,10 @@ const SplashScreen = ({navigation}: any) => {
     }
 
     const timer = setTimeout(() => {
+      // A missing saved session is the normal guest state on first launch.
+      // Protected actions can request login when the guest chooses them.
       if (!user || !token) {
-        navigation.replace('Login');
+        navigation.replace('Main');
       } else if (user.role === 'restaurant_owner') {
         navigation.replace('RestaurantOwner');
       } else if (user.role === 'admin') {

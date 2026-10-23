@@ -1,7 +1,6 @@
 import React from 'react';
 import {
   NavigationContainer,
-  createNavigationContainerRef,
   NavigatorScreenParams,
 } from '@react-navigation/native';
 import {createNativeStackNavigator} from '@react-navigation/native-stack';
@@ -9,6 +8,8 @@ import {Alert as NativeAlert} from 'react-native';
 
 import FoodEAlertHost, {FoodEAlert} from '../utils/FoodEAlert';
 import {UserOrder} from '../features/user/services/orderService';
+import {navigationRef} from './navigationRef';
+export {navigationRef} from './navigationRef';
 
 // Auth / Intro
 import SplashScreen from '../features/auth/screens/SplashScreen';
@@ -122,9 +123,6 @@ export type RootStackParamList = {
   Terms: undefined;
   About: undefined;
 };
-
-export const navigationRef =
-  createNavigationContainerRef<RootStackParamList>();
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 

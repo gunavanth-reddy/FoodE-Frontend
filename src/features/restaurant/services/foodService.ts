@@ -4,6 +4,7 @@
 
 import API_BASE_URL from '../../../config/api';
 import type {ImagePickerAsset} from 'expo-image-picker';
+import {isFoodVegetarian} from '../../../utils/foodClassification';
 
 // =====================================================
 // TYPES
@@ -172,8 +173,7 @@ export const getVegFoods = async (): Promise<Food[]> => {
   const foods = await getAllFoods();
 
   return foods.filter(
-    food =>
-      food.foodType === 'veg' || food.isVegetarian === true,
+    isFoodVegetarian,
   );
 };
 

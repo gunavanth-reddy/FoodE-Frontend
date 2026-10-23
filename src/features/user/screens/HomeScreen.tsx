@@ -51,6 +51,10 @@ import {
   type Restaurant as ApiRestaurant,
 } from '../services/restaurantService';
 import AboutFoodE from '../components/home/AboutFoodE';
+import {
+  isFoodNonVegetarian,
+  isFoodVegetarian,
+} from '../../../utils/foodClassification';
 
 type NavigationProp =
   CompositeNavigationProp<
@@ -178,13 +182,7 @@ const HomeScreen: React.FC = () => {
       return foods.filter(
         food =>
           food.isAvailable === true &&
-          (
-            food.foodType === 'non-veg' ||
-            (
-              food.foodType === undefined &&
-              food.isVegetarian === false
-            )
-          ),
+          isFoodNonVegetarian(food),
       );
     }, [foods]);
 
@@ -193,10 +191,7 @@ const HomeScreen: React.FC = () => {
       return foods.filter(
         food =>
           food.isAvailable === true &&
-          (
-            food.foodType === 'veg' ||
-            food.isVegetarian === true
-          ),
+          isFoodVegetarian(food),
       );
     }, [foods]);
 

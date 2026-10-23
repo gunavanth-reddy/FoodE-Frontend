@@ -15,6 +15,21 @@ export const categories = [
     image: require('../../../../../assets/images/categories/chinese.webp'),
   },
   {
+    id: '14',
+    name: 'Fruits',
+    image: require('../../../../../assets/images/categories/fruits.png'),
+  },
+  {
+    id: '12',
+    name: 'Mini Burgers',
+    image: require('../../../../../assets/images/categories/mini_burgers.png'),
+  },
+  {
+    id: '15',
+    name: 'Bakery',
+    image: require('../../../../../assets/images/categories/bakery.png'),
+  },
+  {
     id: '4',
     name: 'Cakes',
     image: require('../../../../../assets/images/categories/cakes.png'),
@@ -48,6 +63,16 @@ export const categories = [
     id: '10',
     name: 'Drinks',
     image: require('../../../../../assets/images/categories/drinks.png'),
+  },
+  {
+    id: '11',
+    name: 'Pizza',
+    image: require('../../../../../assets/images/categories/pizza.png'),
+  },
+  {
+    id: '13',
+    name: 'Sandwich',
+    image: require('../../../../../assets/images/categories/sandwich.png'),
   },
   {
     id: 'all',

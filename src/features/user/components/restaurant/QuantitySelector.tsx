@@ -2,6 +2,7 @@ import React from 'react';
 import {
   ActivityIndicator,
   Alert,
+  Platform,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -165,8 +166,9 @@ export default QuantitySelector;
 
 const styles = StyleSheet.create({
   addButton: {
-    position: 'absolute',
-    bottom: -10,
+    position: Platform.OS === 'web' ? 'relative' : 'absolute',
+    bottom: Platform.OS === 'web' ? undefined : -10,
+    marginTop: Platform.OS === 'web' ? 8 : 0,
     width: 90,
     height: 38,
     backgroundColor: '#FFFCF8',
@@ -185,8 +187,9 @@ const styles = StyleSheet.create({
   },
 
   quantityContainer: {
-    position: 'absolute',
-    bottom: -10,
+    position: Platform.OS === 'web' ? 'relative' : 'absolute',
+    bottom: Platform.OS === 'web' ? undefined : -10,
+    marginTop: Platform.OS === 'web' ? 8 : 0,
     width: 100,
     height: 38,
     flexDirection: 'row',

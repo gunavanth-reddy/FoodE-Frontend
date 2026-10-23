@@ -41,6 +41,7 @@ import {getRestaurantFoods} from '../../restaurant/services/foodService';
 import type {Food} from '../../restaurant/services/foodService';
 import {getRestaurantById} from '../services/restaurantService';
 import {useCart} from '../../../context/CartContext';
+import {isFoodVegetarian} from '../../../utils/foodClassification';
 
 type Props = NativeStackScreenProps<
   RootStackParamList,
@@ -55,6 +56,7 @@ type MenuItem = {
   price: number;
   discountedPrice?: number | null;
   category: string;
+  isVeg: boolean;
   isAvailable: boolean;
   rating: number;
   totalReviews: number;
@@ -268,6 +270,7 @@ const RestaurantDetailsScreen: React.FC<Props> = ({
             ? Number(item.discountedPrice)
             : null,
         category: getCategoryName(food),
+        isVeg: isFoodVegetarian(item),
         isAvailable: item.isAvailable !== false,
         rating: itemRating,
         totalReviews: Number(item.totalReviews) || 0,

@@ -12,6 +12,7 @@ import {Clock, Heart} from 'phosphor-react-native';
 import {Food} from '../../../../restaurant/services/foodService';
 import {useCart} from '../../../../../context/CartContext';
 import AsyncImage from '../../../../../components/images/AsyncImage';
+import {isFoodVegetarian} from '../../../../../utils/foodClassification';
 
 interface FoodCardProps {
   food: Food;
@@ -75,14 +76,7 @@ const FoodCard: React.FC<FoodCardProps> = ({
 
   const displayPrice = hasDiscount ? discountedPrice : originalPrice;
 
-  const foodType = foodRecord.foodType?.toLowerCase();
-
-  const isVeg =
-    foodType === 'veg'
-      ? true
-      : foodType === 'non-veg'
-        ? false
-        : foodRecord.isVegetarian === true;
+  const isVeg = isFoodVegetarian(foodRecord);
 
   const preparationTime = foodRecord.preparationTime;
 

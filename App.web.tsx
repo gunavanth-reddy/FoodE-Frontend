@@ -18,7 +18,7 @@ import {FavoritesProvider} from './src/context/FavoritesContext';
 import {ThemeProvider} from './src/context/ThemeContext';
 
 const PLAY_STORE_URL =
-  'https://play.google.com/store/apps/details?id=com.foode';
+  'https://play.google.com/store/apps/details?id=com.foode.site';
 
 type BrowserPlatform = 'android' | 'app';
 

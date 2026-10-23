@@ -25,6 +25,10 @@ import {
   getFoodsByCategory,
 } from '../../restaurant/services/foodService';
 import AsyncImage from '../../../components/images/AsyncImage';
+import {
+  isFoodNonVegetarian,
+  isFoodVegetarian,
+} from '../../../utils/foodClassification';
 
 // =====================================================
 // ROUTE TYPE
@@ -158,9 +162,7 @@ const CategoryFoodsScreen = () => {
 
       if (isVeg) {
         result = result.filter(
-          food =>
-            food.foodType === 'veg' ||
-            food.isVegetarian === true,
+          isFoodVegetarian,
         );
       }
 
@@ -169,11 +171,7 @@ const CategoryFoodsScreen = () => {
     // -----------------------------
 
       if (isNonVeg) {
-        result = result.filter(
-          food =>
-            food.foodType === 'non-veg' ||
-            (!food.isVegetarian && food.foodType !== 'veg'),
-        );
+        result = result.filter(isFoodNonVegetarian);
       }
 
       return result;
@@ -419,20 +417,18 @@ const CategoryFoodsScreen = () => {
             style={[
               styles.foodIndicator,
               {
-                borderColor:
-                  food.foodType === 'veg' || food.isVegetarian
-                    ? '#16A34A'
-                    : '#DC2626',
+                borderColor: isFoodVegetarian(food)
+                  ? '#16A34A'
+                  : '#DC2626',
               },
             ]}>
             <View
               style={[
                 styles.foodDot,
                 {
-                  backgroundColor:
-                    food.foodType === 'veg' || food.isVegetarian
-                      ? '#16A34A'
-                      : '#DC2626',
+                  backgroundColor: isFoodVegetarian(food)
+                    ? '#16A34A'
+                    : '#DC2626',
                 },
               ]}
             />

@@ -73,7 +73,7 @@ const FoodEAlertHost: React.FC = () => {
           )}
 
           <View style={styles.actions}>
-            {(alert?.buttons || [{text: 'OK'}]).map((button, index) => {
+            {(alert?.buttons ?? []).map((button, index) => {
               const destructive = button.style === 'destructive';
               const cancel = button.style === 'cancel';
               const primary = !cancel && !destructive;
