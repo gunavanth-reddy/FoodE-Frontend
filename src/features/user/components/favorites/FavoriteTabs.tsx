@@ -23,23 +23,6 @@ const FavoriteTabs: React.FC<FavoriteTabsProps> = ({
         activeOpacity={0.8}
         style={[
           styles.tab,
-          activeTab === 'restaurants' && styles.activeTab,
-        ]}
-        onPress={() => onTabChange('restaurants')}>
-        <Text
-          style={[
-            styles.text,
-            activeTab === 'restaurants' &&
-              styles.activeText,
-          ]}>
-          Restaurants
-        </Text>
-      </TouchableOpacity>
-
-      <TouchableOpacity
-        activeOpacity={0.8}
-        style={[
-          styles.tab,
           activeTab === 'foods' && styles.activeTab,
         ]}
         onPress={() => onTabChange('foods')}>
@@ -50,6 +33,22 @@ const FavoriteTabs: React.FC<FavoriteTabsProps> = ({
               styles.activeText,
           ]}>
           Foods
+        </Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity
+        activeOpacity={0.8}
+        style={[
+          styles.tab,
+          activeTab === 'restaurants' && styles.activeTab,
+        ]}
+        onPress={() => onTabChange('restaurants')}>
+        <Text
+          style={[
+            styles.text,
+            activeTab === 'restaurants' && styles.activeText,
+          ]}>
+          Restaurants
         </Text>
       </TouchableOpacity>
     </View>

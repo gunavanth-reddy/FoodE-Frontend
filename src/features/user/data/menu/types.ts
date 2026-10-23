@@ -9,4 +9,6 @@ export interface MenuItem {
   description: string;
   isVeg: boolean;
   isPopular: boolean;
+  /** Original MongoDB food record used by authenticated actions. */
+  foodRecord?: import('../../../restaurant/services/foodService').Food;
 }

@@ -6,6 +6,7 @@ import React, {
 } from 'react';
 
 import {
+  Alert,
   ActivityIndicator,
   FlatList,
   Pressable,
@@ -41,6 +42,7 @@ import {getRestaurantFoods} from '../../restaurant/services/foodService';
 import type {Food} from '../../restaurant/services/foodService';
 import {getRestaurantById} from '../services/restaurantService';
 import {useCart} from '../../../context/CartContext';
+import {useFavorites} from '../../../context/FavoritesContext';
 import {isFoodVegetarian} from '../../../utils/foodClassification';
 
 type Props = NativeStackScreenProps<
@@ -61,6 +63,7 @@ type MenuItem = {
   rating: number;
   totalReviews: number;
   isPopular: boolean;
+  foodRecord: Food;
 };
 
 const COLORS = {
@@ -89,19 +92,36 @@ const RestaurantDetailsScreen: React.FC<Props> = ({
       ? String(route.params.restaurantId)
       : String(routeRestaurant?._id || routeRestaurant?.id || '');
   const {addItem} = useCart();
+  const {isRestaurantFavorite, toggleRestaurantFavorite} = useFavorites();
 
   const [restaurantData, setRestaurantData] =
     useState<any>(routeRestaurant || {});
   const [foods, setFoods] = useState<Food[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [favoriteLoading, setFavoriteLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const [selectedCategory, setSelectedCategory] =
     useState('All');
 
   const [searchQuery, setSearchQuery] = useState('');
-  const [isFavorite, setIsFavorite] = useState(false);
+  const isFavorite = isRestaurantFavorite(restaurantId || restaurantData);
+
+  const handleRestaurantFavorite = useCallback(async () => {
+    if (favoriteLoading) return;
+    try {
+      setFavoriteLoading(true);
+      await toggleRestaurantFavorite({
+        ...restaurantData,
+        _id: restaurantData?._id || restaurantData?.backendId || restaurantId,
+      });
+    } catch (favoriteError: any) {
+      Alert.alert('Favorites', favoriteError?.message || 'Unable to update favorites.');
+    } finally {
+      setFavoriteLoading(false);
+    }
+  }, [favoriteLoading, restaurantData, restaurantId, toggleRestaurantFavorite]);
 
   useEffect(() => {
     if (routeRestaurant) {
@@ -275,6 +295,7 @@ const RestaurantDetailsScreen: React.FC<Props> = ({
         rating: itemRating,
         totalReviews: Number(item.totalReviews) || 0,
         isPopular: itemRating >= 4.5,
+        foodRecord: food,
       };
     });
   }, [foods, getCategoryName]);
@@ -516,25 +537,22 @@ const RestaurantDetailsScreen: React.FC<Props> = ({
                         ? 'Remove from favorites'
                         : 'Add to favorites'
                     }
-                    onPress={() =>
-                      setIsFavorite(previous => !previous)
-                    }
+                    disabled={favoriteLoading}
+                    onPress={() => void handleRestaurantFavorite()}
                     style={({pressed}) => [
                       styles.headerButton,
                       styles.favoriteButton,
                       pressed && styles.pressed,
                     ]}>
-                    <Heart
-                      size={21}
-                      color={
-                        isFavorite
-                          ? COLORS.orange
-                          : COLORS.text
-                      }
-                      weight={
-                        isFavorite ? 'fill' : 'regular'
-                      }
-                    />
+                    {favoriteLoading ? (
+                      <ActivityIndicator size="small" color={COLORS.orange} />
+                    ) : (
+                      <Heart
+                        size={21}
+                        color={isFavorite ? COLORS.orange : COLORS.text}
+                        weight={isFavorite ? 'fill' : 'regular'}
+                      />
+                    )}
                   </Pressable>
                 </View>
 

@@ -1,6 +1,9 @@
 import React, {useState} from 'react';
 
 import {
+  Alert,
+  ActivityIndicator,
+  Pressable,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -9,8 +12,9 @@ import {
 
 import {MenuItem} from '../../data/menu/types';
 import QuantitySelector from './QuantitySelector';
-import {Star} from 'phosphor-react-native';
+import {Heart, Star} from 'phosphor-react-native';
 import AsyncImage from '../../../../components/images/AsyncImage';
+import {useFavorites} from '../../../../context/FavoritesContext';
 
 interface MenuItemCardProps {
   item: MenuItem;
@@ -22,6 +26,27 @@ const MenuItemCard: React.FC<MenuItemCardProps> = ({
   onPress,
 }) => {
   const [adding, setAdding] = useState(false);
+  const [favoriteLoading, setFavoriteLoading] = useState(false);
+  const {isFoodFavorite, toggleFoodFavorite} = useFavorites();
+  const foodId = item.foodRecord?._id || item.id;
+  const isFavorite = isFoodFavorite(foodId);
+
+  const handleFavoritePress = async (event: any) => {
+    event.stopPropagation();
+    if (favoriteLoading) return;
+    if (!item.foodRecord) {
+      Alert.alert('Unable to save', 'This menu item is missing its database ID.');
+      return;
+    }
+    try {
+      setFavoriteLoading(true);
+      await toggleFoodFavorite(item.foodRecord);
+    } catch (error: any) {
+      Alert.alert('Favorites', error?.message || 'Unable to update favorites.');
+    } finally {
+      setFavoriteLoading(false);
+    }
+  };
 
   const handleAdd = async () => {
     if (!onPress || adding) {
@@ -85,6 +110,22 @@ const MenuItemCard: React.FC<MenuItemCardProps> = ({
 
       {/* Right Section */}
       <View style={styles.imageSection}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={isFavorite ? 'Remove food from favorites' : 'Add food to favorites'}
+          style={styles.favoriteButton}
+          disabled={favoriteLoading}
+          onPress={handleFavoritePress}>
+          {favoriteLoading ? (
+            <ActivityIndicator size="small" color="#FF6B00" />
+          ) : (
+            <Heart
+              size={18}
+              color={isFavorite ? '#EF4444' : '#4A4039'}
+              weight={isFavorite ? 'fill' : 'regular'}
+            />
+          )}
+        </Pressable>
         <AsyncImage
           source={item?.image}
           style={styles.image}
@@ -179,6 +220,20 @@ const styles = StyleSheet.create({
   imageSection: {
     alignItems: 'center',
     position: 'relative',
+  },
+
+  favoriteButton: {
+    position: 'absolute',
+    top: 6,
+    right: 6,
+    zIndex: 2,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    elevation: 3,
   },
 
   image: {

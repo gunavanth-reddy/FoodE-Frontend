@@ -1,6 +1,7 @@
 import React, {useState} from 'react';
 import {
   Alert,
+  ActivityIndicator,
   Pressable,
   StyleSheet,
   Text,
@@ -13,6 +14,7 @@ import {Food} from '../../../../restaurant/services/foodService';
 import {useCart} from '../../../../../context/CartContext';
 import AsyncImage from '../../../../../components/images/AsyncImage';
 import {isFoodVegetarian} from '../../../../../utils/foodClassification';
+import {useFavorites} from '../../../../../context/FavoritesContext';
 
 interface FoodCardProps {
   food: Food;
@@ -20,7 +22,7 @@ interface FoodCardProps {
   onAdd?: () => void;
   showAddButton?: boolean;
   isFavorite?: boolean;
-  onFavoritePress?: () => void;
+  onFavoritePress?: () => void | Promise<void>;
   showFavorite?: boolean;
 }
 
@@ -35,10 +37,12 @@ const FoodCard: React.FC<FoodCardProps> = ({
   showAddButton = true,
   isFavorite = false,
   onFavoritePress,
-  showFavorite = false,
+  showFavorite = true,
 }) => {
   const {addItem, loading: cartLoading} = useCart();
+  const {isFoodFavorite, toggleFoodFavorite} = useFavorites();
   const [adding, setAdding] = useState(false);
+  const [favoriteLoading, setFavoriteLoading] = useState(false);
 
   const hasImage =
     typeof food.image === 'string' && food.image.trim().length > 0;
@@ -79,6 +83,19 @@ const FoodCard: React.FC<FoodCardProps> = ({
   const isVeg = isFoodVegetarian(foodRecord);
 
   const preparationTime = foodRecord.preparationTime;
+
+  const favoriteActive = isFavorite || isFoodFavorite(food._id);
+  const handleFavoritePress = async () => {
+    if (favoriteLoading) return;
+    try {
+      setFavoriteLoading(true);
+      await (onFavoritePress ? onFavoritePress() : toggleFoodFavorite(food));
+    } catch (error: any) {
+      Alert.alert('Favorites', error?.message || 'Unable to update favorites.');
+    } finally {
+      setFavoriteLoading(false);
+    }
+  };
 
   const handleAdd = async () => {
     if (onAdd) {
@@ -121,24 +138,29 @@ const FoodCard: React.FC<FoodCardProps> = ({
           kind="food"
         />
 
-        {showFavorite && onFavoritePress && (
+        {showFavorite && (
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={
-              isFavorite
+              favoriteActive
                 ? 'Remove food from favorites'
                 : 'Add food to favorites'
             }
             style={styles.favoriteButton}
+            disabled={favoriteLoading}
             onPress={event => {
               event.stopPropagation();
-              onFavoritePress();
+              void handleFavoritePress();
             }}>
-            <Heart
-              size={17}
-              color={isFavorite ? ORANGE : '#4A4039'}
-              weight={isFavorite ? 'fill' : 'regular'}
-            />
+            {favoriteLoading ? (
+              <ActivityIndicator size="small" color={ORANGE} />
+            ) : (
+              <Heart
+                size={17}
+                color={favoriteActive ? ORANGE : '#4A4039'}
+                weight={favoriteActive ? 'fill' : 'regular'}
+              />
+            )}
           </Pressable>
         )}
 
@@ -251,8 +273,8 @@ const styles = StyleSheet.create({
 
   favoriteButton: {
     position: 'absolute',
-    top: 7,
-    left: 7,
+    right: 7,
+    bottom: 7,
     width: 29,
     height: 29,
     borderRadius: 15,

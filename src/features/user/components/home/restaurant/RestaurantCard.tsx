@@ -1,7 +1,8 @@
-import React, {memo, useMemo} from 'react';
+import React, {memo, useMemo, useState} from 'react';
 
 import {
   Alert,
+  ActivityIndicator,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -20,6 +21,7 @@ import {
 
 import {Restaurant} from './restaurantData';
 import AsyncImage from '../../../../../components/images/AsyncImage';
+import {useFavorites} from '../../../../../context/FavoritesContext';
 
 interface RestaurantCardProps {
   restaurant: Restaurant;
@@ -27,7 +29,7 @@ interface RestaurantCardProps {
   showOffer?: boolean;
   showDeliveryChip?: boolean;
   isFavorite?: boolean;
-  onFavoritePress?: () => void;
+  onFavoritePress?: () => void | Promise<void>;
 }
 
 const COLORS = {
@@ -55,6 +57,21 @@ const RestaurantCard: React.FC<RestaurantCardProps> = ({
 }) => {
   // Use the actual restaurant status supplied by the backend.
   const isOpen = restaurant.isOpen !== false;
+  const {isRestaurantFavorite, toggleRestaurantFavorite} = useFavorites();
+  const favoriteActive = isFavorite || isRestaurantFavorite(restaurant);
+  const [favoriteLoading, setFavoriteLoading] = useState(false);
+
+  const handleFavoritePress = async () => {
+    if (favoriteLoading) return;
+    try {
+      setFavoriteLoading(true);
+      await (onFavoritePress ? onFavoritePress() : toggleRestaurantFavorite(restaurant));
+    } catch (error: any) {
+      Alert.alert('Favorites', error?.message || 'Unable to update favorites.');
+    } finally {
+      setFavoriteLoading(false);
+    }
+  };
 
   const rating =
     typeof restaurant.rating === 'number'
@@ -166,26 +183,29 @@ const RestaurantCard: React.FC<RestaurantCardProps> = ({
         />
 
         {/* Favorite button */}
-        {onFavoritePress && (
-          <TouchableOpacity
-            accessibilityRole="button"
-            accessibilityLabel={
-              isFavorite
-                ? 'Remove restaurant from favorites'
-                : 'Add restaurant to favorites'
-            }
-            style={styles.favoriteButton}
-            onPress={event => {
-              event.stopPropagation();
-              onFavoritePress();
-            }}>
+        <TouchableOpacity
+          accessibilityRole="button"
+          accessibilityLabel={
+            favoriteActive
+              ? 'Remove restaurant from favorites'
+              : 'Add restaurant to favorites'
+          }
+          style={styles.favoriteButton}
+          disabled={favoriteLoading}
+          onPress={event => {
+            event.stopPropagation();
+            handleFavoritePress();
+          }}>
+          {favoriteLoading ? (
+            <ActivityIndicator size="small" color={COLORS.orange} />
+          ) : (
             <Heart
               size={18}
-              color={isFavorite ? COLORS.orange : COLORS.text}
-              weight={isFavorite ? 'fill' : 'regular'}
+              color={favoriteActive ? COLORS.orange : COLORS.text}
+              weight={favoriteActive ? 'fill' : 'regular'}
             />
-          </TouchableOpacity>
-        )}
+          )}
+        </TouchableOpacity>
 
         {/* Dark overlay for closed restaurants */}
         {!isOpen && <View style={styles.closedImageOverlay} />}
@@ -206,7 +226,7 @@ const RestaurantCard: React.FC<RestaurantCardProps> = ({
         <View
           style={[
             styles.ratingBadge,
-            onFavoritePress ? styles.ratingBadgeWithFavorite : null,
+            styles.ratingBadgeWithFavorite,
           ]}>
           <Star
             size={13}

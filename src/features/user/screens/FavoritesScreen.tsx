@@ -3,6 +3,7 @@ import React, {useMemo, useState} from 'react';
 import {
   ActivityIndicator,
   FlatList,
+  ScrollView,
   StatusBar,
   StyleSheet,
   Text,
@@ -14,21 +15,19 @@ import {SafeAreaView} from 'react-native-safe-area-context';
 
 import {
   ArrowLeft,
-  Storefront,
   Heart,
   Compass,
 } from 'phosphor-react-native';
 
-import {useNavigation} from '@react-navigation/native';
+import {useFocusEffect, useNavigation} from '@react-navigation/native';
 
 import {NativeStackNavigationProp} from '@react-navigation/native-stack';
 
 import {RootStackParamList} from '../../../navigation/AppNavigator';
 
-import FavoriteTabs, {
-  FavoriteTab,
-} from '../components/favorites/FavoriteTabs';
-
+import FavoriteTabs, {FavoriteTab} from '../components/favorites/FavoriteTabs';
+import FavoritesHeaderMark from '../components/favorites/FavoritesHeaderMark';
+import EmptyFavorites from '../components/favorites/EmptyFavorites';
 import RestaurantCard from '../components/home/restaurant/RestaurantCard';
 
 import FoodCard from '../components/home/food/FoodCard';
@@ -38,7 +37,6 @@ import {Restaurant} from '../components/home/restaurant/restaurantData';
 import {Food} from '../../restaurant/services/foodService';
 
 import {useFavorites} from '../../../context/FavoritesContext';
-import {FoodEAlert} from '../../../utils/FoodEAlert';
 
 // =====================================================
 // TYPES
@@ -63,33 +61,18 @@ const FavoritesScreen = () => {
     favoriteFoods,
     removeRestaurantFavorite,
     removeFoodFavorite,
+    refreshFavorites,
     loading,
   } = useFavorites();
+  const [activeTab, setActiveTab] = useState<FavoriteTab>('foods');
 
-  // ===================================================
-  // ACTIVE TAB
-  // ===================================================
-
-  const [activeTab, setActiveTab] =
-    useState<FavoriteTab>('restaurants');
-
-  // ===================================================
-  // CURRENT DATA
-  // ===================================================
-
-  const currentData = useMemo<Array<Restaurant | Food>>(() => {
-    if (activeTab === 'restaurants') {
-      return favoriteRestaurants as Restaurant[];
-    }
-
-    return favoriteFoods as Food[];
-  }, [
-    activeTab,
-    favoriteRestaurants,
-    favoriteFoods,
-  ]);
-
-  const currentCount = currentData.length;
+  useFocusEffect(
+    React.useCallback(() => {
+      refreshFavorites().catch(error => {
+        console.warn('Unable to refresh favorites:', error);
+      });
+    }, [refreshFavorites]),
+  );
 
   // ===================================================
   // TOTAL FAVORITES
@@ -98,6 +81,26 @@ const FavoritesScreen = () => {
   const totalFavorites =
     favoriteRestaurants.length +
     favoriteFoods.length;
+
+  const foodGroups = useMemo(() => {
+    const groups = new Map<string, {id: string; name: string; foods: Food[]}>();
+
+    favoriteFoods.forEach(food => {
+      const restaurant = (food as any).restaurant;
+      const restaurantId = typeof restaurant === 'object' && restaurant
+        ? String(restaurant._id || '')
+        : String(restaurant || (food as any).restaurantId || '');
+      const key = restaurantId || 'unknown-restaurant';
+      const name = typeof restaurant === 'object' && restaurant
+        ? restaurant.name || 'Restaurant'
+        : 'Restaurant';
+      const group = groups.get(key) || {id: key, name, foods: []};
+      group.foods.push(food);
+      groups.set(key, group);
+    });
+
+    return Array.from(groups.values());
+  }, [favoriteFoods]);
 
   // ===================================================
   // HOME
@@ -141,26 +144,9 @@ const FavoritesScreen = () => {
   // REMOVE RESTAURANT
   // ===================================================
 
-  const handleRemoveRestaurant = (
-    restaurant: Restaurant,
-  ) => {
-    FoodEAlert.alert(
-      'Remove from Favorites?',
-      `Remove ${restaurant.name} from your favorite restaurants?`,
-      [
-        {
-          text: 'Cancel',
-          style: 'cancel',
-        },
-        {
-          text: 'Remove',
-          style: 'destructive',
-          onPress: () =>
-            removeRestaurantFavorite(
-              restaurant._id || restaurant.backendId || restaurant.id || '',
-            ),
-        },
-      ],
+  const handleRemoveRestaurant = async (restaurant: Restaurant) => {
+    await removeRestaurantFavorite(
+      restaurant._id || restaurant.backendId || restaurant.id || '',
     );
   };
 
@@ -168,67 +154,8 @@ const FavoritesScreen = () => {
   // REMOVE FOOD
   // ===================================================
 
-  const handleRemoveFood = (food: Food) => {
-    FoodEAlert.alert(
-      'Remove from Favorites?',
-      `Remove ${food.name} from your favorite foods?`,
-      [
-        {
-          text: 'Cancel',
-          style: 'cancel',
-        },
-        {
-          text: 'Remove',
-          style: 'destructive',
-          onPress: () =>
-            removeFoodFavorite(food._id),
-        },
-      ],
-    );
-  };
-
-  // ===================================================
-  // EMPTY STATE
-  // ===================================================
-
-  const renderEmptyState = () => {
-    const isRestaurantTab =
-      activeTab === 'restaurants';
-
-    return (
-      <View style={styles.emptyWrapper}>
-        <View style={styles.emptyIconContainer}>
-          {isRestaurantTab ? (
-            <Storefront size={38} color="#FF7A00" weight="duotone" />
-          ) : (
-            <Heart size={38} color="#FF7A00" weight="regular" />
-          )}
-        </View>
-
-        <Text style={styles.emptyTitle}>
-          {isRestaurantTab
-            ? 'No favorite restaurants'
-            : 'No favorite foods'}
-        </Text>
-
-        <Text style={styles.emptyDescription}>
-          {isRestaurantTab
-            ? 'Save restaurants you love and find them here anytime.'
-            : 'Save your favorite dishes and order them quickly anytime.'}
-        </Text>
-
-        <TouchableOpacity
-          activeOpacity={0.85}
-          style={styles.exploreButton}
-          onPress={goToHome}>
-          <Compass size={18} color="#FFFFFF" weight="fill" />
-
-          <Text style={styles.exploreButtonText}>
-            Explore FoodE
-          </Text>
-        </TouchableOpacity>
-      </View>
-    );
+  const handleRemoveFood = async (food: Food) => {
+    await removeFoodFavorite(food._id);
   };
 
   // ===================================================
@@ -242,9 +169,7 @@ const FavoritesScreen = () => {
         edges={['top', 'left', 'right']}>
         <StatusBar backgroundColor="#FF7A00" barStyle="light-content" hidden={false} translucent={false} />
         <View style={styles.loadingScreen}>
-          <View style={styles.loadingIcon}>
-            <Heart size={30} color="#FF7A00" weight="fill" />
-          </View>
+          <FavoritesHeaderMark size={30} containerStyle={styles.loadingIcon} />
 
           <ActivityIndicator
             size="small"
@@ -269,224 +194,144 @@ const FavoritesScreen = () => {
       edges={['top', 'left', 'right']}>
       <StatusBar backgroundColor="#FF7A00" barStyle="light-content" hidden={false} translucent={false} />
 
-      <FlatList<Restaurant | Food>
-        data={currentData}
-        keyExtractor={item => item._id}
+      <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={
-          currentData.length === 0
-            ? styles.emptyList
-            : styles.listContent
-        }
+        contentContainerStyle={styles.listContent}>
+        <View style={styles.header}>
+          <View style={styles.headerTop}>
+            {navigation.canGoBack() && (
+              <TouchableOpacity
+                accessibilityRole="button"
+                accessibilityLabel="Go back"
+                activeOpacity={0.75}
+                onPress={() => navigation.goBack()}
+                style={styles.backButton}>
+                <ArrowLeft size={22} color="#1E232C" weight="bold" />
+              </TouchableOpacity>
+            )}
 
-        // =================================================
-        // HEADER
-        // =================================================
-
-        ListHeaderComponent={
-          <>
-            <View style={styles.header}>
-              <View style={styles.headerTop}>
-                {navigation.canGoBack() && (
-                  <TouchableOpacity
-                    accessibilityRole="button"
-                    accessibilityLabel="Go back"
-                    activeOpacity={0.75}
-                    onPress={() => navigation.goBack()}
-                    style={styles.backButton}>
-                    <ArrowLeft size={22} color="#1E232C" weight="bold" />
-                  </TouchableOpacity>
-                )}
-
-                <View
-                  style={styles.headerTextContainer}>
-                  <Text style={styles.eyebrow}>
-                    YOUR COLLECTION
-                  </Text>
-
-                  <Text style={styles.title}>
-                    Favorites
-                  </Text>
-
-                  <Text style={styles.subtitle}>
-                    Everything you love,
-                    all in one place.
-                  </Text>
-                </View>
-
-                <View style={styles.heartContainer}>
-                  <Heart size={27} color="#FF7A00" weight="fill" />
-                </View>
-              </View>
-
-              {/* QUICK STATS */}
-
-              <View style={styles.statsContainer}>
-                {/* RESTAURANTS */}
-
-                <View style={styles.statItem}>
-                  <Text style={styles.statNumber}>
-                    {favoriteRestaurants.length}
-                  </Text>
-
-                  <Text style={styles.statLabel}>
-                    Restaurants
-                  </Text>
-                </View>
-
-                <View style={styles.statDivider} />
-
-                {/* FOODS */}
-
-                <View style={styles.statItem}>
-                  <Text style={styles.statNumber}>
-                    {favoriteFoods.length}
-                  </Text>
-
-                  <Text style={styles.statLabel}>
-                    Foods
-                  </Text>
-                </View>
-
-                <View style={styles.statDivider} />
-
-                {/* TOTAL */}
-
-                <View style={styles.statItem}>
-                  <Text style={styles.statNumber}>
-                    {totalFavorites}
-                  </Text>
-
-                  <Text style={styles.statLabel}>
-                    Total
-                  </Text>
-                </View>
-              </View>
-            </View>
-
-            {/* TABS */}
-
-            <View style={styles.tabsWrapper}>
-              <FavoriteTabs
-                activeTab={activeTab}
-                onTabChange={setActiveTab}
-              />
-            </View>
-
-            {/* SECTION HEADER */}
-
-            <View style={styles.sectionHeader}>
-              <View>
-                <Text style={styles.sectionTitle}>
-                  {activeTab === 'restaurants'
-                    ? 'Favorite Restaurants'
-                    : 'Favorite Foods'}
-                </Text>
-
-                <Text style={styles.sectionSubtitle}>
-                  {currentCount === 0
-                    ? 'Nothing saved yet'
-                    : `${currentCount} saved ${
-                        activeTab === 'restaurants'
-                          ? 'restaurant'
-                          : 'food'
-                      }${
-                        currentCount !== 1
-                          ? 's'
-                          : ''
-                      }`}
-                </Text>
-              </View>
-
-              {currentCount > 0 && (
-                <View style={styles.countBadge}>
-                  <Text style={styles.countBadgeText}>
-                    {currentCount}
-                  </Text>
-                </View>
-              )}
-            </View>
-          </>
-        }
-
-        // =================================================
-        // ITEM
-        // =================================================
-
-        renderItem={({item}) => {
-          // ===============================================
-          // RESTAURANT
-          // ===============================================
-
-          if (activeTab === 'restaurants') {
-            const restaurant =
-              item as Restaurant;
-
-            return (
-              <RestaurantCard
-                restaurant={restaurant}
-                onPress={() =>
-                  handleRestaurantPress(
-                    restaurant,
-                  )
-                }
-                isFavorite
-                onFavoritePress={() =>
-                  handleRemoveRestaurant(
-                    restaurant,
-                  )
-                }
-              />
-            );
-          }
-
-          // ===============================================
-          // FOOD
-          // ===============================================
-
-          const food = item as Food;
-
-          return (
-            <FoodCard
-              food={food}
-              onPress={() =>
-                handleFoodPress(food)
-              }
-              showAddButton={false}
-              isFavorite
-              onFavoritePress={() =>
-                handleRemoveFood(food)
-              }
-              showFavorite
-            />
-          );
-        }}
-
-        // =================================================
-        // EMPTY
-        // =================================================
-
-        ListEmptyComponent={
-          renderEmptyState()
-        }
-
-        // =================================================
-        // FOOTER
-        // =================================================
-
-        ListFooterComponent={
-          currentData.length > 0 ? (
-            <View style={styles.footerMessage}>
-              <Heart size={16} color="#B0B0B0" weight="regular" />
-
-              <Text style={styles.footerText}>
-                Your favorites,
-                always close by.
+            <View style={styles.headerTextContainer}>
+              <Text style={styles.eyebrow}>YOUR COLLECTION</Text>
+              <Text style={styles.title}>Favorites</Text>
+              <Text style={styles.subtitle}>
+                Everything you love, all in one place.
               </Text>
             </View>
-          ) : null
-        }
-      />
+
+            <FavoritesHeaderMark />
+          </View>
+
+          <View style={styles.statsContainer}>
+            <View style={styles.statItem}>
+              <Text style={styles.statNumber}>
+                {favoriteRestaurants.length}
+              </Text>
+              <Text style={styles.statLabel}>Restaurants</Text>
+            </View>
+
+            <View style={styles.statDivider} />
+
+            <View style={styles.statItem}>
+              <Text style={styles.statNumber}>{favoriteFoods.length}</Text>
+              <Text style={styles.statLabel}>Foods</Text>
+            </View>
+
+            <View style={styles.statDivider} />
+
+            <View style={styles.statItem}>
+              <Text style={styles.statNumber}>{totalFavorites}</Text>
+              <Text style={styles.statLabel}>Total</Text>
+            </View>
+              </View>
+        </View>
+
+        <View style={styles.tabsWrapper}>
+          <FavoriteTabs activeTab={activeTab} onTabChange={setActiveTab} />
+        </View>
+
+        <View style={styles.sectionHeader}>
+          <View>
+            <Text style={styles.sectionTitle}>
+              {activeTab === 'foods' ? 'Favorite Foods' : 'Favorite Restaurants'}
+            </Text>
+            <Text style={styles.sectionSubtitle}>
+              {activeTab === 'foods'
+                ? `${favoriteFoods.length} saved ${favoriteFoods.length === 1 ? 'food' : 'foods'}`
+                : `${favoriteRestaurants.length} saved ${favoriteRestaurants.length === 1 ? 'restaurant' : 'restaurants'}`}
+            </Text>
+          </View>
+          <View style={styles.countBadge}>
+            <Text style={styles.countBadgeText}>
+              {activeTab === 'foods' ? favoriteFoods.length : favoriteRestaurants.length}
+            </Text>
+          </View>
+        </View>
+
+        {activeTab === 'foods' ? (
+          foodGroups.length ? (
+            foodGroups.map(group => (
+              <View key={group.id} style={styles.foodRestaurantGroup}>
+                <View style={styles.restaurantHeading}>
+                  <Text style={styles.restaurantHeadingText} numberOfLines={1}>
+                    {group.name}
+                  </Text>
+                  <Text style={styles.restaurantHeadingCount}>
+                    {group.foods.length} {group.foods.length === 1 ? 'item' : 'items'}
+                  </Text>
+                </View>
+                <FlatList<Food>
+                  horizontal
+                  data={group.foods}
+                  keyExtractor={item => item._id}
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.horizontalList}
+                  renderItem={({item}) => (
+                    <FoodCard
+                      food={item}
+                      onPress={() => handleFoodPress(item)}
+                      showAddButton={false}
+                      isFavorite
+                      onFavoritePress={() => handleRemoveFood(item)}
+                      showFavorite
+                    />
+                  )}
+                />
+              </View>
+            ))
+          ) : (
+            <EmptyFavorites />
+          )
+        ) : favoriteRestaurants.length ? (
+          <View style={styles.restaurantList}>
+            {favoriteRestaurants.map(restaurant => (
+              <RestaurantCard
+                key={restaurant._id}
+                restaurant={restaurant}
+                onPress={() => handleRestaurantPress(restaurant)}
+                isFavorite
+                onFavoritePress={() => handleRemoveRestaurant(restaurant)}
+              />
+            ))}
+          </View>
+        ) : (
+          <EmptyFavorites />
+        )}
+
+        {!totalFavorites ? (
+          <TouchableOpacity
+            activeOpacity={0.85}
+            style={styles.exploreButton}
+            onPress={goToHome}>
+            <Compass size={18} color="#FFFFFF" weight="fill" />
+            <Text style={styles.exploreButtonText}>Explore FoodE</Text>
+          </TouchableOpacity>
+        ) : (
+          <View style={styles.footerMessage}>
+            <Heart size={16} color="#B0B0B0" weight="regular" />
+            <Text style={styles.footerText}>Your favorites, always close by.</Text>
+          </View>
+        )}
+      </ScrollView>
     </SafeAreaView>
   );
 };
@@ -576,16 +421,6 @@ const styles = StyleSheet.create({
     color: '#737B87',
   },
 
-  heartContainer: {
-    width: 58,
-    height: 58,
-    borderRadius: 20,
-    backgroundColor: '#FFF4E8',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginLeft: 12,
-  },
-
   // =================================================
   // STATS
   // =================================================
@@ -622,14 +457,6 @@ const styles = StyleSheet.create({
     width: 1,
     height: 27,
     backgroundColor: '#E2E4E7',
-  },
-
-  // =================================================
-  // TABS
-  // =================================================
-
-  tabsWrapper: {
-    marginTop: 12,
   },
 
   // =================================================
@@ -674,55 +501,51 @@ const styles = StyleSheet.create({
     color: '#FF7A00',
   },
 
+  tabsWrapper: {
+    marginTop: 10,
+  },
+
+  horizontalList: {
+    paddingHorizontal: 16,
+    paddingBottom: 8,
+  },
+
+  foodRestaurantGroup: {
+    marginTop: 8,
+  },
+
+  restaurantHeading: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginHorizontal: 16,
+    marginBottom: 10,
+  },
+
+  restaurantHeadingText: {
+    flex: 1,
+    marginRight: 10,
+    fontSize: 15,
+    fontWeight: '800',
+    color: '#33251D',
+  },
+
+  restaurantHeadingCount: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#9298A1',
+  },
+
+  restaurantList: {
+    marginHorizontal: 16,
+  },
+
   // =================================================
   // LIST
   // =================================================
 
   listContent: {
     paddingBottom: 96,
-  },
-
-  emptyList: {
-    flexGrow: 1,
-    paddingBottom: 96,
-  },
-
-  // =================================================
-  // EMPTY
-  // =================================================
-
-  emptyWrapper: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 32,
-    paddingTop: 32,
-    paddingBottom: 40,
-  },
-
-  emptyIconContainer: {
-    width: 88,
-    height: 88,
-    borderRadius: 44,
-    backgroundColor: '#FFF4E8',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 20,
-  },
-
-  emptyTitle: {
-    fontSize: 21,
-    fontWeight: '900',
-    color: '#17171B',
-    textAlign: 'center',
-  },
-
-  emptyDescription: {
-    marginTop: 8,
-    fontSize: 13,
-    lineHeight: 20,
-    color: '#858B95',
-    textAlign: 'center',
-    maxWidth: 310,
   },
 
   exploreButton: {
@@ -765,10 +588,8 @@ const styles = StyleSheet.create({
     width: 70,
     height: 70,
     borderRadius: 35,
-    backgroundColor: '#FFF4E8',
-    alignItems: 'center',
-    justifyContent: 'center',
     marginBottom: 18,
+    marginLeft: 0,
   },
 
   loadingText: {
