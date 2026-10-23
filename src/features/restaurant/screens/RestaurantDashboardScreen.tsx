@@ -50,6 +50,7 @@ import {
 // =====================================================
 
 import {useAuth} from '../../../context/AuthContext';
+import {getLocalDateKey} from '../../../components/common/DateFilterCalendar';
 import {
   Plus,
   Storefront,
@@ -477,21 +478,11 @@ const RestaurantDashboardScreen = ({
   // TODAY'S ORDERS
   // ===================================================
 
-  const now = new Date();
+  const todayKey = getLocalDateKey();
 
   const todayOrders =
     orders.filter(order => {
-      const orderDate =
-        new Date(order.createdAt);
-
-      return (
-        orderDate.getDate() ===
-          now.getDate() &&
-        orderDate.getMonth() ===
-          now.getMonth() &&
-        orderDate.getFullYear() ===
-          now.getFullYear()
-      );
+      return getLocalDateKey(new Date(order.createdAt)) === todayKey;
     });
 
   // ===================================================
@@ -499,7 +490,9 @@ const RestaurantDashboardScreen = ({
   // ===================================================
 
   const todayRevenue =
-    todayOrders.reduce(
+    todayOrders
+      .filter(order => order.status !== 'CANCELLED')
+      .reduce(
       (
         total: number,
         order: RestaurantOrder,

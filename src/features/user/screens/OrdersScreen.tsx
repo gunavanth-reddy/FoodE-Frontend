@@ -323,6 +323,7 @@ const OrdersScreen: React.FC = () => {
     return parsedDate.toLocaleDateString(
       'en-IN',
       {
+        timeZone: 'Asia/Kolkata',
         day: 'numeric',
         month: 'short',
         year: 'numeric',

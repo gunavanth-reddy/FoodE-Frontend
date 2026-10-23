@@ -157,9 +157,10 @@ const DateFilterCalendar: React.FC<DateFilterCalendarProps> = ({
             <Pressable
               accessibilityRole="button"
               onPress={() => {
-                const today = new Date();
-                setMonth(new Date(today.getFullYear(), today.getMonth(), 1));
-                onChange(toDateKey(today));
+                const todayKey = getLocalDateKey();
+                const [year, month] = todayKey.split('-').map(Number);
+                setMonth(new Date(year, month - 1, 1));
+                onChange(todayKey);
                 setVisible(false);
               }}
               style={styles.todayButton}>
@@ -172,7 +173,19 @@ const DateFilterCalendar: React.FC<DateFilterCalendarProps> = ({
   );
 };
 
-export const getLocalDateKey = (date = new Date()) => toDateKey(date);
+// Match the backend's Asia/Kolkata order-date filter, regardless of device zone.
+export const getLocalDateKey = (date = new Date()) => {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Kolkata',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).formatToParts(date);
+  const part = (type: string) =>
+    parts.find(item => item.type === type)?.value || '';
+  return `${part('year')}-${part('month')}-${part('day')}`;
+};
+
 
 export default DateFilterCalendar;
 
