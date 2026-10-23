@@ -3,34 +3,28 @@ import {ImageSourcePropType} from 'react-native';
 export interface BannerItem {
   id: string;
   image: ImageSourcePropType;
+  link?: string;
 }
 
-export const bannerData: BannerItem[] = [
-  {
-    id: '1',
-    image: require(
-      '../../../../../assets/banners/banner1.jpg',
-    ),
-  },
+const WHATSAPP_CHANNEL_URL =
+  'https://whatsapp.com/channel/0029VbEDaijD38CV27uyGB0d';
 
+export const baseBannerData: BannerItem[] = [
   {
-    id: '2',
-    image: require(
-      '../../../../../assets/banners/banner2.jpg',
-    ),
+    id: 'banner1',
+    image: require('../../../../../assets/banners/banner1.png'),
   },
-
   {
-    id: '3',
-    image: require(
-      '../../../../../assets/banners/banner3.jpg',
-    ),
+    id: 'banner2',
+    image: require('../../../../../assets/banners/banner2.png'),
   },
-
   {
-    id: '4',
-    image: require(
-      '../../../../../assets/banners/banner4.jpg',
-    ),
+    id: 'banner3',
+    image: require('../../../../../assets/banners/banner3.png'),
+  },
+  {
+    id: 'banner4',
+    image: require('../../../../../assets/banners/banner4.png'),
+    link: WHATSAPP_CHANNEL_URL,
   },
 ];

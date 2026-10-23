@@ -43,6 +43,7 @@ import {
 import {
   getRestaurantOrders,
   RestaurantOrder,
+  formatBookedDeliverySlot,
 } from '../services/orderService';
 
 // =====================================================
@@ -556,6 +557,7 @@ const RestaurantDashboardScreen = ({
           id: order._id,
           customer,
           items,
+          deliverySlotLabel: formatBookedDeliverySlot(order.deliverySlot),
           amount: Number(
             order.total || 0,
           ),

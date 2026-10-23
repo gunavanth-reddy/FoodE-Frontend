@@ -3,6 +3,7 @@
 // =====================================================
 
 import API_BASE_URL from '../../../config/api';
+import {formatTimeRange12} from '../../../utils/time';
 
 // =====================================================
 // ORDER STATUS
@@ -89,6 +90,7 @@ export interface RestaurantOrderDeliverySlot {
     | string
     | {
         _id?: string;
+        date?: string;
         startTime?: string;
         endTime?: string;
       };
@@ -96,7 +98,42 @@ export interface RestaurantOrderDeliverySlot {
   startTime: string;
 
   endTime: string;
+
+  date?: string;
 }
+
+export const formatBookedDeliverySlot = (
+  slot?: RestaurantOrderDeliverySlot | null,
+): string => {
+  if (!slot) return '';
+
+  const populatedSlot =
+    typeof slot.slotId === 'object' && slot.slotId
+      ? slot.slotId
+      : undefined;
+  const dateValue = slot.date || populatedSlot?.date;
+  const start = slot.startTime || populatedSlot?.startTime;
+  const end = slot.endTime || populatedSlot?.endTime;
+  const time = formatTimeRange12(start, end);
+
+  let dateLabel = '';
+  if (dateValue) {
+    // Parse date-only values as local calendar dates to avoid UTC day shifts.
+    const dateMatch = dateValue.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    const date = dateMatch
+      ? new Date(Number(dateMatch[1]), Number(dateMatch[2]) - 1, Number(dateMatch[3]))
+      : new Date(dateValue);
+    if (!Number.isNaN(date.getTime())) {
+      dateLabel = date.toLocaleDateString('en-IN', {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric',
+      });
+    }
+  }
+
+  return [dateLabel, time].filter(Boolean).join(' · ');
+};
 
 // =====================================================
 // RESTAURANT

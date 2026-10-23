@@ -36,6 +36,7 @@ import {
   Package,
   Bicycle,
   XCircle,
+  CalendarBlank,
 } from 'phosphor-react-native';
 
 import {
@@ -43,6 +44,7 @@ import {
   updateOrderStatus,
   RestaurantOrder,
   OrderStatus,
+  formatBookedDeliverySlot,
 } from '../services/orderService';
 import DateFilterCalendar, {
   getLocalDateKey,
@@ -891,6 +893,7 @@ const OrderCard: React.FC<OrderCardProps> = ({
   const orderTime = formatOrderTime(
     order.createdAt,
   );
+  const deliverySlotLabel = formatBookedDeliverySlot(order.deliverySlot);
 
   // =====================================================
   // UI
@@ -950,6 +953,15 @@ const OrderCard: React.FC<OrderCardProps> = ({
           </Text>
         </View>
       </View>
+
+      {deliverySlotLabel ? (
+        <View style={styles.deliverySlotRow}>
+          <CalendarBlank size={15} color={ORANGE} weight="regular" />
+          <Text style={styles.deliverySlotText}>
+            Delivery slot: {deliverySlotLabel}
+          </Text>
+        </View>
+      ) : null}
 
       {/* =================================================
           ITEMS
@@ -1561,6 +1573,24 @@ const styles = StyleSheet.create({
     fontSize: 10,
     color: '#9999A2',
     marginTop: 3,
+  },
+
+  deliverySlotRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 7,
+    marginTop: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    borderRadius: 10,
+    backgroundColor: '#FFF6EE',
+  },
+
+  deliverySlotText: {
+    flex: 1,
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#5E5148',
   },
 
   // =====================================================

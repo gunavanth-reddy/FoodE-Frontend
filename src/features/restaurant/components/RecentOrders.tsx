@@ -20,6 +20,7 @@ export interface RecentOrder {
     id: string;
     customer: string;
     items: string;
+    deliverySlotLabel?: string;
     amount: number;
     status: OrderStatus;
 }
@@ -170,6 +171,12 @@ const RecentOrders: React.FC<RecentOrdersProps> = ({
                             >
                                 {order.items}
                             </Text>
+
+                            {order.deliverySlotLabel ? (
+                                <Text style={styles.deliverySlot}>
+                                    Delivery slot: {order.deliverySlotLabel}
+                                </Text>
+                            ) : null}
 
 
                             {/* =================================
@@ -393,6 +400,13 @@ const styles = StyleSheet.create({
         fontSize: 12,
         color: "#707079",
         marginTop: 13,
+    },
+
+    deliverySlot: {
+        fontSize: 11,
+        fontWeight: '600',
+        color: '#6F6F78',
+        marginTop: 6,
     },
 
 

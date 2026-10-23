@@ -1,4 +1,12 @@
-export const categories = [
+import {ImageSourcePropType} from 'react-native';
+
+export interface CategoryItem {
+  id: string;
+  name: string;
+  image: ImageSourcePropType;
+}
+
+export const categories: CategoryItem[] = [
   {
     id: '1',
     name: 'Biryani',
