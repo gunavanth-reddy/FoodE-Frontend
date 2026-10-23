@@ -9,6 +9,7 @@ import React, {
 import {
   ActivityIndicator,
   Alert,
+  Linking,
   NativeScrollEvent,
   NativeSyntheticEvent,
   RefreshControl,
@@ -30,9 +31,7 @@ import {
   Storefront,
   CheckCircle,
   Check,
-  MapPin,
   Phone,
-  CreditCard,
   Note,
   Package,
   Bicycle,
@@ -768,6 +767,17 @@ const OrderCard: React.FC<OrderCardProps> = ({
       ? order.user?.phone
       : undefined;
 
+  const callCustomer = () => {
+    if (!customerPhone) {
+      return;
+    }
+
+    const phoneNumber = customerPhone.replace(/[^\d+]/g, '');
+    Linking.openURL(`tel:${phoneNumber}`).catch(error => {
+      console.warn('Unable to open phone dialer:', error);
+    });
+  };
+
   // =====================================================
   // PRICE HELPERS
   // =====================================================
@@ -918,21 +928,26 @@ const OrderCard: React.FC<OrderCardProps> = ({
             #{order.orderNumber}
           </Text>
 
-          <Text style={styles.customer}>
+          <Text style={styles.customer} numberOfLines={1}>
             {customerName}
           </Text>
 
           {customerPhone ? (
-            <View style={styles.phoneRow}>
+            <TouchableOpacity
+              activeOpacity={0.7}
+              onPress={callCustomer}
+              style={styles.phoneRow}
+              accessibilityRole="button"
+              accessibilityLabel={`Call ${customerName} at ${customerPhone}`}>
               <Phone
-                size={12}
-                color="#AAAAAF"
+                size={14}
+                color="#686873"
                 weight="regular"
               />
               <Text style={styles.phone}>
                 {customerPhone}
               </Text>
-            </View>
+            </TouchableOpacity>
           ) : null}
         </View>
 
@@ -978,56 +993,6 @@ const OrderCard: React.FC<OrderCardProps> = ({
             </Text>
           </View>
         ))}
-      </View>
-
-      {/* =================================================
-          DELIVERY ADDRESS
-      ================================================= */}
-
-      <View style={styles.addressBox}>
-        <View style={styles.infoTitleRow}>
-          <MapPin
-            size={15}
-            color={ORANGE}
-            weight="fill"
-          />
-          <Text style={styles.addressTitle}>
-            Delivery Address
-          </Text>
-        </View>
-
-        <Text style={styles.addressText}>
-          {order.deliveryAddress.addressLine}
-
-          {order.deliveryAddress.city
-            ? `, ${order.deliveryAddress.city}`
-            : ''}
-
-          {order.deliveryAddress.pincode
-            ? ` - ${order.deliveryAddress.pincode}`
-            : ''}
-        </Text>
-      </View>
-
-      {/* =================================================
-          PAYMENT
-      ================================================= */}
-
-      <View style={styles.paymentRow}>
-        <View style={styles.paymentBadge}>
-          <CreditCard
-            size={14}
-            color={ORANGE}
-            weight="regular"
-          />
-          <Text style={styles.paymentText}>
-            {order.paymentMethod}
-          </Text>
-        </View>
-
-        <Text style={styles.paymentStatus}>
-          Payment: {order.paymentStatus}
-        </Text>
       </View>
 
       {/* =================================================
@@ -1564,21 +1529,25 @@ const styles = StyleSheet.create({
   },
 
   customer: {
-    fontSize: 11,
-    color: '#909099',
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#45454D',
     marginTop: 3,
   },
 
   phone: {
-    fontSize: 10,
-    color: '#AAAAAF',
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#686873',
   },
 
   phoneRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
-    marginTop: 3,
+    gap: 5,
+    marginTop: 4,
+    alignSelf: 'flex-start',
+    paddingVertical: 2,
   },
 
   amountContainer: {
@@ -1677,67 +1646,11 @@ const styles = StyleSheet.create({
     color: '#17171B',
   },
 
-  // =====================================================
-  // ADDRESS
-  // =====================================================
-
-  addressBox: {
-    backgroundColor: '#F8F8FA',
-    borderRadius: 12,
-    padding: 9,
-    marginTop: 9,
-  },
-
-  addressTitle: {
-    fontSize: 10,
-    fontWeight: '800',
-    color: '#55555D',
-  },
-
   infoTitleRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
     marginBottom: 4,
-  },
-
-  addressText: {
-    fontSize: 11,
-    lineHeight: 16,
-    color: '#777780',
-  },
-
-  // =====================================================
-  // PAYMENT
-  // =====================================================
-
-  paymentRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginTop: 9,
-  },
-
-  paymentBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    paddingHorizontal: 9,
-    paddingVertical: 5,
-    borderRadius: 8,
-    backgroundColor: '#FFF4EA',
-  },
-
-  paymentText: {
-    fontSize: 9,
-    fontWeight: '800',
-    color: ORANGE,
-  },
-
-  paymentStatus: {
-    fontSize: 9,
-    color: '#88888F',
-    fontWeight: '600',
   },
 
   // =====================================================
