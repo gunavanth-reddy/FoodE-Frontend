@@ -126,7 +126,6 @@ const RestaurantDetailsScreen: React.FC<Props> = ({
   useEffect(() => {
     if (routeRestaurant) {
       setRestaurantData(routeRestaurant);
-      return;
     }
 
     if (!restaurantId) {
@@ -164,6 +163,7 @@ const RestaurantDetailsScreen: React.FC<Props> = ({
 
   const restaurantName =
     restaurantData.name || 'Restaurant';
+  const restaurantIsOpen = restaurantData.isOpen !== false;
 
   const cuisine =
     restaurantData.cuisine ||
@@ -455,7 +455,16 @@ const RestaurantDetailsScreen: React.FC<Props> = ({
             <View style={styles.foodCardWrap}>
               <MenuItemCard
                 item={item as any}
+                restaurantOpen={restaurantIsOpen}
                 onPress={async () => {
+                  if (!restaurantIsOpen) {
+                    Alert.alert(
+                      'Restaurant Closed',
+                      'This restaurant is currently closed. You can browse the menu, but you cannot add items to your cart.',
+                    );
+                    return;
+                  }
+
                   const foodToAdd = foods.find(
                     food =>
                       String(

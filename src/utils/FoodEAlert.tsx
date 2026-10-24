@@ -7,6 +7,7 @@ import {
   Text,
   View,
 } from 'react-native';
+import {getUserFacingErrorMessage} from './errorMessages';
 
 export type FoodEAlertButton = {
   text: string;
@@ -28,9 +29,12 @@ export const FoodEAlert = {
     message?: string,
     buttons?: FoodEAlertButton[],
   ) => {
+    const safeMessage = message
+      ? getUserFacingErrorMessage(message)
+      : undefined;
     DeviceEventEmitter.emit(FOODE_ALERT_EVENT, {
       title,
-      message,
+      message: safeMessage,
       buttons: buttons?.length
         ? buttons
         : [{text: 'OK'}],

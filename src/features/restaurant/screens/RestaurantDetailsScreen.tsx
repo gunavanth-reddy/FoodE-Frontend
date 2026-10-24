@@ -1649,8 +1649,8 @@ const styles =
     timeHint: {
       fontSize: 11,
       color: '#8A8F98',
-      marginTop: -5,
-      marginBottom: 8,
+      marginTop: 4,
+      marginBottom: 4,
       fontWeight: '600',
     },
   });

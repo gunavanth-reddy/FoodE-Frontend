@@ -184,8 +184,17 @@ const LoginScreen = ({navigation}: any) => {
         return;
       }
 
-      if (status === 401 || message === 'Invalid Password') {
+      if (
+        status === 401 ||
+        message === 'Invalid Password' ||
+        message === 'Invalid mobile number or password.'
+      ) {
         setPasswordError('Wrong password');
+        return;
+      }
+
+      if (status) {
+        setIdentifierError(message || 'Unable to log in. Please try again.');
         return;
       }
 

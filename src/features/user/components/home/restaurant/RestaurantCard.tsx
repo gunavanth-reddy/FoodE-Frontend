@@ -144,31 +144,17 @@ const RestaurantCard: React.FC<RestaurantCardProps> = ({
     return 'Multi Cuisine';
   }, [restaurant]);
 
-  // Closed restaurants cannot be opened.
   const handlePress = () => {
-    if (!isOpen) {
-      Alert.alert(
-        'Restaurant Closed',
-        'This restaurant is currently closed. Please try again later.',
-        [{text: 'OK'}],
-      );
-
-      return;
-    }
-
     onPress(restaurant);
   };
 
   return (
     <TouchableOpacity
-      activeOpacity={isOpen ? 0.96 : 1}
+      activeOpacity={0.96}
       style={[styles.card, !isOpen && styles.closedCard]}
       onPress={handlePress}
       accessibilityRole="button"
-      accessibilityState={{disabled: !isOpen}}
-      accessibilityLabel={`${
-        isOpen ? 'View' : 'Closed restaurant'
-      } ${restaurant.name || 'Restaurant'}`}>
+      accessibilityLabel={`View ${restaurant.name || 'Restaurant'}${isOpen ? '' : ', currently closed'}`}>
 
       {/* Restaurant banner image */}
       <View style={styles.imageContainer}>

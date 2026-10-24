@@ -235,9 +235,13 @@ export const loginUser = async (
 
     return response.data;
   } catch (error) {
-    throw new Error(
+    const normalizedError = new Error(
       getErrorMessage(error, 'Unable to log in to FoodE.'),
-    );
+    ) as Error & {response?: unknown; code?: string};
+    const originalError = error as {response?: unknown; code?: string};
+    normalizedError.response = originalError?.response;
+    normalizedError.code = originalError?.code;
+    throw normalizedError;
   }
 };
 

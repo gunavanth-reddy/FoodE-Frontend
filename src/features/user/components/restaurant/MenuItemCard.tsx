@@ -19,11 +19,13 @@ import {useFavorites} from '../../../../context/FavoritesContext';
 interface MenuItemCardProps {
   item: MenuItem;
   onPress?: (item: MenuItem) => void;
+  restaurantOpen?: boolean;
 }
 
 const MenuItemCard: React.FC<MenuItemCardProps> = ({
   item,
   onPress,
+  restaurantOpen = true,
 }) => {
   const [adding, setAdding] = useState(false);
   const [favoriteLoading, setFavoriteLoading] = useState(false);
@@ -50,6 +52,14 @@ const MenuItemCard: React.FC<MenuItemCardProps> = ({
 
   const handleAdd = async () => {
     if (!onPress || adding) {
+      return;
+    }
+
+    if (!restaurantOpen) {
+      Alert.alert(
+        'Restaurant Closed',
+        'You can browse this menu, but cannot add items while the restaurant is closed.',
+      );
       return;
     }
 
@@ -136,6 +146,7 @@ const MenuItemCard: React.FC<MenuItemCardProps> = ({
           item={item}
           onAdd={handleAdd}
           adding={adding}
+          disabled={!restaurantOpen}
         />
       </View>
     </TouchableOpacity>

@@ -3,6 +3,7 @@
 // =====================================================
 
 import {ImagePickerAsset} from 'expo-image-picker';
+import {File} from 'expo-file-system';
 import {Platform} from 'react-native';
 import API_BASE_URL from '../../../config/api';
 
@@ -191,16 +192,11 @@ const buildRestaurantFormData = async (
         continue;
       }
 
-      const imageFile = {
-        uri: asset.uri,
-        name: fileName,
-        type: mimeType,
-      };
-
-      // IMPORTANT:
-      // Field names must match backend Multer fields:
-      // logo and coverImage
-      formData.append(key, imageFile as any);
+      // Expo's current native fetch no longer accepts React Native's legacy
+      // {uri, name, type} FormData parts. File implements Blob and exposes
+      // bytes(), which Expo's multipart encoder supports on iOS and Android.
+      const imageFile = new File(asset.uri);
+      formData.append(key, imageFile, fileName);
 
       continue;
     }

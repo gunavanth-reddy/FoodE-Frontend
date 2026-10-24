@@ -21,12 +21,14 @@ interface QuantitySelectorProps {
   item: MenuItem;
   onAdd?: () => void;
   adding?: boolean;
+  disabled?: boolean;
 }
 
 const QuantitySelector: React.FC<QuantitySelectorProps> = ({
   item,
   onAdd,
   adding = false,
+  disabled = false,
 }) => {
   const navigation = useNavigation<any>();
 
@@ -118,9 +120,9 @@ const QuantitySelector: React.FC<QuantitySelectorProps> = ({
   if (quantity === 0) {
     return (
       <TouchableOpacity
-        disabled={isBusy}
+        disabled={isBusy || disabled}
         activeOpacity={0.8}
-        style={styles.addButton}
+        style={[styles.addButton, disabled && styles.disabledAddButton]}
         onPress={handleAddItem}>
         {isBusy ? (
           <ActivityIndicator size="small" color="#FF7A00" />
@@ -151,7 +153,7 @@ const QuantitySelector: React.FC<QuantitySelectorProps> = ({
       )}
 
       <TouchableOpacity
-        disabled={isBusy}
+        disabled={isBusy || disabled}
         style={styles.actionButton}
         onPress={handleIncrease}>
         <Text style={styles.actionText}>
@@ -179,6 +181,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     elevation: 4,
+  },
+  disabledAddButton: {
+    opacity: 0.45,
   },
 
   addText: {

@@ -32,6 +32,7 @@ import {useAuth} from '../../../context/AuthContext';
 import {useCart} from '../../../context/CartContext';
 import API_BASE_URL from '../../../config/api';
 import {FoodEAlert} from '../../../utils/FoodEAlert';
+import {getRestaurantById} from '../services/restaurantService';
 
 import {
   createOrder,
@@ -565,6 +566,7 @@ const CheckoutScreen = () => {
     slotError,
     setSlotError,
   ] = useState('');
+  const [restaurantClosed, setRestaurantClosed] = useState(false);
 
   // ===================================================
   // DELIVERY ADDRESS
@@ -673,10 +675,20 @@ const CheckoutScreen = () => {
 
         try {
           setLoadingSlots(true);
+          setRestaurantClosed(false);
           setSlotError('');
           setSelectedDeliverySlot(
             null,
           );
+
+          // Refresh restaurant status before showing slots from a potentially stale cart.
+          const currentRestaurant = await getRestaurantById(currentRestaurantId);
+          if (currentRestaurant.isOpen === false) {
+            setRestaurantClosed(true);
+            setDeliverySlots([]);
+            setSlotError('This restaurant is currently closed. Please try again when it opens.');
+            return;
+          }
 
           console.log(
             '====================================',
@@ -907,6 +919,10 @@ const CheckoutScreen = () => {
           setSelectedDeliverySlot(
             null,
           );
+
+          if (String(error?.message || '').toLowerCase().includes('restaurant is currently closed')) {
+            setRestaurantClosed(true);
+          }
 
           setSlotError(
             error?.message ||
@@ -1287,6 +1303,18 @@ const CheckoutScreen = () => {
           error,
         );
 
+        if (String(error?.message || '').toLowerCase().includes('restaurant is currently closed')) {
+          setRestaurantClosed(true);
+          setDeliverySlots([]);
+          setSelectedDeliverySlot(null);
+          setSlotError('This restaurant is currently closed. Please try again when it opens.');
+          FoodEAlert.alert(
+            'Restaurant Closed',
+            'The restaurant closed before your order was placed. Your order was not submitted.',
+          );
+          return;
+        }
+
         FoodEAlert.alert(
           'Order Failed',
           error?.message ||
@@ -1573,7 +1601,15 @@ const CheckoutScreen = () => {
 
           {/* LOADING */}
 
-          {loadingSlots ? (
+          {restaurantClosed ? (
+            <View style={styles.slotEmptyCard}>
+              <Clock size={28} color="#FF7A00" weight="duotone" />
+              <Text style={styles.slotEmptyTitle}>Restaurant is closed</Text>
+              <Text style={styles.slotEmptyText}>
+                You can keep your cart and place the order when this restaurant opens.
+              </Text>
+            </View>
+          ) : loadingSlots ? (
             <View
               style={
                 styles.slotLoadingCard
@@ -2033,17 +2069,25 @@ const CheckoutScreen = () => {
           disabled={
             isPlacingOrder ||
             loadingSlots ||
+            restaurantClosed ||
             !selectedDeliverySlot
           }
           loading={isPlacingOrder}
           label={
-            !selectedDeliverySlot
+            restaurantClosed
+              ? 'Restaurant Closed'
+              : !selectedDeliverySlot
               ? 'Select Delivery Time'
               : `Swipe to Order • ₹${grandTotal.toFixed(2)}`
           }
           onSwipeComplete={handlePlaceOrder}
           onDisabledPress={() => {
-            if (!selectedDeliverySlot) {
+            if (restaurantClosed) {
+              FoodEAlert.alert(
+                'Restaurant Closed',
+                'This restaurant is currently closed. Please try again when it opens.',
+              );
+            } else if (!selectedDeliverySlot) {
               FoodEAlert.alert(
                 'Select Delivery Time',
                 'Please choose an available delivery time slot above before swiping to order.',
