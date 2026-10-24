@@ -77,11 +77,9 @@ const OrdersScreen: React.FC = () => {
         ? 28
         : 18;
 
-  const cardPadding =
-    isCompactWidth ? 12 : 16;
+  const cardPadding = isCompactWidth ? 12 : 16;
 
-  const [orders, setOrders] =
-    useState<UserOrder[]>([]);
+  const [orders, setOrders] = useState<UserOrder[]>([]);
   const [selectedDate, setSelectedDate] = useState(getLocalDateKey);
   const selectedDateRef = useRef(selectedDate);
   const loadedPages = useRef(1);
@@ -90,11 +88,8 @@ const OrdersScreen: React.FC = () => {
   const [hasMore, setHasMore] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
 
-  const [loading, setLoading] =
-    useState(true);
-
-  const [refreshing, setRefreshing] =
-    useState(false);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
   const [cancellingOrderId, setCancellingOrderId] =
     useState<string | null>(null);
@@ -106,6 +101,7 @@ const OrdersScreen: React.FC = () => {
   const loadOrders = useCallback(
     async (showLoader = true, targetPageCount?: number) => {
       const requestId = ++loadRequestId.current;
+
       if (!isLoggedIn || !token) {
         setOrders([]);
         setLoading(false);
@@ -120,23 +116,29 @@ const OrdersScreen: React.FC = () => {
 
         const dateStorageKey =
           `foode.customer-orders.date.${user?.id || 'account'}`;
+
         const savedDate = await AsyncStorage.getItem(dateStorageKey);
+
         if (savedDate && targetPageCount === undefined) {
           selectedDateRef.current = savedDate;
           setSelectedDate(savedDate);
         }
 
         const requestDate = selectedDateRef.current;
+
         const storageKey =
           `foode.customer-orders.pages.${user?.id || 'account'}.${requestDate}`;
+
         const storedPageCount = Number(
           await AsyncStorage.getItem(storageKey),
         );
+
         const savedPageCount =
           targetPageCount ??
           (Number.isSafeInteger(storedPageCount) && storedPageCount > 0
             ? Math.min(storedPageCount, 10000)
             : 1);
+
         const loadedOrders: UserOrder[] = [];
         let nextHasMore = true;
         let pagesLoaded = 0;
@@ -147,6 +149,7 @@ const OrdersScreen: React.FC = () => {
             page,
             requestDate,
           );
+
           loadedOrders.push(...result.orders);
           pagesLoaded = page;
           nextHasMore = result.hasMore;
@@ -166,7 +169,12 @@ const OrdersScreen: React.FC = () => {
         );
 
         loadedPages.current = Math.max(1, pagesLoaded);
-        await AsyncStorage.setItem(storageKey, String(loadedPages.current));
+
+        await AsyncStorage.setItem(
+          storageKey,
+          String(loadedPages.current),
+        );
+
         setOrders(uniqueOrdersById(loadedOrders));
         setHasMore(nextHasMore);
       } catch (error: any) {
@@ -174,10 +182,7 @@ const OrdersScreen: React.FC = () => {
           return;
         }
 
-        console.log(
-          'Orders screen error:',
-          error,
-        );
+        console.log('Orders screen error:', error);
 
         Alert.alert(
           'Unable to Load Orders',
@@ -208,30 +213,33 @@ const OrdersScreen: React.FC = () => {
   // PULL TO REFRESH
   // =====================================================
 
-  const handleRefresh =
-    useCallback(() => {
-      setRefreshing(true);
-      loadOrders(false);
-    }, [loadOrders]);
+  const handleRefresh = useCallback(() => {
+    setRefreshing(true);
+    loadOrders(false);
+  }, [loadOrders]);
 
   const handleDateChange = useCallback(
     async (date: string) => {
       selectedDateRef.current = date;
       loadRequestId.current += 1;
       loadedPages.current = 1;
+
       setOrders([]);
       setHasMore(true);
       setSelectedDate(date);
+
       await AsyncStorage.setItem(
         `foode.customer-orders.date.${user?.id || 'account'}`,
         date,
       );
+
       if (user?.id) {
         await AsyncStorage.setItem(
           `foode.customer-orders.pages.${user.id}.${date}`,
           '1',
         );
       }
+
       await loadOrders(true, 1);
     },
     [loadOrders, user?.id],
@@ -249,28 +257,35 @@ const OrdersScreen: React.FC = () => {
       const requestDate = selectedDateRef.current;
       const requestId = loadRequestId.current;
       const nextPage = loadedPages.current + 1;
+
       const result = await getMyOrders(
         token,
         nextPage,
         requestDate,
       );
+
       if (
         requestDate !== selectedDateRef.current ||
         requestId !== loadRequestId.current
       ) {
         return;
       }
+
       loadedPages.current = nextPage;
+
       setOrders(current =>
         uniqueOrdersById([...current, ...result.orders]),
       );
+
       setHasMore(result.hasMore);
+
       await AsyncStorage.setItem(
         `foode.customer-orders.pages.${user?.id || 'account'}.${selectedDateRef.current}`,
         String(nextPage),
       );
     } catch (error: any) {
       console.error('Load more customer orders error:', error);
+
       Alert.alert(
         'Unable to Load More Orders',
         error?.message || 'Please try again.',
@@ -285,18 +300,12 @@ const OrdersScreen: React.FC = () => {
   // RESTAURANT NAME
   // =====================================================
 
-  const getRestaurantName = (
-    order: UserOrder,
-  ) => {
+  const getRestaurantName = (order: UserOrder) => {
     if (
-      typeof order.restaurant ===
-        'object' &&
+      typeof order.restaurant === 'object' &&
       order.restaurant
     ) {
-      return (
-        order.restaurant.name ||
-        'Restaurant'
-      );
+      return order.restaurant.name || 'Restaurant';
     }
 
     return 'Restaurant';
@@ -306,70 +315,46 @@ const OrdersScreen: React.FC = () => {
   // DATE
   // =====================================================
 
-  const formatDate = (
-    date: string,
-  ) => {
-    const parsedDate =
-      new Date(date);
+  const formatDate = (date: string) => {
+    const parsedDate = new Date(date);
 
-    if (
-      Number.isNaN(
-        parsedDate.getTime(),
-      )
-    ) {
+    if (Number.isNaN(parsedDate.getTime())) {
       return '';
     }
 
-    return parsedDate.toLocaleDateString(
-      'en-IN',
-      {
-        timeZone: 'Asia/Kolkata',
-        day: 'numeric',
-        month: 'short',
-        year: 'numeric',
-      },
-    );
+    return parsedDate.toLocaleDateString('en-IN', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+    });
   };
 
   // =====================================================
   // SAFE NUMBER
   // =====================================================
 
-  const toNumber = (
-    value: any,
-  ): number => {
-    const result =
-      Number(value);
+  const toNumber = (value: any): number => {
+    const result = Number(value);
 
-    return Number.isFinite(result)
-      ? result
-      : 0;
+    return Number.isFinite(result) ? result : 0;
   };
 
   // =====================================================
   // GET UNIT PRICE
   // =====================================================
 
-  const getUnitPrice = (
-    food: OrderItem,
-  ): number => {
-    const originalPrice =
-      toNumber(food.price);
+  const getUnitPrice = (food: OrderItem): number => {
+    const originalPrice = toNumber(food.price);
 
     const discountedPrice =
-      food.discountedPrice !==
-        null &&
-      food.discountedPrice !==
-        undefined
-        ? toNumber(
-            food.discountedPrice,
-          )
+      food.discountedPrice !== null &&
+      food.discountedPrice !== undefined
+        ? toNumber(food.discountedPrice)
         : 0;
 
     if (
       discountedPrice > 0 &&
-      discountedPrice <
-        originalPrice
+      discountedPrice < originalPrice
     ) {
       return discountedPrice;
     }
@@ -381,57 +366,30 @@ const OrdersScreen: React.FC = () => {
   // GET ITEM TOTAL
   // =====================================================
 
-  const getItemTotal = (
-    food: OrderItem,
-  ): number => {
-    const quantity =
-      Math.max(
-        1,
-        toNumber(
-          food.quantity,
-        ),
-      );
-
-    const unitPrice =
-      getUnitPrice(food);
-
-    /*
-     * Calculate directly from:
-     *
-     * UNIT PRICE × QUANTITY
-     *
-     * This prevents the UI from depending
-     * only on backend `total`.
-     */
-
-    return (
-      unitPrice *
-      quantity
+  const getItemTotal = (food: OrderItem): number => {
+    const quantity = Math.max(
+      1,
+      toNumber(food.quantity),
     );
+
+    const unitPrice = getUnitPrice(food);
+
+    return unitPrice * quantity;
   };
 
   // =====================================================
   // GET SUBTOTAL
   // =====================================================
 
-  const getSubtotal = (
-    order: UserOrder,
-  ): number => {
-    const backendSubtotal =
-      toNumber(
-        order.subtotal,
-      );
+  const getSubtotal = (order: UserOrder): number => {
+    const backendSubtotal = toNumber(order.subtotal);
 
-    if (
-      backendSubtotal > 0
-    ) {
+    if (backendSubtotal > 0) {
       return backendSubtotal;
     }
 
     return order.items.reduce(
-      (sum, food) =>
-        sum +
-        getItemTotal(food),
+      (sum, food) => sum + getItemTotal(food),
       0,
     );
   };
@@ -440,23 +398,14 @@ const OrdersScreen: React.FC = () => {
   // GET ORDER TOTAL
   // =====================================================
 
-  const getOrderTotal = (
-    order: UserOrder,
-  ): number => {
-    const subtotal =
-      getSubtotal(order);
-
-    const deliveryFee =
-      toNumber(order.deliveryFee);
-
-    const discount =
-      toNumber(order.discount);
+  const getOrderTotal = (order: UserOrder): number => {
+    const subtotal = getSubtotal(order);
+    const deliveryFee = toNumber(order.deliveryFee);
+    const discount = toNumber(order.discount);
 
     return Math.max(
       0,
-      subtotal +
-        deliveryFee -
-        discount,
+      subtotal + deliveryFee - discount,
     );
   };
 
@@ -464,9 +413,7 @@ const OrdersScreen: React.FC = () => {
   // STATUS COLOR
   // =====================================================
 
-  const getStatusColor = (
-    status: UserOrder['status'],
-  ) => {
+  const getStatusColor = (status: UserOrder['status']) => {
     switch (status) {
       case 'DELIVERED':
         return '#15803D';
@@ -490,9 +437,7 @@ const OrdersScreen: React.FC = () => {
   // STATUS LABEL
   // =====================================================
 
-  const getStatusLabel = (
-    status: UserOrder['status'],
-  ) => {
+  const getStatusLabel = (status: UserOrder['status']) => {
     switch (status) {
       case 'DELIVERED':
         return 'Delivered';
@@ -529,19 +474,36 @@ const OrdersScreen: React.FC = () => {
       'Cancel Order',
       `Are you sure you want to cancel order #${order.orderNumber}?`,
       [
-        {text: 'Keep Order', style: 'cancel'},
+        {
+          text: 'Keep Order',
+          style: 'cancel',
+        },
         {
           text: 'Cancel Order',
           style: 'destructive',
           onPress: async () => {
-            if (!token) return;
+            if (!token) {
+              return;
+            }
+
             try {
               setCancellingOrderId(order._id);
-              const updated = await cancelOrder(token, order._id);
-              setOrders(prev =>
-                prev.map(o => (o._id === order._id ? updated : o)),
+
+              const updated = await cancelOrder(
+                token,
+                order._id,
               );
-              Alert.alert('Order Cancelled', 'Your order has been cancelled.');
+
+              setOrders(prev =>
+                prev.map(o =>
+                  o._id === order._id ? updated : o,
+                ),
+              );
+
+              Alert.alert(
+                'Order Cancelled',
+                'Your order has been cancelled.',
+              );
             } catch (err: any) {
               Alert.alert(
                 'Unable to Cancel',
@@ -560,93 +522,45 @@ const OrdersScreen: React.FC = () => {
   // REVIEW
   // =====================================================
 
-  const handleReview = (
-    order: UserOrder,
-  ) => {
-    if (
-      order.status !==
-      'DELIVERED'
-    ) {
+  const handleReview = (order: UserOrder) => {
+    if (order.status !== 'DELIVERED') {
       return;
     }
 
-    navigation.navigate(
-      'Review',
-      {order},
-    );
+    navigation.navigate('Review', {order});
   };
 
   // =====================================================
   // ORDER CARD
   // =====================================================
 
-  const renderOrder = ({
-    item,
-  }: {
-    item: UserOrder;
-  }) => {
-    const statusColor =
-      getStatusColor(
-        item.status,
-      );
+  const renderOrder = ({item}: {item: UserOrder}) => {
+    const statusColor = getStatusColor(item.status);
 
-    const itemCount =
-      item.items.reduce(
-        (
-          total,
-          food,
-        ) =>
-          total +
-          toNumber(
-            food.quantity,
-          ),
-        0,
-      );
+    const itemCount = item.items.reduce(
+      (total, food) =>
+        total + toNumber(food.quantity),
+      0,
+    );
 
-    const subtotal =
-      getSubtotal(item);
-
-    const deliveryFee =
-      toNumber(
-        item.deliveryFee,
-      );
-
-    const discount =
-      toNumber(
-        item.discount,
-      );
-
-    const orderTotal =
-      getOrderTotal(item);
+    const subtotal = getSubtotal(item);
+    const deliveryFee = toNumber(item.deliveryFee);
+    const discount = toNumber(item.discount);
+    const orderTotal = getOrderTotal(item);
 
     return (
       <View
         style={[
           styles.orderCard,
           {
-            padding:
-              cardPadding,
+            padding: cardPadding,
           },
         ]}>
+        {/* HEADER */}
 
-        {/* =================================================
-            HEADER
-        ================================================= */}
-
-        <View
-          style={
-            styles.orderHeader
-          }>
-
-          <View
-            style={
-              styles.restaurantSection
-            }>
-
-            <View
-              style={
-                styles.restaurantIcon
-              }>
+        <View style={styles.orderHeader}>
+          <View style={styles.restaurantSection}>
+            <View style={styles.restaurantIcon}>
               <Storefront
                 size={23}
                 color={ORANGE}
@@ -654,51 +568,33 @@ const OrdersScreen: React.FC = () => {
               />
             </View>
 
-            <View
-              style={
-                styles.restaurantInfo
-              }>
-
+            <View style={styles.restaurantInfo}>
               <Text
-                style={
-                  styles.restaurantName
-                }
+                style={styles.restaurantName}
                 numberOfLines={1}>
-                {getRestaurantName(
-                  item,
-                )}
+                {getRestaurantName(item)}
               </Text>
 
               <Text
-                style={
-                  styles.orderNumber
-                }
+                style={styles.orderNumber}
                 numberOfLines={1}>
-                Order #
-                {
-                  item.orderNumber
-                }
+                Order #{item.orderNumber}
               </Text>
-
             </View>
-
           </View>
 
           <View
             style={[
               styles.statusBadge,
               {
-                backgroundColor:
-                  `${statusColor}14`,
+                backgroundColor: `${statusColor}14`,
               },
             ]}>
-
             <View
               style={[
                 styles.statusDot,
                 {
-                  backgroundColor:
-                    statusColor,
+                  backgroundColor: statusColor,
                 },
               ]}
             />
@@ -707,321 +603,148 @@ const OrdersScreen: React.FC = () => {
               style={[
                 styles.statusText,
                 {
-                  color:
-                    statusColor,
+                  color: statusColor,
                 },
               ]}>
-              {getStatusLabel(
-                item.status,
-              )}
+              {getStatusLabel(item.status)}
             </Text>
-
           </View>
-
         </View>
 
-        {/* =================================================
-            META
-        ================================================= */}
+        {/* META */}
 
-        <View
-          style={
-            styles.metaRow
-          }>
-
+        <View style={styles.metaRow}>
           <CalendarBlank
             size={14}
             color="#8A8F98"
             weight="regular"
           />
 
-          <Text
-            style={
-              styles.orderDate
-            }>
-            {formatDate(
-              item.createdAt,
-            )}
+          <Text style={styles.orderDate}>
+            {formatDate(item.createdAt)}
           </Text>
 
-          <View
-            style={
-              styles.metaDot
-            }
-          />
+          <View style={styles.metaDot} />
 
-          <Text
-            style={
-              styles.itemCount
-            }>
-            {itemCount}{' '}
-            {itemCount === 1
-              ? 'item'
-              : 'items'}
+          <Text style={styles.itemCount}>
+            {itemCount} {itemCount === 1 ? 'item' : 'items'}
           </Text>
-
         </View>
 
-        {/* =================================================
-            ITEMS
-        ================================================= */}
+        {/* ITEMS */}
 
-        <View
-          style={
-            styles.itemsContainer
-          }>
+        <View style={styles.itemsContainer}>
+          {item.items.map((food, index) => {
+            const quantity = Math.max(
+              1,
+              toNumber(food.quantity),
+            );
 
-          {item.items.map(
-            (
-              food,
-              index,
-            ) => {
+            const unitPrice = getUnitPrice(food);
+            const itemTotal = getItemTotal(food);
 
-              const quantity =
-                Math.max(
-                  1,
-                  toNumber(
-                    food.quantity,
-                  ),
-                );
-
-              const unitPrice =
-                getUnitPrice(
-                  food,
-                );
-
-              const itemTotal =
-                getItemTotal(
-                  food,
-                );
-
-              return (
-                <View
-                  key={`${item._id}-${index}`}
-                  style={
-                    styles.itemBlock
-                  }>
-
-                  {/* ITEM MAIN ROW */}
-
-                  <View
-                    style={
-                      styles.itemRow
-                    }>
-
-                    <View
-                      style={
-                        styles.quantityPill
-                      }>
-                      <Text
-                        style={
-                          styles.itemQuantity
-                        }>
-                        {quantity}×
-                      </Text>
-                    </View>
-
-                    <Text
-                      style={
-                        styles.itemName
-                      }
-                      numberOfLines={2}>
-                      {food.name ||
-                        'Food Item'}
+            return (
+              <View
+                key={`${item._id}-${index}`}
+                style={styles.itemBlock}>
+                <View style={styles.itemRow}>
+                  <View style={styles.quantityPill}>
+                    <Text style={styles.itemQuantity}>
+                      {quantity}×
                     </Text>
-
-                    <Text
-                      style={
-                        styles.itemTotal
-                      }>
-                      ₹
-                      {itemTotal.toFixed(
-                        2,
-                      )}
-                    </Text>
-
                   </View>
 
-                  {/* UNIT PRICE */}
+                  <Text
+                    style={styles.itemName}
+                    numberOfLines={2}>
+                    {food.name || 'Food Item'}
+                  </Text>
 
-                  <View
-                    style={
-                      styles.itemPriceDetails
-                    }>
-
-                    <Text
-                      style={
-                        styles.unitPriceText
-                      }>
-                      ₹
-                      {unitPrice.toFixed(
-                        2,
-                      )}{' '}
-                      ×{' '}
-                      {quantity}
-                    </Text>
-
-                    <Text
-                      style={
-                        styles.itemCalculation
-                      }>
-                      = ₹
-                      {itemTotal.toFixed(
-                        2,
-                      )}
-                    </Text>
-
-                  </View>
-
+                  <Text style={styles.itemTotal}>
+                    ₹{itemTotal.toFixed(2)}
+                  </Text>
                 </View>
-              );
-            },
-          )}
 
+                <View style={styles.itemPriceDetails}>
+                  <Text style={styles.unitPriceText}>
+                    ₹{unitPrice.toFixed(2)} × {quantity}
+                  </Text>
+
+                  <Text style={styles.itemCalculation}>
+                    = ₹{itemTotal.toFixed(2)}
+                  </Text>
+                </View>
+              </View>
+            );
+          })}
         </View>
 
-        {/* =================================================
-            PRICE BREAKDOWN
-        ================================================= */}
+        {/* PRICE BREAKDOWN
+            Hidden for cancelled orders.
+        */}
 
-        <View
-          style={
-            styles.priceBreakdown
-          }>
-
-          <View
-            style={
-              styles.priceRow
-            }>
-
-            <Text
-              style={
-                styles.priceLabel
-              }>
-              Subtotal
-            </Text>
-
-            <Text
-              style={
-                styles.priceValue
-              }>
-              ₹
-              {subtotal.toFixed(
-                2,
-              )}
-            </Text>
-
-          </View>
-
-          <View
-            style={
-              styles.priceRow
-            }>
-
-            <Text
-              style={
-                styles.priceLabel
-              }>
-              Delivery fee
-            </Text>
-
-            <Text
-              style={
-                styles.priceValue
-              }>
-              ₹
-              {deliveryFee.toFixed(
-                2,
-              )}
-            </Text>
-
-          </View>
-
-          {discount > 0 && (
-            <View
-              style={
-                styles.priceRow
-              }>
-
-              <Text
-                style={
-                  styles.discountLabel
-                }>
-                Discount
+        {item.status !== 'CANCELLED' && (
+          <View style={styles.priceBreakdown}>
+            <View style={styles.priceRow}>
+              <Text style={styles.priceLabel}>
+                Subtotal
               </Text>
 
-              <Text
-                style={
-                  styles.discountValue
-                }>
-                -₹
-                {discount.toFixed(
-                  2,
-                )}
+              <Text style={styles.priceValue}>
+                ₹{subtotal.toFixed(2)}
               </Text>
-
             </View>
-          )}
 
-          <View
-            style={
-              styles.priceDivider
-            }
-          />
+            <View style={styles.priceRow}>
+              <Text style={styles.priceLabel}>
+                Delivery fee
+              </Text>
 
-          <View
-            style={
-              styles.totalRow
-            }>
+              <Text style={styles.priceValue}>
+                ₹{deliveryFee.toFixed(2)}
+              </Text>
+            </View>
 
-            <Text
-              style={
-                styles.totalLabel
-              }>
-              Total paid
-            </Text>
+            {discount > 0 && (
+              <View style={styles.priceRow}>
+                <Text style={styles.discountLabel}>
+                  Discount
+                </Text>
 
-            <Text
-              style={
-                styles.totalValue
-              }>
-              ₹
-              {orderTotal.toFixed(
-                2,
-              )}
-            </Text>
+                <Text style={styles.discountValue}>
+                  -₹{discount.toFixed(2)}
+                </Text>
+              </View>
+            )}
 
+            <View style={styles.priceDivider} />
+
+            <View style={styles.totalRow}>
+              <Text style={styles.totalLabel}>
+                To be paid
+              </Text>
+
+              <Text style={styles.totalValue}>
+                ₹{orderTotal.toFixed(2)}
+              </Text>
+            </View>
           </View>
+        )}
 
-        </View>
+        {/* REVIEW */}
 
-        {/* =================================================
-            REVIEW
-        ================================================= */}
-
-        {item.status ===
-          'DELIVERED' && (
+        {item.status === 'DELIVERED' && (
           <TouchableOpacity
             activeOpacity={0.85}
-            onPress={() =>
-              handleReview(
-                item,
-              )
-            }
-            style={
-              styles.reviewButton
-            }>
-
+            onPress={() => handleReview(item)}
+            style={styles.reviewButton}>
             <Star
               size={16}
               color="#FFFFFF"
               weight="fill"
             />
 
-            <Text
-              style={
-                styles.reviewButtonText
-              }>
+            <Text style={styles.reviewButtonText}>
               Rate & Review
             </Text>
 
@@ -1029,17 +752,12 @@ const OrdersScreen: React.FC = () => {
               size={16}
               color="#FFFFFF"
               weight="bold"
-              style={
-                styles.reviewChevron
-              }
+              style={styles.reviewChevron}
             />
-
           </TouchableOpacity>
         )}
 
-        {/* =================================================
-            CANCEL (ONLY WHEN PLACED)
-        ================================================= */}
+        {/* CANCEL ORDER — ONLY WHEN PLACED */}
 
         {item.status === 'PLACED' && (
           <TouchableOpacity
@@ -1048,7 +766,10 @@ const OrdersScreen: React.FC = () => {
             onPress={() => handleCancelOrder(item)}
             style={styles.cancelOrderButton}>
             {cancellingOrderId === item._id ? (
-              <ActivityIndicator size="small" color="#DC2626" />
+              <ActivityIndicator
+                size="small"
+                color="#DC2626"
+              />
             ) : (
               <>
                 <XCircle
@@ -1056,6 +777,7 @@ const OrdersScreen: React.FC = () => {
                   color="#DC2626"
                   weight="bold"
                 />
+
                 <Text style={styles.cancelOrderText}>
                   Cancel Order
                 </Text>
@@ -1063,7 +785,6 @@ const OrdersScreen: React.FC = () => {
             )}
           </TouchableOpacity>
         )}
-
       </View>
     );
   };
@@ -1075,36 +796,25 @@ const OrdersScreen: React.FC = () => {
   return (
     <SafeAreaView
       style={styles.container}
-      edges={[
-        'left',
-        'right',
-      ]}>
+      edges={['left', 'right']}>
+      <StatusBar
+        backgroundColor="#FF7A00"
+        barStyle="light-content"
+        hidden={false}
+        translucent={false}
+      />
 
-      <StatusBar backgroundColor="#FF7A00" barStyle="light-content" hidden={false} translucent={false} />
-
-      {/* =================================================
-          HEADER
-      ================================================= */}
+      {/* HEADER */}
 
       <View
         style={[
           styles.pageHeader,
           {
-            paddingHorizontal:
-              horizontalPadding,
-
-            paddingTop:
-              isShortScreen
-                ? 12
-                : 16,
-
-            paddingBottom:
-              isShortScreen
-                ? 12
-                : 16,
+            paddingHorizontal: horizontalPadding,
+            paddingTop: isShortScreen ? 12 : 16,
+            paddingBottom: isShortScreen ? 12 : 16,
           },
         ]}>
-
         {navigation.canGoBack() ? (
           <TouchableOpacity
             accessibilityRole="button"
@@ -1119,10 +829,7 @@ const OrdersScreen: React.FC = () => {
             />
           </TouchableOpacity>
         ) : (
-          <View
-            style={
-              styles.headerIcon
-            }>
+          <View style={styles.headerIcon}>
             <Receipt
               size={23}
               color={ORANGE}
@@ -1131,51 +838,29 @@ const OrdersScreen: React.FC = () => {
           </View>
         )}
 
-        <View
-          style={
-            styles.headerTextContainer
-          }>
-
+        <View style={styles.headerTextContainer}>
           <Text
             style={[
               styles.title,
               {
-                fontSize:
-                  isCompactWidth
-                    ? 22
-                    : 25,
+                fontSize: isCompactWidth ? 22 : 25,
               },
             ]}>
             My Orders
           </Text>
 
-          <Text
-            style={
-              styles.subtitle
-            }>
+          <Text style={styles.subtitle}>
             Your FoodE order history
           </Text>
-
         </View>
 
-        {!loading &&
-          orders.length >
-            0 && (
-            <View
-              style={
-                styles.orderCountBadge
-              }>
-
-              <Text
-                style={
-                  styles.orderCountText
-                }>
-                {orders.length}
-              </Text>
-
-            </View>
-          )}
-
+        {!loading && orders.length > 0 && (
+          <View style={styles.orderCountBadge}>
+            <Text style={styles.orderCountText}>
+              {orders.length}
+            </Text>
+          </View>
+        )}
       </View>
 
       <DateFilterCalendar
@@ -1183,87 +868,45 @@ const OrdersScreen: React.FC = () => {
         onChange={handleDateChange}
       />
 
-      {/* =================================================
-          LOADING
-      ================================================= */}
+      {/* LOADING */}
 
       {loading ? (
-        <View
-          style={
-            styles.loadingContainer
-          }>
-
-          <View
-            style={
-              styles.loadingIcon
-            }>
+        <View style={styles.loadingContainer}>
+          <View style={styles.loadingIcon}>
             <ActivityIndicator
               size="large"
               color={ORANGE}
             />
           </View>
 
-          <Text
-            style={
-              styles.loadingTitle
-            }>
+          <Text style={styles.loadingTitle}>
             Loading your orders
           </Text>
 
-          <Text
-            style={
-              styles.loadingText
-            }>
+          <Text style={styles.loadingText}>
             Just a moment...
           </Text>
-
         </View>
-      ) : orders.length ===
-        0 ? (
-
-        /* =================================================
-           EMPTY
-        ================================================= */
-
+      ) : orders.length === 0 ? (
+        /* EMPTY */
         <ScrollView
-          contentContainerStyle={
-            styles.emptyContent
-          }
+          contentContainerStyle={styles.emptyContent}
           refreshControl={
             <RefreshControl
-              refreshing={
-                refreshing
-              }
-              onRefresh={
-                handleRefresh
-              }
-              colors={[
-                ORANGE,
-              ]}
-              tintColor={
-                ORANGE
-              }
+              refreshing={refreshing}
+              onRefresh={handleRefresh}
+              colors={[ORANGE]}
+              tintColor={ORANGE}
             />
           }>
-
           <EmptyOrders />
-
         </ScrollView>
-
       ) : (
-
-        /* =================================================
-           ORDERS
-        ================================================= */
-
+        /* ORDERS */
         <FlatList
           data={orders}
-          keyExtractor={item =>
-            item._id
-          }
-          renderItem={
-            renderOrder
-          }
+          keyExtractor={item => item._id}
+          renderItem={renderOrder}
           onEndReached={loadNextPage}
           onEndReachedThreshold={0.4}
           ListFooterComponent={
@@ -1274,36 +917,23 @@ const OrdersScreen: React.FC = () => {
               />
             ) : null
           }
-          showsVerticalScrollIndicator={
-            false
-          }
+          showsVerticalScrollIndicator={false}
           contentContainerStyle={[
             styles.listContent,
             {
-              paddingHorizontal:
-                horizontalPadding,
+              paddingHorizontal: horizontalPadding,
             },
           ]}
           refreshControl={
             <RefreshControl
-              refreshing={
-                refreshing
-              }
-              onRefresh={
-                handleRefresh
-              }
-              colors={[
-                ORANGE,
-              ]}
-              tintColor={
-                ORANGE
-              }
+              refreshing={refreshing}
+              onRefresh={handleRefresh}
+              colors={[ORANGE]}
+              tintColor={ORANGE}
             />
           }
         />
-
       )}
-
     </SafeAreaView>
   );
 };
@@ -1320,9 +950,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#F7F8FA',
   },
 
-  // ===================================================
   // HEADER
-  // ===================================================
 
   pageHeader: {
     flexDirection: 'row',
@@ -1404,22 +1032,19 @@ const styles = StyleSheet.create({
     color: ORANGE,
   },
 
-  // ===================================================
   // LIST
-  // ===================================================
 
   listContent: {
     paddingTop: 16,
     paddingBottom: 100,
     flexGrow: 1,
   },
+
   loadingMore: {
     paddingVertical: 18,
   },
 
-  // ===================================================
   // ORDER CARD
-  // ===================================================
 
   orderCard: {
     backgroundColor: '#FFFCF8',
@@ -1479,9 +1104,7 @@ const styles = StyleSheet.create({
     color: '#9297A2',
   },
 
-  // ===================================================
   // STATUS
-  // ===================================================
 
   statusBadge: {
     flexDirection: 'row',
@@ -1505,9 +1128,7 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
 
-  // ===================================================
   // META
-  // ===================================================
 
   metaRow: {
     flexDirection: 'row',
@@ -1534,9 +1155,7 @@ const styles = StyleSheet.create({
     color: '#858B96',
   },
 
-  // ===================================================
   // ITEMS
-  // ===================================================
 
   itemsContainer: {
     marginTop: 14,
@@ -1606,9 +1225,7 @@ const styles = StyleSheet.create({
     color: '#454B56',
   },
 
-  // ===================================================
   // PRICE BREAKDOWN
-  // ===================================================
 
   priceBreakdown: {
     marginTop: 4,
@@ -1671,9 +1288,7 @@ const styles = StyleSheet.create({
     color: '#171923',
   },
 
-  // ===================================================
   // REVIEW
-  // ===================================================
 
   reviewButton: {
     flexDirection: 'row',
@@ -1697,9 +1312,7 @@ const styles = StyleSheet.create({
     right: 13,
   },
 
-  // ===================================================
   // CANCEL ORDER
-  // ===================================================
 
   cancelOrderButton: {
     flexDirection: 'row',
@@ -1720,9 +1333,7 @@ const styles = StyleSheet.create({
     color: '#DC2626',
   },
 
-  // ===================================================
   // LOADING
-  // ===================================================
 
   loadingContainer: {
     flex: 1,
@@ -1754,9 +1365,7 @@ const styles = StyleSheet.create({
     color: '#858B96',
   },
 
-  // ===================================================
   // EMPTY
-  // ===================================================
 
   emptyContent: {
     flexGrow: 1,
