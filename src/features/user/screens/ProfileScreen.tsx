@@ -12,7 +12,6 @@ import {
 import {SafeAreaView} from 'react-native-safe-area-context';
 
 import {
-  CaretLeft,
   CaretRight,
   User,
   Envelope,
@@ -29,6 +28,7 @@ import {
   SignIn,
   WhatsappLogo,
 } from 'phosphor-react-native';
+import AppBackButton from '../../../components/buttons/AppBackButton';
 
 import {useAuth} from '../../../context/AuthContext';
 import {APP_VERSION} from '../../../config/version';
@@ -89,14 +89,7 @@ const ProfileScreen = ({navigation}: any) => {
       {/* Top Header */}
       <View style={styles.navBar}>
         {navigation?.canGoBack?.() ? (
-          <TouchableOpacity
-            style={styles.navBackButton}
-            onPress={() => navigation.goBack()}
-            activeOpacity={0.75}
-            accessibilityRole="button"
-            accessibilityLabel="Go back">
-            <CaretLeft size={20} color={TEXT_DARK} weight="bold" />
-          </TouchableOpacity>
+          <AppBackButton />
         ) : (
           <View style={styles.navButtonPlaceholder} />
         )}

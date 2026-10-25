@@ -301,10 +301,15 @@ const OrderSuccessScreen: React.FC = () => {
       : subtotal + deliveryFee;
 
   const deliverySlot = order?.deliverySlot;
+  const slotDate = deliverySlot?.date;
+  const today = new Date().toISOString().slice(0, 10);
+  const tomorrow = new Date(Date.now() + 86400000).toISOString().slice(0, 10);
+  const isPreBooking = slotDate === tomorrow || (typeof slotDate === 'string' && slotDate > today);
+  const datePrefix = slotDate === today ? 'Today, ' : isPreBooking ? 'Tomorrow, ' : slotDate ? `${slotDate}, ` : '';
 
   const deliveryTime =
     deliverySlot?.startTime && deliverySlot?.endTime
-      ? `${formatTime(deliverySlot.startTime)} – ${formatTime(
+      ? `${datePrefix}${formatTime(deliverySlot.startTime)} – ${formatTime(
           deliverySlot.endTime,
         )}`
       : 'To be confirmed';
@@ -340,10 +345,14 @@ const OrderSuccessScreen: React.FC = () => {
           <View style={styles.successHeader}>
             <AnimatedSuccessIcon />
 
-            <Text style={styles.successTitle}>Order placed!</Text>
+            <Text style={styles.successTitle}>
+              {isPreBooking ? 'Pre-Booking Placed!' : 'Order placed!'}
+            </Text>
 
             <Text style={styles.successSubtitle}>
-              Your order has been confirmed successfully.
+              {isPreBooking
+                ? 'Your order is pre-booked for tomorrow and will be prepared fresh on time.'
+                : 'Your order has been confirmed successfully.'}
             </Text>
 
             <View style={styles.statusBadge}>
@@ -391,7 +400,14 @@ const OrderSuccessScreen: React.FC = () => {
               </View>
 
               <View style={styles.detailContent}>
-                <Text style={styles.label}>DELIVERY TIME</Text>
+                <View style={{flexDirection: 'row', alignItems: 'center', gap: 6}}>
+                  <Text style={styles.label}>DELIVERY TIME</Text>
+                  {isPreBooking && (
+                    <View style={styles.preBookTag}>
+                      <Text style={styles.preBookTagText}>PRE-BOOKED</Text>
+                    </View>
+                  )}
+                </View>
 
                 <Text style={styles.detailValue}>
                   {deliveryTime}
@@ -704,6 +720,19 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     letterSpacing: 0.6,
     color: MUTED,
+  },
+
+  preBookTag: {
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
+    backgroundColor: '#EDE9FE',
+  },
+
+  preBookTagText: {
+    fontSize: 9,
+    fontWeight: '800',
+    color: '#7C3AED',
   },
 
   detailValue: {

@@ -263,7 +263,7 @@ const HomeScreen: React.FC = () => {
       style={styles.safeArea}
       edges={['top', 'left', 'right']}>
 
-      <StatusBar backgroundColor="#FF7A00" barStyle="light-content" hidden={false} translucent={false} />
+      <StatusBar backgroundColor="#FFFFFF" barStyle="dark-content" hidden={false} translucent={false} />
 
       <View style={styles.body}>
         <ScrollView
@@ -462,12 +462,12 @@ export default HomeScreen;
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#FFF8F2',
+    backgroundColor: '#FFFFFF',
   },
 
   body: {
     flex: 1,
-    backgroundColor: '#FFF9F4',
+    backgroundColor: '#FAFAF9',
   },
 
   scrollContent: {
@@ -476,17 +476,12 @@ const styles = StyleSheet.create({
 
   headerContainer: {
     width: '100%',
-    backgroundColor: '#F47721',
-    borderBottomLeftRadius: 24,
-    borderBottomRightRadius: 24,
-    overflow: 'hidden',
-    marginBottom: 10,
+    backgroundColor: '#FFFFFF',
   },
 
   searchContainer: {
-    backgroundColor: '#FFF9F4',
-    paddingTop: 2,
-    paddingBottom: 10,
+    backgroundColor: '#FFFFFF',
+    paddingBottom: 6,
   },
 
   foodSectionWrapper: {

@@ -17,7 +17,8 @@ import AppTextInput from "../../../components/inputs/AppTextInput";
 
 import {SafeAreaView} from 'react-native-safe-area-context';
 
-import { ArrowLeft, MagnifyingGlass, X, Microphone, Clock, Storefront, ForkKnife, Star, CaretRight, Warning } from 'phosphor-react-native';
+import { MagnifyingGlass, X, Microphone, Clock, Storefront, ForkKnife, Star, CaretRight, Warning } from 'phosphor-react-native';
+import AppBackButton from '../../../components/buttons/AppBackButton';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {useNavigation} from '@react-navigation/native';
 
@@ -954,12 +955,7 @@ const SearchScreen = () => {
 
             <View style={styles.searchRow}>
               {navigation.canGoBack() && (
-                <TouchableOpacity
-                  activeOpacity={0.75}
-                  onPress={() => navigation.goBack()}
-                  style={styles.backButton}>
-                  <ArrowLeft size={22} color="#1E232C" weight="bold" />
-                </TouchableOpacity>
+                <AppBackButton />
               )}
 
               <View

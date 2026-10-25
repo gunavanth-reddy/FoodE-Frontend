@@ -12,6 +12,7 @@ import AppTextInput from "../../../components/inputs/AppTextInput";
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {MagnifyingGlass, Warning} from 'phosphor-react-native';
 import {useNavigation} from '@react-navigation/native';
+import AppBackButton from '../../../components/buttons/AppBackButton';
 
 import RestaurantCard from '../components/home/restaurant/RestaurantCard';
 import type {Restaurant as RestaurantCardData} from '../components/home/restaurant/restaurantData';
@@ -87,12 +88,26 @@ const RestaurantsScreen: React.FC = () => {
 
   const renderHeader = () => (
     <View style={styles.header}>
+      <View style={styles.headerTopRow}>
+        {navigation.canGoBack() && (
+          <AppBackButton style={styles.backButton} />
+        )}
+        <View style={styles.headerTitleWrap}>
+          <Text style={styles.headerTitle}>All Restaurants</Text>
+          <Text style={styles.headerSubtitle}>
+            {restaurants.length > 0
+              ? `${restaurants.length} spots to satisfy your cravings`
+              : 'Explore delicious food spots near you'}
+          </Text>
+        </View>
+      </View>
+
       <View style={styles.searchBox}>
         <MagnifyingGlass size={19} color="#858B95" />
         <AppTextInput
           value={query}
           onChangeText={setQuery}
-          placeholder="Search restaurants"
+          placeholder="Search restaurants, cuisines..."
           placeholderTextColor="#858B95"
           style={styles.searchInput}
           returnKeyType="search"
@@ -173,13 +188,34 @@ const styles = StyleSheet.create({
     paddingBottom: 12,
     backgroundColor: '#FFF9F4',
   },
+  headerTopRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  backButton: {
+    marginRight: 12,
+  },
+  headerTitleWrap: {
+    flex: 1,
+  },
+  headerTitle: {
+    fontSize: 22,
+    fontWeight: '800',
+    color: '#211A16',
+  },
+  headerSubtitle: {
+    fontSize: 13,
+    color: '#79716B',
+    marginTop: 2,
+    fontWeight: '500',
+  },
   searchBox: {
     width: '100%',
     height: 46,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 9,
-    marginTop: 0,
     paddingHorizontal: 14,
     backgroundColor: '#FFFFFF',
     borderRadius: 14,

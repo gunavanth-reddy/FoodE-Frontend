@@ -7,7 +7,7 @@ import {
   View,
 } from 'react-native';
 
-import {MapPin, User, Bell} from 'phosphor-react-native';
+import {MapPin, User, Bell, CaretDown} from 'phosphor-react-native';
 import {useNavigation} from '@react-navigation/native';
 import {BottomTabNavigationProp} from '@react-navigation/bottom-tabs';
 import {NativeStackNavigationProp} from '@react-navigation/native-stack';
@@ -21,9 +21,8 @@ type HeaderNavigationProp = CompositeNavigationProp<
   NativeStackNavigationProp<RootStackParamList>
 >;
 
-const ORANGE = '#FF6B00';
-const DARK_ORANGE = '#E85D04';
-const LIGHT_ORANGE = '#FFF7F0';
+const ORANGE = '#FF7A00';
+const LIGHT_ORANGE = '#FFF2EA';
 
 const Header: React.FC = () => {
   const navigation = useNavigation<HeaderNavigationProp>();
@@ -42,7 +41,7 @@ const Header: React.FC = () => {
 
   const translateY = entrance.interpolate({
     inputRange: [0, 1],
-    outputRange: [-8, 0],
+    outputRange: [-6, 0],
   });
 
   return (
@@ -54,25 +53,23 @@ const Header: React.FC = () => {
           transform: [{translateY}],
         },
       ]}>
-      {/* Soft curved bottom */}
-      <View pointerEvents="none" style={styles.bottomCurve} />
-
-      {/* Decorative accents */}
-      <View pointerEvents="none" style={styles.decorativeCircle} />
-      <View pointerEvents="none" style={styles.decorativeDot} />
-
       {/* Delivery location */}
       <View style={styles.locationSection}>
         <View style={styles.locationIcon}>
-          <MapPin size={17} color={DARK_ORANGE} weight="fill" />
+          <MapPin size={19} color={ORANGE} weight="fill" />
         </View>
 
         <View style={styles.locationTextBlock}>
-          <Text style={styles.deliverLabel}>DELIVERING TO</Text>
+          <View style={styles.labelRow}>
+            <Text style={styles.deliverLabel}>DELIVERING TO</Text>
+          </View>
 
-          <Text style={styles.location} numberOfLines={1}>
-            SRM AP, Neerukonda
-          </Text>
+          <View style={styles.locationRow}>
+            <Text style={styles.location} numberOfLines={1}>
+              SRM AP, Neerukonda
+            </Text>
+            <CaretDown size={14} color={ORANGE} weight="bold" style={styles.caretIcon} />
+          </View>
         </View>
       </View>
 
@@ -86,7 +83,7 @@ const Header: React.FC = () => {
             styles.actionButton,
             pressed && styles.pressed,
           ]}>
-          <Bell size={21} color={DARK_ORANGE} weight="regular" />
+          <Bell size={20} color="#1E232C" weight="regular" />
           <View style={styles.notificationDot} />
         </Pressable>
 
@@ -98,7 +95,7 @@ const Header: React.FC = () => {
             styles.profileButton,
             pressed && styles.pressed,
           ]}>
-          <User size={22} color={DARK_ORANGE} weight="fill" />
+          <User size={20} color={ORANGE} weight="fill" />
         </Pressable>
       </View>
     </Animated.View>
@@ -110,86 +107,15 @@ export default Header;
 const styles = StyleSheet.create({
   header: {
     width: '100%',
-    minHeight: 82,
-
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-
-    paddingHorizontal: 15,
-    paddingTop: 10,
-    paddingBottom: 17,
-
-    backgroundColor: LIGHT_ORANGE,
-
-    overflow: 'hidden',
-
-    // Soft floating-card feel
-    borderBottomLeftRadius: 24,
-    borderBottomRightRadius: 24,
-
-    shadowColor: '#D96A24',
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.07,
-    shadowRadius: 10,
-    elevation: 3,
-  },
-
-  /* ---------------------------------- */
-  /* CURVED BOTTOM                      */
-  /* ---------------------------------- */
-
-  bottomCurve: {
-    position: 'absolute',
-
-    left: -25,
-    right: -25,
-    bottom: -42,
-
-    height: 72,
-
-    borderRadius: 50,
-
+    paddingHorizontal: 18,
+    paddingTop: 12,
+    paddingBottom: 12,
     backgroundColor: '#FFFFFF',
-
-    opacity: 0.75,
-  },
-
-  /* ---------------------------------- */
-  /* DECORATION                         */
-  /* ---------------------------------- */
-
-  decorativeCircle: {
-    position: 'absolute',
-
-    width: 105,
-    height: 105,
-
-    borderRadius: 53,
-
-    backgroundColor: '#FFE8D5',
-
-    top: -62,
-    right: 60,
-
-    opacity: 0.7,
-  },
-
-  decorativeDot: {
-    position: 'absolute',
-
-    width: 9,
-    height: 9,
-
-    borderRadius: 5,
-
-    backgroundColor: '#FFD2B1',
-
-    right: 128,
-    bottom: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F3F4F6',
   },
 
   /* ---------------------------------- */
@@ -199,39 +125,21 @@ const styles = StyleSheet.create({
   locationSection: {
     flex: 1,
     minWidth: 0,
-
     flexDirection: 'row',
     alignItems: 'center',
-
-    marginRight: 10,
-
-    zIndex: 2,
+    marginRight: 12,
   },
 
   locationIcon: {
-    width: 37,
-    height: 37,
-
+    width: 40,
+    height: 40,
     borderRadius: 14,
-
     alignItems: 'center',
     justifyContent: 'center',
-
-    backgroundColor: '#FFFFFF',
-
+    backgroundColor: LIGHT_ORANGE,
+    marginRight: 10,
     borderWidth: 1,
-    borderColor: '#FFE1CA',
-
-    marginRight: 9,
-
-    shadowColor: '#D96A24',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.06,
-    shadowRadius: 5,
-    elevation: 1,
+    borderColor: '#FFE2D1',
   },
 
   locationTextBlock: {
@@ -239,24 +147,34 @@ const styles = StyleSheet.create({
     minWidth: 0,
   },
 
+  labelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+
   deliverLabel: {
-    fontSize: 9,
-    lineHeight: 13,
-
-    color: '#A66A42',
-
+    fontSize: 10,
+    lineHeight: 14,
+    color: '#9CA3AF',
     fontWeight: '800',
-
     letterSpacing: 0.8,
   },
 
+  locationRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 2,
+  },
+
   location: {
-    fontSize: 13,
-    lineHeight: 18,
+    fontSize: 15,
+    lineHeight: 20,
+    color: '#1E232C',
+    fontWeight: '800',
+  },
 
-    color: '#3D3028',
-
-    fontWeight: '700',
+  caretIcon: {
+    marginLeft: 4,
   },
 
   /* ---------------------------------- */
@@ -266,84 +184,50 @@ const styles = StyleSheet.create({
   actions: {
     flexDirection: 'row',
     alignItems: 'center',
-
-    gap: 8,
-
-    zIndex: 2,
+    gap: 10,
   },
 
   actionButton: {
     width: 40,
     height: 40,
-
     alignItems: 'center',
     justifyContent: 'center',
-
-    borderRadius: 14,
-
+    borderRadius: 20,
     backgroundColor: '#FFFFFF',
-
     borderWidth: 1,
-    borderColor: '#FFE3D0',
-
-    shadowColor: '#D96A24',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
+    borderColor: '#E5E7EB',
+    shadowColor: '#000000',
+    shadowOffset: {width: 0, height: 1},
     shadowOpacity: 0.05,
-    shadowRadius: 5,
-    elevation: 1,
+    shadowRadius: 3,
+    elevation: 2,
   },
 
   notificationDot: {
     position: 'absolute',
-
-    top: 7,
-    right: 7,
-
+    top: 8,
+    right: 8,
     width: 7,
     height: 7,
-
     borderRadius: 4,
-
     backgroundColor: ORANGE,
-
-    borderWidth: 1,
+    borderWidth: 1.5,
     borderColor: '#FFFFFF',
   },
 
   profileButton: {
     width: 40,
     height: 40,
-
     alignItems: 'center',
     justifyContent: 'center',
-
-    borderRadius: 14,
-
-    backgroundColor: '#FFF0E3',
-
+    borderRadius: 20,
+    backgroundColor: LIGHT_ORANGE,
     borderWidth: 1,
-    borderColor: '#FFD9BC',
-
-    shadowColor: '#D96A24',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.05,
-    shadowRadius: 5,
-    elevation: 1,
+    borderColor: '#FFE2D1',
   },
 
   pressed: {
-    opacity: 0.7,
-
-    transform: [
-      {
-        scale: 0.96,
-      },
-    ],
+    opacity: 0.75,
+    transform: [{scale: 0.95}],
   },
 });

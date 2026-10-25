@@ -10,7 +10,8 @@ import {
 } from 'react-native';
 
 import {useNavigation} from '@react-navigation/native';
-import {ArrowLeft, CheckCircle} from 'phosphor-react-native';
+import {CheckCircle} from 'phosphor-react-native';
+import AppBackButton from '../../../components/buttons/AppBackButton';
 import {NativeStackNavigationProp} from '@react-navigation/native-stack';
 
 import {RootStackParamList} from '../../../navigation/AppNavigator';
@@ -56,24 +57,7 @@ const PaymentScreen: React.FC = () => {
         contentContainerStyle={styles.content}>
         <View style={{flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 16}}>
           {navigation.canGoBack() && (
-            <TouchableOpacity
-              activeOpacity={0.75}
-              onPress={() => navigation.goBack()}
-              style={{
-                width: 42,
-                height: 42,
-                borderRadius: 21,
-                backgroundColor: '#FFFFFF',
-                alignItems: 'center',
-                justifyContent: 'center',
-                shadowColor: '#000',
-                shadowOffset: {width: 0, height: 2},
-                shadowOpacity: 0.08,
-                shadowRadius: 4,
-                elevation: 3,
-              }}>
-              <ArrowLeft size={22} color="#1E232C" weight="bold" />
-            </TouchableOpacity>
+            <AppBackButton />
           )}
           <Text style={styles.heading}>
             Payment

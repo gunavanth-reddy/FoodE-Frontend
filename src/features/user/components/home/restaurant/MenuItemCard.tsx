@@ -102,7 +102,7 @@ const MenuItemCard: React.FC<MenuItemCardProps> = ({
           {item.name}
         </Text>
 
-        {/* Rating */}
+        {/* Rating and reviewer count */}
         <View style={styles.ratingRow}>
           <Star
             size={13}
@@ -115,12 +115,38 @@ const MenuItemCard: React.FC<MenuItemCardProps> = ({
               ? item.rating.toFixed(1)
               : 'New'}
           </Text>
+
+          <Text style={styles.reviewCount}>
+            ({Number(item.totalReviews ?? 0)})
+          </Text>
         </View>
 
-        {/* Price */}
-        <Text style={styles.price}>
-          ₹{item.price}
-        </Text>
+        {/* Price & Discount */}
+        <View style={styles.priceRow}>
+          {item.discountedPrice != null &&
+          Number(item.discountedPrice) > 0 &&
+          Number(item.discountedPrice) < item.price ? (
+            <>
+              <Text style={styles.price}>
+                ₹{Number(item.discountedPrice)}
+              </Text>
+              <Text style={styles.originalPrice}>
+                ₹{item.price}
+              </Text>
+              <View style={styles.discountBadge}>
+                <Text style={styles.discountBadgeText}>
+                  {Math.round(
+                    ((item.price - Number(item.discountedPrice)) /
+                      item.price) *
+                      100,
+                  )}% OFF
+                </Text>
+              </View>
+            </>
+          ) : (
+            <Text style={styles.price}>₹{item.price}</Text>
+          )}
+        </View>
 
         {/* Description */}
         {!!item.description && (
@@ -269,12 +295,46 @@ const styles = StyleSheet.create({
     marginLeft: 4,
   },
 
-  price: {
+  reviewCount: {
+    fontSize: 11,
+    fontWeight: '500',
+    color: COLORS.muted,
+    marginLeft: 4,
+  },
+
+  priceRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
     marginTop: 8,
-    fontSize: 17,
+    flexWrap: 'wrap',
+    gap: 6,
+  },
+
+  price: {
+    fontSize: 16,
     fontWeight: '900',
     color: COLORS.text,
     letterSpacing: -0.3,
+  },
+
+  originalPrice: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: COLORS.muted,
+    textDecorationLine: 'line-through',
+  },
+
+  discountBadge: {
+    backgroundColor: '#DCFCE7',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+
+  discountBadgeText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#15803D',
   },
 
   description: {

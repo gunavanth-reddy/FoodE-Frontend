@@ -12,7 +12,6 @@ import {
 import {useNavigation} from '@react-navigation/native';
 
 import {
-  ArrowLeft,
   MapPin,
   CheckCircle,
   NavigationArrow,
@@ -20,6 +19,7 @@ import {
   Info,
   ShieldCheck,
 } from 'phosphor-react-native';
+import AppBackButton from '../../../components/buttons/AppBackButton';
 
 const ORANGE = '#FF6B00';
 
@@ -45,12 +45,7 @@ const AddressScreen: React.FC = () => {
         <View style={styles.header}>
           <View style={{flexDirection: 'row', alignItems: 'center', gap: 12}}>
             {navigation.canGoBack() && (
-              <TouchableOpacity
-                activeOpacity={0.75}
-                onPress={() => navigation.goBack()}
-                style={styles.backButton}>
-                <ArrowLeft size={22} color="#1E232C" weight="bold" />
-              </TouchableOpacity>
+              <AppBackButton />
             )}
             <View>
               <Text style={styles.title}>Saved Addresses</Text>

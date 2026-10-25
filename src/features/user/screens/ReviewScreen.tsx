@@ -17,7 +17,8 @@ import {
 } from '@react-navigation/native-stack';
 
 import {RootStackParamList} from '../../../navigation/AppNavigator';
-import {ArrowLeft, ForkKnife} from 'phosphor-react-native';
+import {ForkKnife} from 'phosphor-react-native';
+import AppBackButton from '../../../components/buttons/AppBackButton';
 
 import {
   createReview,
@@ -95,7 +96,7 @@ const ReviewScreen: React.FC<Props> = ({
   const [
     restaurantRating,
     setRestaurantRating,
-  ] = useState(0);
+  ] = useState(Number(order.review?.rating) || 0);
 
   // ===================================================
   // FOOD RATINGS
@@ -113,7 +114,7 @@ const ReviewScreen: React.FC<Props> = ({
   const [
     comment,
     setComment,
-  ] = useState('');
+  ] = useState(order.review?.comment || '');
 
   // ===================================================
   // SUBMITTING
@@ -446,16 +447,7 @@ const ReviewScreen: React.FC<Props> = ({
 
         <View style={styles.header}>
 
-          <TouchableOpacity
-            activeOpacity={0.7}
-            onPress={() =>
-              navigation.goBack()
-            }
-            style={styles.backButton}>
-
-            <ArrowLeft size={22} color="#1E232C" weight="bold" />
-
-          </TouchableOpacity>
+          <AppBackButton />
 
           <Text style={styles.headerTitle}>
             Rate & Review

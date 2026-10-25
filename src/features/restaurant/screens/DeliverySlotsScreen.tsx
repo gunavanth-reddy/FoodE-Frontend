@@ -1,5 +1,4 @@
-
-import React, {useCallback, useEffect, useMemo, useState} from 'react';
+import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {
   ActivityIndicator,
   ScrollView,
@@ -10,7 +9,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import AppTextInput from "../../../components/inputs/AppTextInput";
+import AppTextInput from '../../../components/inputs/AppTextInput';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {
   CalendarBlank,
@@ -27,8 +26,8 @@ import {formatTime12} from '../../../utils/time';
 interface DeliverySlot {
   _id?: string;
   date: string;
-  startTime: string;
-  endTime: string;
+  startTime: string; // Stored in 24-hr "HH:mm"
+  endTime: string;   // Stored in 24-hr "HH:mm"
   durationMinutes: number;
   isActive: boolean;
   cutoffMinutes: number;
@@ -47,6 +46,14 @@ const todayDate = () => {
   const now = new Date();
   return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(
     now.getDate(),
+  )}`;
+};
+
+const tomorrowDate = () => {
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  return `${tomorrow.getFullYear()}-${pad(tomorrow.getMonth() + 1)}-${pad(
+    tomorrow.getDate(),
   )}`;
 };
 
@@ -81,14 +88,220 @@ const calculateDuration = (startTime: string, endTime: string) => {
   return start < 0 || end <= start ? 0 : end - start;
 };
 
-const createEmptySlot = (): DeliverySlot => ({
-  date: todayDate(),
+// =====================================================
+// 12-HOUR <-> 24-HOUR HELPERS FOR AM/PM SUPPORT
+// =====================================================
+
+const splitTo12Hour = (time24: string) => {
+  if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(time24)) {
+    return {hour: '12', minute: '00', period: 'PM' as 'AM' | 'PM'};
+  }
+  const [h, m] = time24.split(':').map(Number);
+  const period: 'AM' | 'PM' = h >= 12 ? 'PM' : 'AM';
+  const hour12 = h % 12 || 12;
+  return {
+    hour: String(hour12).padStart(2, '0'),
+    minute: String(m).padStart(2, '0'),
+    period,
+  };
+};
+
+const joinTo24Hour = (hour12Str: string, minuteStr: string, period: 'AM' | 'PM') => {
+  let h = Number(hour12Str) || 12;
+  h = Math.min(12, Math.max(1, h));
+  const m = Math.min(59, Math.max(0, Number(minuteStr) || 0));
+
+  if (period === 'AM') {
+    h = h === 12 ? 0 : h;
+  } else {
+    h = h === 12 ? 12 : h + 12;
+  }
+
+  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+};
+
+const createEmptySlot = (defaultDate = todayDate()): DeliverySlot => ({
+  date: defaultDate,
   startTime: '12:00',
-  endTime: '12:30',
-  durationMinutes: 30,
+  endTime: '13:00',
+  durationMinutes: 60,
   isActive: true,
   cutoffMinutes: 10,
 });
+
+// =====================================================
+// TIME FIELD WITH AM / PM TOGGLE
+// =====================================================
+
+interface TimeField12Props {
+  label: string;
+  value24: string;
+  onChange24: (value24: string) => void;
+}
+
+const TimeField12: React.FC<TimeField12Props> = ({
+  label,
+  value24,
+  onChange24,
+}) => {
+  const parts = useMemo(() => splitTo12Hour(value24), [value24]);
+  const [hour, setHour] = useState(parts.hour);
+  const [minute, setMinute] = useState(parts.minute);
+  const [period, setPeriod] = useState<'AM' | 'PM'>(parts.period);
+  const lastEmitted24Ref = useRef<string | null>(null);
+
+  useEffect(() => {
+    // Only synchronize from external prop changes, never overwrite the owner's active typing
+    if (value24 === lastEmitted24Ref.current) {
+      return;
+    }
+    setHour(parts.hour);
+    setMinute(parts.minute);
+    setPeriod(parts.period);
+  }, [value24, parts]);
+
+  const handleHourChange = (text: string) => {
+    let clean = text.replace(/\D/g, '').slice(0, 2);
+    if (clean !== '' && Number(clean) > 12) {
+      clean = '12';
+    }
+    setHour(clean);
+    const new24 = joinTo24Hour(clean || '12', minute || '00', period);
+    lastEmitted24Ref.current = new24;
+    onChange24(new24);
+  };
+
+  const handleHourBlur = () => {
+    if (hour === '' || Number(hour) === 0) {
+      setHour('12');
+      const new24 = joinTo24Hour('12', minute || '00', period);
+      lastEmitted24Ref.current = new24;
+      onChange24(new24);
+    } else if (hour.length === 1) {
+      const padded = hour.padStart(2, '0');
+      setHour(padded);
+      const new24 = joinTo24Hour(padded, minute || '00', period);
+      lastEmitted24Ref.current = new24;
+      onChange24(new24);
+    }
+  };
+
+  const handleMinuteChange = (text: string) => {
+    let clean = text.replace(/\D/g, '').slice(0, 2);
+    if (clean !== '' && Number(clean) > 59) {
+      clean = '59';
+    }
+    setMinute(clean);
+    const new24 = joinTo24Hour(hour || '12', clean || '00', period);
+    lastEmitted24Ref.current = new24;
+    onChange24(new24);
+  };
+
+  const handleMinuteBlur = () => {
+    if (minute === '') {
+      setMinute('00');
+      const new24 = joinTo24Hour(hour || '12', '00', period);
+      lastEmitted24Ref.current = new24;
+      onChange24(new24);
+    } else if (minute.length === 1) {
+      const padded = minute.padStart(2, '0');
+      setMinute(padded);
+      const new24 = joinTo24Hour(hour || '12', padded, period);
+      lastEmitted24Ref.current = new24;
+      onChange24(new24);
+    }
+  };
+
+  const handlePeriodChange = (newPeriod: 'AM' | 'PM') => {
+    setPeriod(newPeriod);
+    const new24 = joinTo24Hour(hour || '12', minute || '00', newPeriod);
+    lastEmitted24Ref.current = new24;
+    onChange24(new24);
+  };
+
+  return (
+    <View style={styles.timeField}>
+      <Text style={styles.label}>{label}</Text>
+
+      <View style={styles.timeInputContainer}>
+        {/* HOUR INPUT */}
+        <View style={styles.timeUnitBox}>
+          <AppTextInput
+            value={hour}
+            onChangeText={handleHourChange}
+            onBlur={handleHourBlur}
+            placeholder="12"
+            placeholderTextColor="#A0A4AC"
+            style={styles.timeUnitInput}
+            keyboardType="number-pad"
+            maxLength={2}
+            selectTextOnFocus
+          />
+        </View>
+
+        <Text style={styles.timeColon}>:</Text>
+
+        {/* MINUTE INPUT */}
+        <View style={styles.timeUnitBox}>
+          <AppTextInput
+            value={minute}
+            onChangeText={handleMinuteChange}
+            onBlur={handleMinuteBlur}
+            placeholder="00"
+            placeholderTextColor="#A0A4AC"
+            style={styles.timeUnitInput}
+            keyboardType="number-pad"
+            maxLength={2}
+            selectTextOnFocus
+          />
+        </View>
+
+        {/* AM / PM TOGGLE BUTTONS */}
+        <View style={styles.periodGroup}>
+          <TouchableOpacity
+            activeOpacity={0.7}
+            onPress={() => handlePeriodChange('AM')}
+            style={[
+              styles.periodButton,
+              period === 'AM' && styles.periodButtonActive,
+            ]}>
+            <Text
+              style={[
+                styles.periodText,
+                period === 'AM' && styles.periodTextActive,
+              ]}>
+              AM
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            activeOpacity={0.7}
+            onPress={() => handlePeriodChange('PM')}
+            style={[
+              styles.periodButton,
+              period === 'PM' && styles.periodButtonActive,
+            ]}>
+            <Text
+              style={[
+                styles.periodText,
+                period === 'PM' && styles.periodTextActive,
+              ]}>
+              PM
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+
+      <Text style={styles.timeHelper}>
+        {formatTime12(value24)}
+      </Text>
+    </View>
+  );
+};
+
+// =====================================================
+// SCREEN
+// =====================================================
 
 const DeliverySlotsScreen: React.FC = () => {
   const {token} = useAuth();
@@ -170,28 +383,28 @@ const DeliverySlotsScreen: React.FC = () => {
     );
   };
 
-  const updateStartTime = (index: number, value: string) => {
+  const updateStartTime = (index: number, new24: string) => {
     const slot = deliverySlots[index];
     if (!slot) return;
 
     updateSlot(index, {
-      startTime: value,
-      durationMinutes: calculateDuration(value, slot.endTime),
+      startTime: new24,
+      durationMinutes: calculateDuration(new24, slot.endTime),
     });
   };
 
-  const updateEndTime = (index: number, value: string) => {
+  const updateEndTime = (index: number, new24: string) => {
     const slot = deliverySlots[index];
     if (!slot) return;
 
     updateSlot(index, {
-      endTime: value,
-      durationMinutes: calculateDuration(slot.startTime, value),
+      endTime: new24,
+      durationMinutes: calculateDuration(slot.startTime, new24),
     });
   };
 
-  const addCustomSlot = () => {
-    setDeliverySlots(previous => [...previous, createEmptySlot()]);
+  const addCustomSlot = (date = todayDate()) => {
+    setDeliverySlots(previous => [...previous, createEmptySlot(date)]);
   };
 
   const removeSlot = (index: number) => {
@@ -232,7 +445,7 @@ const DeliverySlotsScreen: React.FC = () => {
       ) {
         FoodEAlert.alert(
           'Invalid Time',
-          'Use 24-hour time such as 09:00 or 18:30.',
+          'Ensure valid 12-hour times with AM/PM selected.',
         );
         return false;
       }
@@ -242,22 +455,21 @@ const DeliverySlotsScreen: React.FC = () => {
         slot.endTime,
       );
 
-      if (duration < 10) {
+      if (duration <= 0) {
         FoodEAlert.alert(
           'Invalid Time Range',
-          'The end time must be later than the start time, and the slot must be at least 10 minutes.',
+          'End time must be later than start time.',
         );
         return false;
       }
 
       if (
-        !Number.isInteger(Number(slot.cutoffMinutes)) ||
-        slot.cutoffMinutes < 0 ||
-        slot.cutoffMinutes >= duration
+        !Number.isFinite(Number(slot.cutoffMinutes)) ||
+        slot.cutoffMinutes < 0
       ) {
         FoodEAlert.alert(
           'Invalid Cutoff',
-          'Cutoff must be a whole number, at least 0 and less than the slot duration.',
+          'Cutoff must be 0 or a positive whole number.',
         );
         return false;
       }
@@ -284,7 +496,7 @@ const DeliverySlotsScreen: React.FC = () => {
             previous.endTime,
           )} overlaps with ${formatTime12(
             current.startTime,
-          )}–${formatTime12(current.endTime)}.`,
+          )}–${formatTime12(current.endTime)} on ${current.date}.`,
         );
         return false;
       }
@@ -307,14 +519,12 @@ const DeliverySlotsScreen: React.FC = () => {
     try {
       setSaving(true);
 
-      // Fetch the authoritative server schedule before applying changes.
       const existingData = await apiRequest('/delivery-slots/my');
       const existingSlots = existingData.deliverySlots || [];
       const localIds = new Set(
         deliverySlots.filter(slot => slot._id).map(slot => slot._id),
       );
 
-      // Update existing slots, rather than deleting and recreating them.
       for (const slot of deliverySlots) {
         const payload = {
           date: slot.date,
@@ -334,15 +544,11 @@ const DeliverySlotsScreen: React.FC = () => {
             'PUT',
             payload,
           );
-        } else if (slot.isActive) {
-          // The create endpoint creates active slots.
+        } else {
           await apiRequest('/delivery-slots', 'POST', payload);
         }
-        // New inactive drafts are not sent to the server.
       }
 
-      // Slots removed from the editor are disabled on the server,
-      // preserving their records in case orders reference them.
       for (const oldSlot of existingSlots) {
         if (oldSlot._id && !localIds.has(oldSlot._id)) {
           await apiRequest(
@@ -357,7 +563,7 @@ const DeliverySlotsScreen: React.FC = () => {
 
       FoodEAlert.alert(
         'Schedule Saved',
-        'Your delivery schedule has been updated.',
+        'Your delivery slots have been updated successfully.',
       );
     } catch (error: any) {
       FoodEAlert.alert(
@@ -375,6 +581,12 @@ const DeliverySlotsScreen: React.FC = () => {
     () => deliverySlots.filter(slot => slot.isActive).length,
     [deliverySlots],
   );
+
+  const getSlotDateLabel = (dateStr: string) => {
+    if (dateStr === todayDate()) return 'Today';
+    if (dateStr === tomorrowDate()) return 'Tomorrow';
+    return dateStr;
+  };
 
   if (loading) {
     return (
@@ -394,20 +606,76 @@ const DeliverySlotsScreen: React.FC = () => {
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled">
+        {/* HEADER */}
+        <View style={styles.header}>
+          <View style={styles.headerIcon}>
+            <Clock size={28} color="#FF7A00" weight="duotone" />
+          </View>
+          <View style={styles.headerText}>
+            <Text style={styles.eyebrow}>SCHEDULE MANAGEMENT</Text>
+            <Text style={styles.title}>Delivery Slots</Text>
+            <Text style={styles.subtitle}>
+              Configure Today & Tomorrow delivery slots with AM/PM times.
+            </Text>
+          </View>
+        </View>
+
+        {/* QUICK ADD BUTTONS */}
+        <View style={styles.quickAddRow}>
+          <TouchableOpacity
+            activeOpacity={0.8}
+            onPress={() => addCustomSlot(todayDate())}
+            style={styles.quickAddPill}>
+            <Plus size={15} color="#FF7A00" weight="bold" />
+            <Text style={styles.quickAddText}>Add for Today</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            activeOpacity={0.8}
+            onPress={() => addCustomSlot(tomorrowDate())}
+            style={[styles.quickAddPill, styles.quickAddPillTomorrow]}>
+            <Plus size={15} color="#2563EB" weight="bold" />
+            <Text style={[styles.quickAddText, {color: '#2563EB'}]}>
+              Add for Tomorrow
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* SLOTS LIST */}
         {deliverySlots.map((slot, index) => {
           const duration = calculateDuration(
             slot.startTime,
             slot.endTime,
           );
+          const isToday = slot.date === todayDate();
+          const isTomorrow = slot.date === tomorrowDate();
 
           return (
             <View key={slot._id || `new-${index}`} style={styles.slotCard}>
+              {/* TOP HEADER */}
               <View style={styles.slotHeader}>
                 <View style={styles.slotTitleWrap}>
-                  <Text style={styles.slotTitle}>Slot {index + 1}</Text>
+                  <View style={styles.slotTitleRow}>
+                    <Text style={styles.slotTitle}>Slot {index + 1}</Text>
+                    <View
+                      style={[
+                        styles.dateTag,
+                        isToday && styles.dateTagToday,
+                        isTomorrow && styles.dateTagTomorrow,
+                      ]}>
+                      <Text
+                        style={[
+                          styles.dateTagText,
+                          isToday && styles.dateTagTextToday,
+                          isTomorrow && styles.dateTagTextTomorrow,
+                        ]}>
+                        {getSlotDateLabel(slot.date)}
+                      </Text>
+                    </View>
+                  </View>
+
                   <Text style={styles.slotPreview}>
-                    {formatTime12(slot.startTime)} –{' '}
-                    {formatTime12(slot.endTime)}
+                    {formatTime12(slot.startTime)} – {formatTime12(slot.endTime)}
                   </Text>
                 </View>
 
@@ -421,60 +689,74 @@ const DeliverySlotsScreen: React.FC = () => {
                 />
               </View>
 
-              <Text style={styles.label}>Date</Text>
-              <View style={styles.inputRow}>
-                <CalendarBlank size={18} color="#FF7A00" />
-                <AppTextInput
-                  value={slot.date}
-                  onChangeText={value => updateSlot(index, {date: value})}
-                  placeholder="YYYY-MM-DD"
-                  placeholderTextColor="#A0A4AC"
-                  style={styles.input}
-                  autoCapitalize="none"
-                  maxLength={10}
+              {/* DATE SELECTOR (TODAY / TOMORROW / CUSTOM) */}
+              <Text style={styles.label}>Scheduled Date</Text>
+              <View style={styles.dateSelectorRow}>
+                <TouchableOpacity
+                  activeOpacity={0.7}
+                  onPress={() => updateSlot(index, {date: todayDate()})}
+                  style={[
+                    styles.dateOptionPill,
+                    isToday && styles.dateOptionPillActive,
+                  ]}>
+                  <Text
+                    style={[
+                      styles.dateOptionText,
+                      isToday && styles.dateOptionTextActive,
+                    ]}>
+                    Today
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  activeOpacity={0.7}
+                  onPress={() => updateSlot(index, {date: tomorrowDate()})}
+                  style={[
+                    styles.dateOptionPill,
+                    isTomorrow && styles.dateOptionPillActiveTomorrow,
+                  ]}>
+                  <Text
+                    style={[
+                      styles.dateOptionText,
+                      isTomorrow && styles.dateOptionTextActiveTomorrow,
+                    ]}>
+                    Tomorrow
+                  </Text>
+                </TouchableOpacity>
+
+                <View style={styles.dateInputWrap}>
+                  <CalendarBlank size={16} color="#FF7A00" />
+                  <AppTextInput
+                    value={slot.date}
+                    onChangeText={value => updateSlot(index, {date: value})}
+                    placeholder="YYYY-MM-DD"
+                    placeholderTextColor="#A0A4AC"
+                    style={styles.customDateInput}
+                    autoCapitalize="none"
+                    maxLength={10}
+                  />
+                </View>
+              </View>
+
+              {/* TIME FIELDS WITH AM / PM SELECTOR */}
+              <View style={styles.timeFieldsRow}>
+                <TimeField12
+                  label="Start Time"
+                  value24={slot.startTime}
+                  onChange24={new24 => updateStartTime(index, new24)}
+                />
+
+                <TimeField12
+                  label="End Time"
+                  value24={slot.endTime}
+                  onChange24={new24 => updateEndTime(index, new24)}
                 />
               </View>
-              <Text style={styles.helper}>Format: YYYY-MM-DD</Text>
 
-              <View style={styles.timeFieldsRow}>
-                <View style={styles.timeField}>
-                  <Text style={styles.label}>Start time</Text>
-                  <View style={[styles.inputRow, styles.timeInputRow]}>
-                    <Clock size={18} color="#FF7A00" />
-                    <AppTextInput
-                      value={slot.startTime}
-                      onChangeText={value => updateStartTime(index, value)}
-                      placeholder="09:00"
-                      placeholderTextColor="#A0A4AC"
-                      style={[styles.input, styles.timeInput]}
-                      keyboardType="numbers-and-punctuation"
-                      maxLength={5}
-                    />
-                  </View>
-                  <Text style={styles.timeHelper}>{formatTime12(slot.startTime)}</Text>
-                </View>
-
-                <View style={styles.timeField}>
-                  <Text style={styles.label}>End time</Text>
-                  <View style={[styles.inputRow, styles.timeInputRow]}>
-                    <Clock size={18} color="#FF7A00" />
-                    <AppTextInput
-                      value={slot.endTime}
-                      onChangeText={value => updateEndTime(index, value)}
-                      placeholder="11:00"
-                      placeholderTextColor="#A0A4AC"
-                      style={[styles.input, styles.timeInput]}
-                      keyboardType="numbers-and-punctuation"
-                      maxLength={5}
-                    />
-                  </View>
-                  <Text style={styles.timeHelper}>{formatTime12(slot.endTime)}</Text>
-                </View>
-              </View>
-
+              {/* DURATION CARD */}
               <View style={styles.durationCard}>
                 <View>
-                  <Text style={styles.durationLabel}>Slot duration</Text>
+                  <Text style={styles.durationLabel}>Slot Duration</Text>
                   <Text style={styles.durationHint}>
                     Calculated automatically
                   </Text>
@@ -484,9 +766,10 @@ const DeliverySlotsScreen: React.FC = () => {
                 </Text>
               </View>
 
+              {/* CUTOFF ROW */}
               <View style={styles.cutoffRow}>
                 <View style={styles.cutoffText}>
-                  <Text style={styles.cutoffLabel}>Booking closes</Text>
+                  <Text style={styles.cutoffLabel}>Booking Closes</Text>
                   <Text style={styles.cutoffHint}>
                     Minutes before the slot starts
                   </Text>
@@ -508,34 +791,38 @@ const DeliverySlotsScreen: React.FC = () => {
                 <Text style={styles.cutoffUnit}>min</Text>
               </View>
 
+              {/* REMOVE BUTTON */}
               <TouchableOpacity
                 activeOpacity={0.8}
                 style={styles.deleteButton}
                 onPress={() => removeSlot(index)}>
-                <Trash size={18} color="#DC2626" />
-                <Text style={styles.deleteText}>Remove from schedule</Text>
+                <Trash size={16} color="#DC2626" />
+                <Text style={styles.deleteText}>Remove Slot</Text>
               </TouchableOpacity>
             </View>
           );
         })}
 
+        {/* ADD SLOT BUTTON */}
         <TouchableOpacity
           activeOpacity={0.86}
           style={styles.addButton}
-          onPress={addCustomSlot}>
-          <Plus size={21} color="#FF7A00" weight="bold" />
-          <Text style={styles.addText}>Add another slot</Text>
+          onPress={() => addCustomSlot()}>
+          <Plus size={20} color="#FF7A00" weight="bold" />
+          <Text style={styles.addText}>Add another delivery slot</Text>
         </TouchableOpacity>
 
+        {/* FOOTER INFO */}
         <View style={styles.footerCard}>
           <Text style={styles.footerTitle}>
-            {activeCount} active slot{activeCount === 1 ? '' : 's'}
+            {activeCount} active slot{activeCount === 1 ? '' : 's'} configured
           </Text>
           <Text style={styles.footerText}>
-            Customers can book active slots for the dates and times saved here.
+            Customers can book active slots for Today and Tomorrow with the AM/PM times configured above.
           </Text>
         </View>
 
+        {/* SAVE BUTTON */}
         <TouchableOpacity
           activeOpacity={0.88}
           disabled={saving}
@@ -544,7 +831,7 @@ const DeliverySlotsScreen: React.FC = () => {
           {saving ? (
             <ActivityIndicator color="#FFFFFF" />
           ) : (
-            <Text style={styles.saveText}>Save delivery schedule</Text>
+            <Text style={styles.saveText}>Save Delivery Schedule</Text>
           )}
         </TouchableOpacity>
       </ScrollView>
@@ -571,22 +858,22 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   content: {
-    padding: 18,
+    padding: 16,
     paddingBottom: 40,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 18,
+    marginBottom: 16,
   },
   headerIcon: {
-    width: 54,
-    height: 54,
-    borderRadius: 18,
+    width: 50,
+    height: 50,
+    borderRadius: 16,
     backgroundColor: '#FFF0E2',
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 13,
+    marginRight: 12,
   },
   headerText: {
     flex: 1,
@@ -598,43 +885,59 @@ const styles = StyleSheet.create({
     color: '#FF7A00',
   },
   title: {
-    fontSize: 28,
+    fontSize: 24,
     fontWeight: '900',
     color: '#17171B',
     marginTop: 2,
   },
   subtitle: {
     fontSize: 12,
-    lineHeight: 18,
+    lineHeight: 17,
     color: '#7B8089',
-    marginTop: 3,
+    marginTop: 2,
   },
-  infoCard: {
+
+  // QUICK ADD
+  quickAddRow: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
-    backgroundColor: '#EFFBF2',
-    borderRadius: 16,
-    padding: 14,
+    gap: 10,
     marginBottom: 14,
   },
-  infoText: {
+  quickAddPill: {
     flex: 1,
-    color: '#166534',
-    fontSize: 12,
-    lineHeight: 18,
-    fontWeight: '600',
-    marginLeft: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FFF2E6',
+    borderWidth: 1,
+    borderColor: '#FFE0C2',
+    paddingVertical: 10,
+    borderRadius: 12,
+    gap: 6,
   },
+  quickAddPillTomorrow: {
+    backgroundColor: '#EFF6FF',
+    borderColor: '#BFDBFE',
+  },
+  quickAddText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#FF7A00',
+  },
+
+  // SLOT CARD
   slotCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 22,
-    padding: 17,
+    borderRadius: 20,
+    padding: 16,
     marginBottom: 14,
     shadowColor: '#000000',
     shadowOpacity: 0.045,
-    shadowRadius: 12,
-    shadowOffset: {width: 0, height: 4},
+    shadowRadius: 10,
+    shadowOffset: {width: 0, height: 3},
     elevation: 2,
+    borderWidth: 1,
+    borderColor: '#ECECEC',
   },
   slotHeader: {
     flexDirection: 'row',
@@ -645,73 +948,181 @@ const styles = StyleSheet.create({
   slotTitleWrap: {
     flex: 1,
   },
+  slotTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
   slotTitle: {
     fontSize: 16,
     fontWeight: '900',
     color: '#17171B',
   },
+  dateTag: {
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 6,
+    backgroundColor: '#F3F4F6',
+  },
+  dateTagToday: {
+    backgroundColor: '#FFF2E6',
+  },
+  dateTagTomorrow: {
+    backgroundColor: '#EFF6FF',
+  },
+  dateTagText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#6B7280',
+  },
+  dateTagTextToday: {
+    color: '#FF7A00',
+  },
+  dateTagTextTomorrow: {
+    color: '#2563EB',
+  },
   slotPreview: {
     marginTop: 3,
     color: '#FF7A00',
     fontSize: 12,
-    fontWeight: '800',
+    fontWeight: '700',
   },
   label: {
     fontSize: 11,
     fontWeight: '800',
     color: '#6B7280',
-    marginBottom: 7,
+    marginBottom: 6,
     marginTop: 10,
   },
-  inputRow: {
-    minHeight: 48,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    backgroundColor: '#FAFAFB',
+
+  // DATE SELECTOR
+  dateSelectorRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 13,
+    gap: 8,
+    marginBottom: 6,
   },
+  dateOptionPill: {
+    paddingHorizontal: 12,
+    paddingVertical: 9,
+    borderRadius: 10,
+    backgroundColor: '#F3F4F6',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  dateOptionPillActive: {
+    backgroundColor: '#FF7A00',
+    borderColor: '#FF7A00',
+  },
+  dateOptionPillActiveTomorrow: {
+    backgroundColor: '#2563EB',
+    borderColor: '#2563EB',
+  },
+  dateOptionText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#4B5563',
+  },
+  dateOptionTextActive: {
+    color: '#FFFFFF',
+  },
+  dateOptionTextActiveTomorrow: {
+    color: '#FFFFFF',
+  },
+  dateInputWrap: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FAFAFB',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    borderRadius: 10,
+    paddingHorizontal: 8,
+  },
+  customDateInput: {
+    flex: 1,
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#17171B',
+    paddingVertical: 7,
+    paddingHorizontal: 6,
+  },
+
+  // TIME FIELDS & AM/PM
   timeFieldsRow: {
     flexDirection: 'row',
-    gap: 10,
+    gap: 12,
+    marginTop: 4,
   },
   timeField: {
     flex: 1,
     minWidth: 0,
   },
-  timeInputRow: {
-    paddingHorizontal: 11,
+  timeInputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FAFAFB',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    padding: 4,
   },
-  timeInput: {
-    paddingHorizontal: 8,
+  timeUnitBox: {
+    width: 32,
+    height: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  input: {
-    flex: 1,
-    color: '#17171B',
+  timeUnitInput: {
+    width: '100%',
+    textAlign: 'center',
     fontSize: 14,
-    fontWeight: '700',
-    paddingHorizontal: 9,
-    paddingVertical: 11,
+    fontWeight: '800',
+    color: '#17171B',
+    padding: 0,
   },
-  helper: {
-    fontSize: 9,
-    color: '#8A8F98',
-    fontWeight: '700',
+  timeColon: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#9CA3AF',
+    marginHorizontal: 1,
+  },
+  periodGroup: {
+    flexDirection: 'row',
+    marginLeft: 'auto',
+    backgroundColor: '#E5E7EB',
+    borderRadius: 8,
+    padding: 2,
+    gap: 2,
+  },
+  periodButton: {
+    paddingHorizontal: 7,
+    paddingVertical: 4,
+    borderRadius: 6,
+  },
+  periodButtonActive: {
+    backgroundColor: '#FF7A00',
+  },
+  periodText: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#4B5563',
+  },
+  periodTextActive: {
+    color: '#FFFFFF',
   },
   timeHelper: {
     marginTop: 4,
-    marginLeft: 2,
     fontSize: 10,
-    lineHeight: 13,
     color: '#8A8F98',
     fontWeight: '700',
   },
+
+  // DURATION
   durationCard: {
-    marginTop: 14,
-    padding: 13,
-    borderRadius: 15,
+    marginTop: 12,
+    padding: 11,
+    borderRadius: 12,
     backgroundColor: '#FFF5EA',
     borderWidth: 1,
     borderColor: '#FFE0C2',
@@ -721,24 +1132,26 @@ const styles = StyleSheet.create({
   },
   durationLabel: {
     fontSize: 12,
-    fontWeight: '900',
+    fontWeight: '800',
     color: '#17171B',
   },
   durationHint: {
     fontSize: 10,
     color: '#9A6B3A',
-    marginTop: 2,
+    marginTop: 1,
   },
   durationValue: {
-    fontSize: 17,
+    fontSize: 15,
     fontWeight: '900',
     color: '#FF7A00',
   },
+
+  // CUTOFF
   cutoffRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 14,
-    paddingTop: 13,
+    marginTop: 12,
+    paddingTop: 11,
     borderTopWidth: 1,
     borderTopColor: '#F0F1F3',
   },
@@ -753,40 +1166,45 @@ const styles = StyleSheet.create({
   cutoffHint: {
     fontSize: 10,
     color: '#9A9EA6',
-    marginTop: 2,
+    marginTop: 1,
   },
   cutoffInput: {
-    width: 55,
-    height: 38,
-    borderRadius: 11,
+    width: 50,
+    height: 34,
+    borderRadius: 8,
     backgroundColor: '#F5F6F8',
     textAlign: 'center',
     color: '#17171B',
     fontWeight: '800',
+    padding: 0,
   },
   cutoffUnit: {
     fontSize: 11,
     color: '#7B8089',
-    marginLeft: 7,
+    marginLeft: 6,
     fontWeight: '700',
   },
+
+  // REMOVE BUTTON
   deleteButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'flex-end',
     alignSelf: 'flex-end',
-    marginTop: 15,
-    paddingVertical: 6,
+    marginTop: 12,
+    paddingVertical: 4,
   },
   deleteText: {
     color: '#DC2626',
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '800',
-    marginLeft: 7,
+    marginLeft: 5,
   },
+
+  // ADD & SAVE BUTTONS
   addButton: {
-    height: 54,
-    borderRadius: 16,
+    height: 50,
+    borderRadius: 14,
     borderWidth: 1.5,
     borderColor: '#FFD0A8',
     borderStyle: 'dashed',
@@ -797,34 +1215,34 @@ const styles = StyleSheet.create({
   },
   addText: {
     color: '#FF7A00',
-    fontWeight: '900',
+    fontWeight: '800',
     fontSize: 13,
-    marginLeft: 8,
+    marginLeft: 6,
   },
   footerCard: {
-    marginTop: 14,
-    padding: 15,
-    borderRadius: 17,
+    marginTop: 12,
+    padding: 13,
+    borderRadius: 14,
     backgroundColor: '#FFF2E6',
   },
   footerTitle: {
-    fontSize: 14,
-    fontWeight: '900',
+    fontSize: 13,
+    fontWeight: '800',
     color: '#17171B',
   },
   footerText: {
-    fontSize: 12,
-    lineHeight: 18,
+    fontSize: 11,
+    lineHeight: 16,
     color: '#7B5B3B',
-    marginTop: 3,
+    marginTop: 2,
   },
   saveButton: {
-    height: 54,
-    borderRadius: 17,
+    height: 52,
+    borderRadius: 14,
     backgroundColor: '#FF7A00',
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 15,
+    marginTop: 14,
   },
   saveText: {
     color: '#FFFFFF',

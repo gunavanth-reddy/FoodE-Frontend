@@ -1,4 +1,5 @@
 export {default as AppButton} from './buttons/AppButton';
+export {default as AppBackButton} from './buttons/AppBackButton';
 export {default as AppInput} from './inputs/AppInput';
 export {default as AppText} from './typography/AppText';
 

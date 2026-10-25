@@ -14,10 +14,10 @@ import {
 import {SafeAreaView} from 'react-native-safe-area-context';
 
 import {
-  ArrowLeft,
   Heart,
   Compass,
 } from 'phosphor-react-native';
+import AppBackButton from '../../../components/buttons/AppBackButton';
 
 import {useFocusEffect, useNavigation} from '@react-navigation/native';
 
@@ -94,7 +94,7 @@ const FavoritesScreen = () => {
       const name = typeof restaurant === 'object' && restaurant
         ? restaurant.name || 'Restaurant'
         : 'Restaurant';
-      const group = groups.get(key) || {id: key, name, foods: []};
+      const group = groups.get(key) || {id: key, name, foods: [] as Food[]};
       group.foods.push(food);
       groups.set(key, group);
     });
@@ -200,14 +200,7 @@ const FavoritesScreen = () => {
         <View style={styles.header}>
           <View style={styles.headerTop}>
             {navigation.canGoBack() && (
-              <TouchableOpacity
-                accessibilityRole="button"
-                accessibilityLabel="Go back"
-                activeOpacity={0.75}
-                onPress={() => navigation.goBack()}
-                style={styles.backButton}>
-                <ArrowLeft size={22} color="#1E232C" weight="bold" />
-              </TouchableOpacity>
+              <AppBackButton />
             )}
 
             <View style={styles.headerTextContainer}>

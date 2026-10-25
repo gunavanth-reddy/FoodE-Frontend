@@ -5,7 +5,8 @@ import {
   Text,
   View,
 } from 'react-native';
-import {SquaresFour} from 'phosphor-react-native';
+import {CaretRight, SquaresFour} from 'phosphor-react-native';
+import {TouchableOpacity} from 'react-native';
 import {useNavigation} from '@react-navigation/native';
 import {NativeStackNavigationProp} from '@react-navigation/native-stack';
 
@@ -25,9 +26,18 @@ const CategorySection: React.FC = () => {
   const handleCategoryPress = (item: (typeof categories)[number]) => {
     setSelected(item.id);
 
+    if (item.id === 'all') {
+      navigation.navigate('AllCategories');
+      return;
+    }
+
     navigation.navigate('CategoryFoods', {
-      categoryName: item.id === 'all' ? 'All' : item.name,
+      categoryName: item.name,
     });
+  };
+
+  const handleSeeAllPress = () => {
+    navigation.navigate('AllCategories');
   };
 
   return (
@@ -47,6 +57,13 @@ const CategorySection: React.FC = () => {
           </View>
         </View>
 
+        <TouchableOpacity
+          activeOpacity={0.7}
+          onPress={handleSeeAllPress}
+          style={styles.seeAllButton}>
+          <Text style={styles.seeAllText}>See all</Text>
+          <CaretRight size={13} color="#FF6B00" weight="bold" />
+        </TouchableOpacity>
       </View>
 
       {/* Horizontally scrolling categories */}
@@ -130,5 +147,21 @@ const styles = StyleSheet.create({
     paddingRight: 24,
     paddingTop: 2,
     paddingBottom: 10,
+  },
+
+  seeAllButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 999,
+    backgroundColor: '#FFF2EA',
+    gap: 3,
+  },
+
+  seeAllText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#FF6B00',
   },
 });

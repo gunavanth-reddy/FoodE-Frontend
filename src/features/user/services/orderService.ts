@@ -143,6 +143,14 @@ export interface UserOrder {
 
   deliveredAt?: string | null;
 
+  review?: {
+    _id: string;
+    rating: number;
+    comment?: string;
+    response?: string;
+    createdAt?: string;
+  } | null;
+
   createdAt: string;
 
   updatedAt: string;

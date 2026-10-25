@@ -82,41 +82,25 @@ export default SearchBar;
 
 const styles = StyleSheet.create({
   container: {
-    paddingHorizontal: 20,
+    paddingHorizontal: 18,
     paddingTop: 8,
-    paddingBottom: 6,
-
-    backgroundColor: '#FFF8F2',
+    paddingBottom: 10,
+    backgroundColor: '#FFFFFF',
   },
 
   searchBox: {
-    height: 54,
-
+    height: 50,
     flexDirection: 'row',
     alignItems: 'center',
-
-    paddingHorizontal: 16,
-
-    backgroundColor: '#FFFFFF',
-
-    borderRadius: 18,
-
+    paddingHorizontal: 14,
+    backgroundColor: '#F9FAFB',
+    borderRadius: 14,
     borderWidth: 1,
-    borderColor: '#FFE4D0',
-
-    elevation: 3,
-
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.08,
-    shadowRadius: 6,
+    borderColor: '#E5E7EB',
   },
 
   searchBoxPressed: {
-    opacity: 0.85,
+    backgroundColor: '#F3F4F6',
   },
 
   searchIcon: {
@@ -125,24 +109,18 @@ const styles = StyleSheet.create({
 
   input: {
     flex: 1,
-
     paddingVertical: 0,
-
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '500',
-
-    color: '#222222',
+    color: '#1E232C',
   },
 
   voiceButton: {
-    width: 38,
-    height: 38,
-
-    borderRadius: 19,
-
+    width: 34,
+    height: 34,
+    borderRadius: 17,
     alignItems: 'center',
     justifyContent: 'center',
-
-    backgroundColor: '#F47721',
+    backgroundColor: '#FF7A00',
   },
 });

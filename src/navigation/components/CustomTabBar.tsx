@@ -22,7 +22,7 @@ import {useAuth} from '../../context/AuthContext';
 import {useCart} from '../../context/CartContext';
 
 const PRIMARY_ORANGE = '#FF6B00';
-const INACTIVE_COLOR = '#8A92A0';
+const INACTIVE_COLOR = '#8E8E93';
 
 const tabs = [
   {name: 'Home', label: 'Home', Icon: House},
@@ -50,32 +50,22 @@ const CustomTabBar: React.FC<BottomTabBarProps> = ({
     tabs.map(() => new Animated.Value(1)),
   ).current;
 
-  const tabBounces = useRef(
-    tabs.map(() => new Animated.Value(0)),
-  ).current;
   const activeTabIndex = tabs.findIndex(
     tab => tab.name === state.routes[state.index]?.name,
   );
 
-  // Trigger bounce on tab switch
+  // Smooth subtle scale on tab switch
   useEffect(() => {
-    if (activeTabIndex >= 0 && tabBounces[activeTabIndex]) {
-      tabBounces[activeTabIndex].setValue(0);
-      Animated.sequence([
-        Animated.timing(tabBounces[activeTabIndex], {
-          toValue: -6,
-          duration: 140,
-          useNativeDriver: true,
-        }),
-        Animated.spring(tabBounces[activeTabIndex], {
-          toValue: 0,
-          friction: 4,
-          tension: 70,
-          useNativeDriver: true,
-        }),
-      ]).start();
+    if (activeTabIndex >= 0 && pressScales[activeTabIndex]) {
+      pressScales[activeTabIndex].setValue(0.92);
+      Animated.spring(pressScales[activeTabIndex], {
+        toValue: 1,
+        friction: 6,
+        tension: 100,
+        useNativeDriver: true,
+      }).start();
     }
-  }, [activeTabIndex, tabBounces]);
+  }, [activeTabIndex, pressScales]);
 
   const handleTabPress = (tabName: string) => {
     if (
@@ -112,9 +102,9 @@ const CustomTabBar: React.FC<BottomTabBarProps> = ({
 
   const animatePress = (index: number, pressed: boolean) => {
     Animated.spring(pressScales[index], {
-      toValue: pressed ? 0.88 : 1,
-      speed: 24,
-      bounciness: 6,
+      toValue: pressed ? 0.94 : 1,
+      speed: 35,
+      bounciness: 2,
       useNativeDriver: true,
     }).start();
   };
@@ -156,10 +146,7 @@ const CustomTabBar: React.FC<BottomTabBarProps> = ({
                   styles.tabContent,
                   isCart && styles.cartContent,
                   {
-                    transform: [
-                      {scale: pressScales[index]},
-                      {translateY: tabBounces[index]},
-                    ],
+                    transform: [{scale: pressScales[index]}],
                   },
                 ]}>
                 {isCart ? (
@@ -178,13 +165,9 @@ const CustomTabBar: React.FC<BottomTabBarProps> = ({
                     )}
                   </View>
                 ) : (
-                  <View
-                    style={[
-                      styles.iconHolder,
-                      focused && styles.activeIconHolder,
-                    ]}>
+                  <View style={styles.iconHolder}>
                     <IconComponent
-                      size={isSmallScreen ? 20 : 22}
+                      size={isSmallScreen ? 21 : 23}
                       color={focused ? PRIMARY_ORANGE : INACTIVE_COLOR}
                       weight={focused ? 'fill' : 'regular'}
                     />
@@ -247,15 +230,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   iconHolder: {
-    width: 38,
-    height: 32,
-    borderRadius: 16,
+    width: 32,
+    height: 28,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: 'transparent',
-  },
-  activeIconHolder: {
-    backgroundColor: '#FFF2E6',
   },
   cartContent: {
     marginTop: -22,
@@ -298,13 +277,13 @@ const styles = StyleSheet.create({
   tabLabel: {
     marginTop: 2,
     fontSize: 10,
-    fontWeight: '600',
+    fontWeight: '500',
     color: INACTIVE_COLOR,
     textAlign: 'center',
   },
   activeTabLabel: {
     color: PRIMARY_ORANGE,
-    fontWeight: '800',
+    fontWeight: '700',
   },
   cartLabel: {
     marginTop: 3,
@@ -312,10 +291,10 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   activePillDot: {
-    width: 5,
-    height: 5,
-    borderRadius: 2.5,
+    width: 4,
+    height: 4,
+    borderRadius: 2,
     backgroundColor: PRIMARY_ORANGE,
-    marginTop: 2,
+    marginTop: 2.5,
   },
 });

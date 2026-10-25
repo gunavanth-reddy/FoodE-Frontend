@@ -13,12 +13,12 @@ import {
 } from 'react-native';
 
 import {
-  ArrowLeft,
   ForkKnife,
   Info,
   MapPin,
   Code,
 } from 'phosphor-react-native';
+import AppBackButton from '../../../components/buttons/AppBackButton';
 import {APP_VERSION} from '../../../config/version';
 
 const ORANGE = '#FF7A00';
@@ -46,12 +46,7 @@ const AboutScreen: React.FC = () => {
         {/* Header */}
         <View style={styles.header}>
           {navigation.canGoBack() && (
-            <TouchableOpacity
-              onPress={() => navigation.goBack()}
-              style={styles.backButton}
-              activeOpacity={0.7}>
-              <ArrowLeft size={22} color="#1E232C" weight="bold" />
-            </TouchableOpacity>
+            <AppBackButton />
           )}
 
           <View style={{flex: 1}}>

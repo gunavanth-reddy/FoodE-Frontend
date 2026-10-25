@@ -21,7 +21,6 @@ import {SafeAreaView} from 'react-native-safe-area-context';
 import {useFocusEffect} from '@react-navigation/native';
 
 import {
-  ArrowLeft,
   ForkKnife,
   Heart,
   MapPin,
@@ -29,6 +28,7 @@ import {
   Star,
   Warning,
 } from 'phosphor-react-native';
+import AppBackButton from '../../../components/buttons/AppBackButton';
 
 import type {NativeStackScreenProps} from '@react-navigation/native-stack';
 import type {RootStackParamList} from '../../../navigation/AppNavigator';
@@ -513,21 +513,14 @@ const RestaurantDetailsScreen: React.FC<Props> = ({
                   <View style={styles.decorativeDot} />
 
                   {/* Back button */}
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel="Go back"
-                    onPress={() => navigation.goBack()}
-                    style={({pressed}) => [
-                      styles.headerButton,
-                      styles.backButton,
-                      pressed && styles.pressed,
-                    ]}>
-                    <ArrowLeft
-                      size={21}
-                      color={COLORS.text}
-                      weight="bold"
-                    />
-                  </Pressable>
+                  <AppBackButton
+                    style={{
+                      position: 'absolute',
+                      top: 14,
+                      left: 16,
+                      zIndex: 10,
+                    }}
+                  />
 
                   {/* FoodE mark */}
                   <View style={styles.brandMark}>

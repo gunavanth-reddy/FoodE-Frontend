@@ -18,6 +18,7 @@ import AppTextInput from "../../../components/inputs/AppTextInput";
 
 import Ionicons from '@react-native-vector-icons/ionicons/static';
 import {useNavigation} from '@react-navigation/native';
+import AppBackButton from '../../../components/buttons/AppBackButton';
 
 import type {NativeStackNavigationProp} from '@react-navigation/native-stack';
 
@@ -161,20 +162,7 @@ const EditProfileScreen: React.FC = () => {
         ========================================= */}
 
         <View style={styles.header}>
-          <TouchableOpacity
-            style={styles.backButton}
-            onPress={() => navigation.goBack()}
-            activeOpacity={0.7}
-            accessibilityRole="button"
-            accessibilityLabel="Go back">
-
-            <Ionicons
-              name="arrow-back-outline"
-              size={24}
-              color={COLORS.textPrimary}
-            />
-
-          </TouchableOpacity>
+          <AppBackButton />
 
           <View style={styles.headerTextContainer}>
             <Text style={styles.headerTitle}>

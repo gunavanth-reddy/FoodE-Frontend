@@ -18,7 +18,15 @@ import {
 } from 'react-native';
 
 import {useNavigation} from '@react-navigation/native';
-import {ArrowLeft, Bicycle, Clock, MapPin, Money} from 'phosphor-react-native';
+import {
+  Bicycle,
+  CalendarBlank,
+  Clock,
+  MapPin,
+  Money,
+  Sparkle,
+} from 'phosphor-react-native';
+import AppBackButton from '../../../components/buttons/AppBackButton';
 
 import {
   NativeStackNavigationProp,
@@ -568,6 +576,54 @@ const CheckoutScreen = () => {
   ] = useState('');
   const [restaurantClosed, setRestaurantClosed] = useState(false);
 
+  const todayDateStr = useMemo(() => getCurrentIndiaDate(), []);
+  const tomorrowDateStr = useMemo(
+    () => addDaysToDate(todayDateStr, 1),
+    [todayDateStr],
+  );
+
+  const isTomorrowSlot = useCallback(
+    (slot: AvailableDeliverySlot | null): boolean => {
+      if (!slot) return false;
+      const today = getCurrentIndiaDate();
+      const date = slot.date || today;
+      return date > today;
+    },
+    [],
+  );
+
+  const isTomorrowSelected = useMemo(
+    () => isTomorrowSlot(selectedDeliverySlot),
+    [isTomorrowSlot, selectedDeliverySlot],
+  );
+
+  const [dateTab, setDateTab] = useState<'all' | 'today' | 'tomorrow'>('all');
+
+  const todaySlots = useMemo(
+    () => deliverySlots.filter(s => (s.date || todayDateStr) === todayDateStr),
+    [deliverySlots, todayDateStr],
+  );
+
+  const tomorrowSlots = useMemo(
+    () => deliverySlots.filter(s => (s.date || todayDateStr) > todayDateStr),
+    [deliverySlots, todayDateStr],
+  );
+
+  useEffect(() => {
+    if (deliverySlots.length === 0) return;
+    if (todaySlots.length === 0 && tomorrowSlots.length > 0) {
+      setDateTab('tomorrow');
+    } else if (todaySlots.length > 0 && tomorrowSlots.length === 0) {
+      setDateTab('today');
+    }
+  }, [deliverySlots, todaySlots.length, tomorrowSlots.length]);
+
+  const visibleSlots = useMemo(() => {
+    if (dateTab === 'today') return todaySlots;
+    if (dateTab === 'tomorrow') return tomorrowSlots;
+    return deliverySlots;
+  }, [dateTab, todaySlots, tomorrowSlots, deliverySlots]);
+
   // ===================================================
   // DELIVERY ADDRESS
   // ===================================================
@@ -1033,8 +1089,13 @@ const CheckoutScreen = () => {
   const getSlotLabel = (
     slot: AvailableDeliverySlot,
   ): string => {
-    const time = `${formatSlotTime(slot.startTime)} - ${formatSlotTime(slot.endTime)}`;
-    return slot.date ? `${slot.date} • ${time}` : time;
+    const time = `${formatSlotTime(slot.startTime)} – ${formatSlotTime(slot.endTime)}`;
+    if (!slot.date) return time;
+    const today = getCurrentIndiaDate();
+    const tomorrow = addDaysToDate(today, 1);
+    const datePrefix =
+      slot.date === today ? 'Today' : slot.date === tomorrow ? 'Tomorrow' : slot.date;
+    return `${datePrefix} • ${time}`;
   };
 
   // ===================================================
@@ -1442,14 +1503,7 @@ const CheckoutScreen = () => {
           style={styles.header}>
           <View style={{flexDirection: 'row', alignItems: 'center', gap: 12}}>
             {navigation.canGoBack() && (
-              <TouchableOpacity
-                accessibilityRole="button"
-                accessibilityLabel="Go back"
-                activeOpacity={0.75}
-                onPress={() => navigation.goBack()}
-                style={styles.backButton}>
-                <ArrowLeft size={22} color="#1E232C" weight="bold" />
-              </TouchableOpacity>
+              <AppBackButton />
             )}
             <View>
               <Text
@@ -1599,6 +1653,94 @@ const CheckoutScreen = () => {
             )}
           </View>
 
+          {/* DATE FILTER TABS */}
+          {deliverySlots.length > 0 && (todaySlots.length > 0 || tomorrowSlots.length > 0) && (
+            <View style={styles.dateTabsRow}>
+              {todaySlots.length > 0 && (
+                <TouchableOpacity
+                  activeOpacity={0.8}
+                  onPress={() => setDateTab('today')}
+                  style={[
+                    styles.dateTabPill,
+                    dateTab === 'today' && styles.dateTabPillActive,
+                  ]}>
+                  <Clock
+                    size={14}
+                    color={dateTab === 'today' ? '#FF7A00' : '#6B7280'}
+                    weight={dateTab === 'today' ? 'bold' : 'regular'}
+                  />
+                  <Text
+                    style={[
+                      styles.dateTabText,
+                      dateTab === 'today' && styles.dateTabTextActive,
+                    ]}>
+                    Today ({todaySlots.length})
+                  </Text>
+                </TouchableOpacity>
+              )}
+
+              {tomorrowSlots.length > 0 && (
+                <TouchableOpacity
+                  activeOpacity={0.8}
+                  onPress={() => setDateTab('tomorrow')}
+                  style={[
+                    styles.dateTabPill,
+                    styles.dateTabPillTomorrow,
+                    dateTab === 'tomorrow' && styles.dateTabPillActiveTomorrow,
+                  ]}>
+                  <Sparkle
+                    size={14}
+                    color={dateTab === 'tomorrow' ? '#7C3AED' : '#6D28D9'}
+                    weight="fill"
+                  />
+                  <Text
+                    style={[
+                      styles.dateTabText,
+                      styles.dateTabTextTomorrow,
+                      dateTab === 'tomorrow' && styles.dateTabTextActiveTomorrow,
+                    ]}>
+                    Tomorrow • Pre-Book ({tomorrowSlots.length})
+                  </Text>
+                </TouchableOpacity>
+              )}
+
+              {todaySlots.length > 0 && tomorrowSlots.length > 0 && (
+                <TouchableOpacity
+                  activeOpacity={0.8}
+                  onPress={() => setDateTab('all')}
+                  style={[
+                    styles.dateTabPill,
+                    dateTab === 'all' && styles.dateTabPillActiveNeutral,
+                  ]}>
+                  <Text
+                    style={[
+                      styles.dateTabText,
+                      dateTab === 'all' && styles.dateTabTextActiveNeutral,
+                    ]}>
+                    All ({deliverySlots.length})
+                  </Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          )}
+
+          {/* TODAY SLOTS CLOSED NOTICE */}
+          {todaySlots.length === 0 && tomorrowSlots.length > 0 && (
+            <View style={styles.preBookingNoticeCard}>
+              <View style={styles.preBookingNoticeIconWrap}>
+                <Sparkle size={18} color="#7C3AED" weight="fill" />
+              </View>
+              <View style={{flex: 1}}>
+                <Text style={styles.preBookingNoticeTitle}>
+                  Pre-Booking Available for Tomorrow
+                </Text>
+                <Text style={styles.preBookingNoticeText}>
+                  Today's delivery slots are closed. You can pre-book your order for delivery tomorrow!
+                </Text>
+              </View>
+            </View>
+          )}
+
           {/* LOADING */}
 
           {restaurantClosed ? (
@@ -1627,14 +1769,16 @@ const CheckoutScreen = () => {
                 delivery times...
               </Text>
             </View>
-          ) : deliverySlots.length >
+          ) : visibleSlots.length >
             0 ? (
             <View>
-              {deliverySlots.map(
+              {visibleSlots.map(
                 slot => {
                   const isSelected =
                     selectedDeliverySlot?._id ===
                     slot._id;
+
+                  const isTomorrow = isTomorrowSlot(slot);
 
                   const cutoffTime =
                     getSlotCutoffTime(
@@ -1646,8 +1790,11 @@ const CheckoutScreen = () => {
                       key={slot._id}
                       style={[
                         styles.slotCard,
+                        isTomorrow && styles.slotCardTomorrow,
                         isSelected &&
-                          styles.slotCardSelected,
+                          (isTomorrow
+                            ? styles.slotCardSelectedTomorrow
+                            : styles.slotCardSelected),
                       ]}
                       onPress={() =>
                         handleSelectDeliverySlot(
@@ -1656,10 +1803,23 @@ const CheckoutScreen = () => {
                       }>
 
                       <View
-                        style={
-                          styles.slotIcon
-                        }>
-                        <Bicycle size={20} color="#FF7A00" weight="duotone" />
+                        style={[
+                          styles.slotIcon,
+                          isTomorrow && styles.slotIconTomorrow,
+                        ]}>
+                        {isTomorrow ? (
+                          <CalendarBlank
+                            size={20}
+                            color="#7C3AED"
+                            weight="duotone"
+                          />
+                        ) : (
+                          <Bicycle
+                            size={20}
+                            color="#FF7A00"
+                            weight="duotone"
+                          />
+                        )}
                       </View>
 
                       <View
@@ -1667,22 +1827,36 @@ const CheckoutScreen = () => {
                           styles.slotInfo
                         }>
 
-                        <Text
-                          style={[
-                            styles.etaText,
-                            isSelected &&
-                              styles.etaTextSelected,
-                          ]}>
-                          {getEtaLabel(
-                            slot,
+                        <View style={styles.slotHeaderRow}>
+                          <Text
+                            style={[
+                              styles.etaText,
+                              isTomorrow && styles.etaTextTomorrow,
+                              isSelected &&
+                                (isTomorrow
+                                  ? styles.etaTextSelectedTomorrow
+                                  : styles.etaTextSelected),
+                            ]}>
+                            {isTomorrow ? 'Pre-Booking Slot' : getEtaLabel(slot)}
+                          </Text>
+
+                          {isTomorrow && (
+                            <View style={styles.preBookingBadge}>
+                              <Sparkle size={10} color="#7C3AED" weight="fill" />
+                              <Text style={styles.preBookingBadgeText}>
+                                PRE-BOOKING
+                              </Text>
+                            </View>
                           )}
-                        </Text>
+                        </View>
 
                         <Text
                           style={[
                             styles.slotTime,
                             isSelected &&
-                              styles.slotTimeSelected,
+                              (isTomorrow
+                                ? styles.slotTimeSelectedTomorrow
+                                : styles.slotTimeSelected),
                           ]}>
                           {getSlotLabel(
                             slot,
@@ -1690,27 +1864,31 @@ const CheckoutScreen = () => {
                         </Text>
 
                         <Text
-                          style={
-                            styles.slotAvailableText
-                          }>
-                          Book until{' '}
-                          {formatSlotTime(
-                            cutoffTime,
-                          )}
+                          style={[
+                            styles.slotAvailableText,
+                            isTomorrow && styles.slotAvailableTextTomorrow,
+                          ]}>
+                          {isTomorrow
+                            ? '⚡ Pre-book now • Delivered tomorrow'
+                            : `Book until ${formatSlotTime(cutoffTime)}`}
                         </Text>
                       </View>
 
                       <View
                         style={[
                           styles.slotRadio,
+                          isTomorrow && styles.slotRadioTomorrow,
                           isSelected &&
-                            styles.slotRadioSelected,
+                            (isTomorrow
+                              ? styles.slotRadioSelectedTomorrow
+                              : styles.slotRadioSelected),
                         ]}>
                         {isSelected && (
                           <View
-                            style={
-                              styles.slotRadioDot
-                            }
+                            style={[
+                              styles.slotRadioDot,
+                              isTomorrow && styles.slotRadioDotTomorrow,
+                            ]}
                           />
                         )}
                       </View>
@@ -1763,32 +1941,62 @@ const CheckoutScreen = () => {
             </View>
           )}
 
-          {/* SELECTED SLOT */}
+          {/* SELECTED SLOT OR PRE-BOOKING BANNER */}
 
           {selectedDeliverySlot && (
-            <View
-              style={
-                styles.selectedSlotBadge
-              }>
-              <Text
+            isTomorrowSelected ? (
+              <View style={styles.preBookingBanner}>
+                <View style={styles.preBookingBannerHeader}>
+                  <View style={styles.preBookingBannerIcon}>
+                    <CalendarBlank size={22} color="#7C3AED" weight="duotone" />
+                  </View>
+                  <View style={{flex: 1}}>
+                    <View style={styles.preBookingBannerTitleRow}>
+                      <Text style={styles.preBookingBannerTitle}>
+                        PRE-BOOKING FOR TOMORROW
+                      </Text>
+                      <View style={styles.preBookingLiveTag}>
+                        <Text style={styles.preBookingLiveTagText}>SCHEDULED</Text>
+                      </View>
+                    </View>
+                    <Text style={styles.preBookingBannerSlot}>
+                      Delivery Tomorrow: {formatSlotTime(selectedDeliverySlot.startTime)} – {formatSlotTime(selectedDeliverySlot.endTime)}
+                    </Text>
+                  </View>
+                </View>
+                <View style={styles.preBookingBannerDivider} />
+                <View style={styles.preBookingBannerFooter}>
+                  <Sparkle size={14} color="#7C3AED" weight="fill" />
+                  <Text style={styles.preBookingBannerFooterText}>
+                    The restaurant will prepare this fresh tomorrow on time for delivery.
+                  </Text>
+                </View>
+              </View>
+            ) : (
+              <View
                 style={
-                  styles.selectedSlotBadgeText
+                  styles.selectedSlotBadge
                 }>
-                ✓{' '}
-                {getEtaLabel(
-                  selectedDeliverySlot,
-                )}
-              </Text>
+                <Text
+                  style={
+                    styles.selectedSlotBadgeText
+                  }>
+                  ✓{' '}
+                  {getEtaLabel(
+                    selectedDeliverySlot,
+                  )}
+                </Text>
 
-              <Text
-                style={
-                  styles.selectedSlotTime
-                }>
-                {getSlotLabel(
-                  selectedDeliverySlot,
-                )}
-              </Text>
-            </View>
+                <Text
+                  style={
+                    styles.selectedSlotTime
+                  }>
+                  {getSlotLabel(
+                    selectedDeliverySlot,
+                  )}
+                </Text>
+              </View>
+            )
           )}
         </View>
 
@@ -2065,6 +2273,20 @@ const CheckoutScreen = () => {
 
       {/* FIXED BOTTOM SWIPE TO ORDER */}
       <View style={styles.fixedBottomContainer}>
+        {isTomorrowSelected && selectedDeliverySlot && (
+          <View style={styles.bottomPreBookingHighlight}>
+            <View style={styles.bottomPreBookingBadge}>
+              <Sparkle size={12} color="#7C3AED" weight="fill" />
+              <Text style={styles.bottomPreBookingBadgeText}>
+                PRE-BOOKING ORDER
+              </Text>
+            </View>
+            <Text style={styles.bottomPreBookingDateText} numberOfLines={1}>
+              Delivers Tomorrow ({formatSlotTime(selectedDeliverySlot.startTime)} – {formatSlotTime(selectedDeliverySlot.endTime)})
+            </Text>
+          </View>
+        )}
+
         <SwipeToOrder
           disabled={
             isPlacingOrder ||
@@ -2078,6 +2300,8 @@ const CheckoutScreen = () => {
               ? 'Restaurant Closed'
               : !selectedDeliverySlot
               ? 'Select Delivery Time'
+              : isTomorrowSelected
+              ? `Swipe to Pre-Book • ₹${grandTotal.toFixed(2)}`
               : `Swipe to Order • ₹${grandTotal.toFixed(2)}`
           }
           onSwipeComplete={handlePlaceOrder}
@@ -2444,6 +2668,290 @@ const styles =
       fontSize: 12,
       fontWeight: '600',
       color: '#5D765F',
+    },
+
+    // ================================================
+    // PRE-BOOKING HIGHLIGHT STYLES
+    // ================================================
+
+    dateTabsRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+      marginBottom: 12,
+      flexWrap: 'wrap',
+    },
+
+    dateTabPill: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+      paddingHorizontal: 13,
+      paddingVertical: 7,
+      borderRadius: 20,
+      backgroundColor: '#F3F4F6',
+      borderWidth: 1,
+      borderColor: '#E5E7EB',
+    },
+
+    dateTabPillActive: {
+      backgroundColor: '#FFF2EA',
+      borderColor: '#FF7A00',
+    },
+
+    dateTabPillTomorrow: {
+      backgroundColor: '#FAF5FF',
+      borderColor: '#E9D5FF',
+    },
+
+    dateTabPillActiveTomorrow: {
+      backgroundColor: '#EDE9FE',
+      borderColor: '#7C3AED',
+    },
+
+    dateTabPillActiveNeutral: {
+      backgroundColor: '#1E232C',
+      borderColor: '#1E232C',
+    },
+
+    dateTabText: {
+      fontSize: 12,
+      fontWeight: '600',
+      color: '#6B7280',
+    },
+
+    dateTabTextActive: {
+      color: '#FF7A00',
+      fontWeight: '700',
+    },
+
+    dateTabTextTomorrow: {
+      color: '#7C3AED',
+    },
+
+    dateTabTextActiveTomorrow: {
+      color: '#7C3AED',
+      fontWeight: '700',
+    },
+
+    dateTabTextActiveNeutral: {
+      color: '#FFFFFF',
+      fontWeight: '700',
+    },
+
+    preBookingNoticeCard: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 12,
+      backgroundColor: '#FAF5FF',
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: '#E9D5FF',
+      paddingHorizontal: 14,
+      paddingVertical: 10,
+      marginBottom: 12,
+    },
+
+    preBookingNoticeIconWrap: {
+      width: 32,
+      height: 32,
+      borderRadius: 16,
+      backgroundColor: '#EDE9FE',
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+
+    preBookingNoticeTitle: {
+      fontSize: 13,
+      fontWeight: '700',
+      color: '#6D28D9',
+    },
+
+    preBookingNoticeText: {
+      fontSize: 11,
+      color: '#7C3AED',
+      marginTop: 2,
+      lineHeight: 16,
+    },
+
+    slotHeaderRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginBottom: 3,
+    },
+
+    slotCardTomorrow: {
+      backgroundColor: '#FDFAFF',
+      borderColor: '#E9D5FF',
+    },
+
+    slotCardSelectedTomorrow: {
+      borderColor: '#7C3AED',
+      backgroundColor: '#FAF5FF',
+      borderWidth: 2,
+    },
+
+    slotIconTomorrow: {
+      backgroundColor: '#EDE9FE',
+    },
+
+    etaTextTomorrow: {
+      color: '#7C3AED',
+    },
+
+    etaTextSelectedTomorrow: {
+      color: '#7C3AED',
+    },
+
+    slotTimeSelectedTomorrow: {
+      color: '#7C3AED',
+    },
+
+    slotAvailableTextTomorrow: {
+      color: '#6D28D9',
+      fontWeight: '600',
+    },
+
+    slotRadioTomorrow: {
+      borderColor: '#DDD6FE',
+    },
+
+    slotRadioSelectedTomorrow: {
+      borderColor: '#7C3AED',
+    },
+
+    slotRadioDotTomorrow: {
+      backgroundColor: '#7C3AED',
+    },
+
+    preBookingBadge: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+      paddingHorizontal: 8,
+      paddingVertical: 3,
+      borderRadius: 12,
+      backgroundColor: '#EDE9FE',
+    },
+
+    preBookingBadgeText: {
+      fontSize: 10,
+      fontWeight: '800',
+      color: '#7C3AED',
+      letterSpacing: 0.5,
+    },
+
+    preBookingBanner: {
+      marginTop: 6,
+      borderRadius: 12,
+      backgroundColor: '#FAF5FF',
+      borderWidth: 1.5,
+      borderColor: '#C4B5FD',
+      padding: 14,
+    },
+
+    preBookingBannerHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 12,
+    },
+
+    preBookingBannerIcon: {
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      backgroundColor: '#EDE9FE',
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+
+    preBookingBannerTitleRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+    },
+
+    preBookingBannerTitle: {
+      fontSize: 12,
+      fontWeight: '800',
+      color: '#6D28D9',
+      letterSpacing: 0.5,
+    },
+
+    preBookingLiveTag: {
+      paddingHorizontal: 6,
+      paddingVertical: 2,
+      borderRadius: 6,
+      backgroundColor: '#7C3AED',
+    },
+
+    preBookingLiveTagText: {
+      fontSize: 9,
+      fontWeight: '800',
+      color: '#FFFFFF',
+    },
+
+    preBookingBannerSlot: {
+      fontSize: 13,
+      fontWeight: '700',
+      color: '#1F2937',
+      marginTop: 3,
+    },
+
+    preBookingBannerDivider: {
+      height: 1,
+      backgroundColor: '#E9D5FF',
+      marginVertical: 10,
+    },
+
+    preBookingBannerFooter: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+    },
+
+    preBookingBannerFooterText: {
+      fontSize: 11,
+      fontWeight: '500',
+      color: '#6D28D9',
+      flex: 1,
+    },
+
+    bottomPreBookingHighlight: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+      marginBottom: 10,
+      paddingHorizontal: 12,
+      paddingVertical: 7,
+      borderRadius: 8,
+      backgroundColor: '#FAF5FF',
+      borderWidth: 1,
+      borderColor: '#E9D5FF',
+    },
+
+    bottomPreBookingBadge: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+      paddingHorizontal: 7,
+      paddingVertical: 2,
+      borderRadius: 6,
+      backgroundColor: '#EDE9FE',
+    },
+
+    bottomPreBookingBadgeText: {
+      fontSize: 9,
+      fontWeight: '800',
+      color: '#7C3AED',
+    },
+
+    bottomPreBookingDateText: {
+      fontSize: 11,
+      fontWeight: '600',
+      color: '#4B5563',
+      flex: 1,
     },
 
     // ================================================

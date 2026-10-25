@@ -1,5 +1,4 @@
 import React, {useCallback, useRef, useState} from 'react';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   ActivityIndicator,
   Alert,
@@ -22,14 +21,16 @@ import {
 import {SafeAreaView} from 'react-native-safe-area-context';
 
 import {
-  ArrowLeft,
   Storefront,
   CalendarBlank,
   Star,
   CaretRight,
   Receipt,
   XCircle,
+  Bicycle,
+  ChatCircleDots,
 } from 'phosphor-react-native';
+import AppBackButton from '../../../components/buttons/AppBackButton';
 
 import {useAuth} from '../../../context/AuthContext';
 
@@ -44,6 +45,7 @@ import EmptyOrders from '../components/orders/EmptyOrders';
 import DateFilterCalendar, {
   getLocalDateKey,
 } from '../../../components/common/DateFilterCalendar';
+import {formatTime12} from '../../../utils/time';
 
 const ORANGE = '#FF6B00';
 
@@ -63,43 +65,33 @@ const uniqueOrdersById = <T extends {_id: string}>(
 const OrdersScreen: React.FC = () => {
   const navigation = useNavigation<any>();
 
-  const {token, isLoggedIn, user} = useAuth();
-
-  const {width, height} = useWindowDimensions();
+  const {token, isLoggedIn} = useAuth();
+  const {width} = useWindowDimensions();
 
   const isCompactWidth = width < 360;
-  const isShortScreen = height < 700;
+  const horizontalPadding = isCompactWidth ? 12 : 16;
 
-  const horizontalPadding =
-    isCompactWidth
-      ? 12
-      : width >= 600
-        ? 28
-        : 18;
+  // Requirement 4: Always default to today's date
+  const [selectedDate, setSelectedDate] = useState<string>(getLocalDateKey);
+  const selectedDateRef = useRef<string>(getLocalDateKey());
 
-  const cardPadding = isCompactWidth ? 12 : 16;
-
-  const [orders, setOrders] = useState<UserOrder[]>([]);
-  const [selectedDate, setSelectedDate] = useState(getLocalDateKey);
-  const selectedDateRef = useRef(selectedDate);
   const loadedPages = useRef(1);
   const loadingMoreRef = useRef(false);
   const loadRequestId = useRef(0);
+
+  const [orders, setOrders] = useState<UserOrder[]>([]);
   const [hasMore, setHasMore] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
-
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-
-  const [cancellingOrderId, setCancellingOrderId] =
-    useState<string | null>(null);
+  const [cancellingOrderId, setCancellingOrderId] = useState<string | null>(null);
 
   // =====================================================
   // LOAD ORDERS
   // =====================================================
 
   const loadOrders = useCallback(
-    async (showLoader = true, targetPageCount?: number) => {
+    async (showLoader = true, targetDate?: string, targetPage = 1) => {
       const requestId = ++loadRequestId.current;
 
       if (!isLoggedIn || !token) {
@@ -109,85 +101,31 @@ const OrdersScreen: React.FC = () => {
         return;
       }
 
+      const requestDate = targetDate || selectedDateRef.current;
+
       try {
         if (showLoader) {
           setLoading(true);
         }
 
-        const dateStorageKey =
-          `foode.customer-orders.date.${user?.id || 'account'}`;
-
-        const savedDate = await AsyncStorage.getItem(dateStorageKey);
-
-        if (savedDate && targetPageCount === undefined) {
-          selectedDateRef.current = savedDate;
-          setSelectedDate(savedDate);
-        }
-
-        const requestDate = selectedDateRef.current;
-
-        const storageKey =
-          `foode.customer-orders.pages.${user?.id || 'account'}.${requestDate}`;
-
-        const storedPageCount = Number(
-          await AsyncStorage.getItem(storageKey),
-        );
-
-        const savedPageCount =
-          targetPageCount ??
-          (Number.isSafeInteger(storedPageCount) && storedPageCount > 0
-            ? Math.min(storedPageCount, 10000)
-            : 1);
-
-        const loadedOrders: UserOrder[] = [];
-        let nextHasMore = true;
-        let pagesLoaded = 0;
-
-        for (let page = 1; page <= savedPageCount; page += 1) {
-          const result = await getMyOrders(
-            token,
-            page,
-            requestDate,
-          );
-
-          loadedOrders.push(...result.orders);
-          pagesLoaded = page;
-          nextHasMore = result.hasMore;
-
-          if (!nextHasMore) {
-            break;
-          }
-        }
+        const result = await getMyOrders(token, targetPage, requestDate);
 
         if (requestId !== loadRequestId.current) {
           return;
         }
 
-        console.log(
-          'FOODE ORDERS SCREEN:',
-          loadedOrders.length,
-        );
-
-        loadedPages.current = Math.max(1, pagesLoaded);
-
-        await AsyncStorage.setItem(
-          storageKey,
-          String(loadedPages.current),
-        );
-
-        setOrders(uniqueOrdersById(loadedOrders));
-        setHasMore(nextHasMore);
+        loadedPages.current = targetPage;
+        setOrders(uniqueOrdersById(result.orders));
+        setHasMore(result.hasMore);
       } catch (error: any) {
         if (requestId !== loadRequestId.current) {
           return;
         }
 
         console.log('Orders screen error:', error);
-
         Alert.alert(
           'Unable to Load Orders',
-          error?.message ||
-            'Something went wrong while loading your orders.',
+          error?.message || 'Something went wrong while loading your orders.',
         );
       } finally {
         if (requestId === loadRequestId.current) {
@@ -196,16 +134,22 @@ const OrdersScreen: React.FC = () => {
         }
       }
     },
-    [token, isLoggedIn, user?.id],
+    [token, isLoggedIn],
   );
 
   // =====================================================
-  // REFRESH ON SCREEN FOCUS
+  // REFRESH ON SCREEN FOCUS — ALWAYS DEFAULT TO TODAY
+  // Requirement 4: make sure order screen is displaying todays orders
+  // as default when user change the date also after coming to same screen
   // =====================================================
 
   useFocusEffect(
     useCallback(() => {
-      loadOrders();
+      const today = getLocalDateKey();
+      selectedDateRef.current = today;
+      setSelectedDate(today);
+      loadedPages.current = 1;
+      loadOrders(true, today, 1);
     }, [loadOrders]),
   );
 
@@ -215,35 +159,28 @@ const OrdersScreen: React.FC = () => {
 
   const handleRefresh = useCallback(() => {
     setRefreshing(true);
-    loadOrders(false);
+    loadOrders(false, selectedDateRef.current, 1);
   }, [loadOrders]);
 
-  const handleDateChange = useCallback(
-    async (date: string) => {
-      selectedDateRef.current = date;
-      loadRequestId.current += 1;
-      loadedPages.current = 1;
+  // =====================================================
+  // DATE FILTER CHANGE
+  // =====================================================
 
+  const handleDateChange = useCallback(
+    (date: string) => {
+      selectedDateRef.current = date;
+      setSelectedDate(date);
+      loadedPages.current = 1;
       setOrders([]);
       setHasMore(true);
-      setSelectedDate(date);
-
-      await AsyncStorage.setItem(
-        `foode.customer-orders.date.${user?.id || 'account'}`,
-        date,
-      );
-
-      if (user?.id) {
-        await AsyncStorage.setItem(
-          `foode.customer-orders.pages.${user.id}.${date}`,
-          '1',
-        );
-      }
-
-      await loadOrders(true, 1);
+      loadOrders(true, date, 1);
     },
-    [loadOrders, user?.id],
+    [loadOrders],
   );
+
+  // =====================================================
+  // PAGINATION
+  // =====================================================
 
   const loadNextPage = useCallback(async () => {
     if (!token || !hasMore || loadingMoreRef.current) {
@@ -258,11 +195,7 @@ const OrdersScreen: React.FC = () => {
       const requestId = loadRequestId.current;
       const nextPage = loadedPages.current + 1;
 
-      const result = await getMyOrders(
-        token,
-        nextPage,
-        requestDate,
-      );
+      const result = await getMyOrders(token, nextPage, requestDate);
 
       if (
         requestDate !== selectedDateRef.current ||
@@ -272,56 +205,32 @@ const OrdersScreen: React.FC = () => {
       }
 
       loadedPages.current = nextPage;
-
-      setOrders(current =>
-        uniqueOrdersById([...current, ...result.orders]),
-      );
-
+      setOrders(current => uniqueOrdersById([...current, ...result.orders]));
       setHasMore(result.hasMore);
-
-      await AsyncStorage.setItem(
-        `foode.customer-orders.pages.${user?.id || 'account'}.${selectedDateRef.current}`,
-        String(nextPage),
-      );
     } catch (error: any) {
       console.error('Load more customer orders error:', error);
-
-      Alert.alert(
-        'Unable to Load More Orders',
-        error?.message || 'Please try again.',
-      );
     } finally {
       loadingMoreRef.current = false;
       setLoadingMore(false);
     }
-  }, [hasMore, token, user?.id]);
+  }, [hasMore, token]);
 
   // =====================================================
-  // RESTAURANT NAME
+  // HELPERS
   // =====================================================
 
   const getRestaurantName = (order: UserOrder) => {
-    if (
-      typeof order.restaurant === 'object' &&
-      order.restaurant
-    ) {
+    if (typeof order.restaurant === 'object' && order.restaurant) {
       return order.restaurant.name || 'Restaurant';
     }
-
     return 'Restaurant';
   };
 
-  // =====================================================
-  // DATE
-  // =====================================================
-
   const formatDate = (date: string) => {
     const parsedDate = new Date(date);
-
     if (Number.isNaN(parsedDate.getTime())) {
       return '';
     }
-
     return parsedDate.toLocaleDateString('en-IN', {
       day: 'numeric',
       month: 'short',
@@ -329,132 +238,111 @@ const OrdersScreen: React.FC = () => {
     });
   };
 
-  // =====================================================
-  // SAFE NUMBER
-  // =====================================================
-
   const toNumber = (value: any): number => {
     const result = Number(value);
-
     return Number.isFinite(result) ? result : 0;
   };
 
-  // =====================================================
-  // GET UNIT PRICE
-  // =====================================================
-
   const getUnitPrice = (food: OrderItem): number => {
     const originalPrice = toNumber(food.price);
-
     const discountedPrice =
-      food.discountedPrice !== null &&
-      food.discountedPrice !== undefined
+      food.discountedPrice !== null && food.discountedPrice !== undefined
         ? toNumber(food.discountedPrice)
         : 0;
 
-    if (
-      discountedPrice > 0 &&
-      discountedPrice < originalPrice
-    ) {
+    if (discountedPrice > 0 && discountedPrice < originalPrice) {
       return discountedPrice;
     }
-
     return originalPrice;
   };
 
-  // =====================================================
-  // GET ITEM TOTAL
-  // =====================================================
-
   const getItemTotal = (food: OrderItem): number => {
-    const quantity = Math.max(
-      1,
-      toNumber(food.quantity),
-    );
-
+    const quantity = Math.max(1, toNumber(food.quantity));
     const unitPrice = getUnitPrice(food);
-
     return unitPrice * quantity;
   };
 
-  // =====================================================
-  // GET SUBTOTAL
-  // =====================================================
-
   const getSubtotal = (order: UserOrder): number => {
     const backendSubtotal = toNumber(order.subtotal);
-
     if (backendSubtotal > 0) {
       return backendSubtotal;
     }
-
-    return order.items.reduce(
-      (sum, food) => sum + getItemTotal(food),
-      0,
-    );
+    return order.items.reduce((sum, food) => sum + getItemTotal(food), 0);
   };
-
-  // =====================================================
-  // GET ORDER TOTAL
-  // =====================================================
 
   const getOrderTotal = (order: UserOrder): number => {
     const subtotal = getSubtotal(order);
     const deliveryFee = toNumber(order.deliveryFee);
     const discount = toNumber(order.discount);
-
-    return Math.max(
-      0,
-      subtotal + deliveryFee - discount,
-    );
+    return Math.max(0, subtotal + deliveryFee - discount);
   };
 
-  // =====================================================
-  // STATUS COLOR
-  // =====================================================
-
-  const getStatusColor = (status: UserOrder['status']) => {
+  const getStatusConfig = (status: UserOrder['status']) => {
     switch (status) {
       case 'DELIVERED':
-        return '#15803D';
-
+        return {
+          label: 'Delivered',
+          color: '#15803D',
+          bg: '#DCFCE7',
+          borderColor: '#BBF7D0',
+        };
       case 'READY_FOR_DELIVERY':
-        return '#7C3AED';
-
+        return {
+          label: 'Ready for Delivery',
+          color: '#7C3AED',
+          bg: '#F3E8FF',
+          borderColor: '#E9D5FF',
+        };
       case 'CONFIRMED':
-        return '#2563EB';
-
+        return {
+          label: 'Confirmed',
+          color: '#2563EB',
+          bg: '#DBEAFE',
+          borderColor: '#BFDBFE',
+        };
       case 'CANCELLED':
-        return '#DC2626';
-
+        return {
+          label: 'Cancelled',
+          color: '#DC2626',
+          bg: '#FEE2E2',
+          borderColor: '#FECACA',
+        };
       case 'PLACED':
       default:
-        return '#D97706';
+        return {
+          label: 'Placed',
+          color: '#D97706',
+          bg: '#FEF3C7',
+          borderColor: '#FDE68A',
+        };
     }
   };
 
-  // =====================================================
-  // STATUS LABEL
-  // =====================================================
+  const formatDeliverySlot = (slot?: UserOrder['deliverySlot']) => {
+    if (!slot || !slot.startTime || !slot.endTime) return null;
+    const start = formatTime12(slot.startTime);
+    const end = formatTime12(slot.endTime);
 
-  const getStatusLabel = (status: UserOrder['status']) => {
-    switch (status) {
-      case 'DELIVERED':
-        return 'Delivered';
-
-      case 'READY_FOR_DELIVERY':
-        return 'Ready for Delivery';
-
-      case 'CONFIRMED':
-        return 'Confirmed';
-
-      case 'CANCELLED':
-        return 'Cancelled';
-
-      case 'PLACED':
-      default:
-        return 'Placed';
+    const today = getLocalDateKey();
+    let datePrefix = '';
+    if (slot.date) {
+      if (slot.date === today) {
+        datePrefix = 'Today';
+      } else {
+        const tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        const tomorrowStr = `${tomorrow.getFullYear()}-${String(
+          tomorrow.getMonth() + 1,
+        ).padStart(2, '0')}-${String(tomorrow.getDate()).padStart(2, '0')}`;
+        if (slot.date === tomorrowStr) {
+          datePrefix = 'Tomorrow (Pre-Booked)';
+        } else {
+          datePrefix = `${slot.date} (Pre-Booked)`;
+        }
+      }
     }
+
+    return datePrefix ? `${datePrefix}, ${start} – ${end}` : `${start} – ${end}`;
   };
 
   // =====================================================
@@ -474,41 +362,22 @@ const OrdersScreen: React.FC = () => {
       'Cancel Order',
       `Are you sure you want to cancel order #${order.orderNumber}?`,
       [
-        {
-          text: 'Keep Order',
-          style: 'cancel',
-        },
+        {text: 'Keep Order', style: 'cancel'},
         {
           text: 'Cancel Order',
           style: 'destructive',
           onPress: async () => {
-            if (!token) {
-              return;
-            }
+            if (!token) return;
 
             try {
               setCancellingOrderId(order._id);
-
-              const updated = await cancelOrder(
-                token,
-                order._id,
-              );
-
+              const updated = await cancelOrder(token, order._id);
               setOrders(prev =>
-                prev.map(o =>
-                  o._id === order._id ? updated : o,
-                ),
+                prev.map(o => (o._id === order._id ? updated : o)),
               );
-
-              Alert.alert(
-                'Order Cancelled',
-                'Your order has been cancelled.',
-              );
+              Alert.alert('Order Cancelled', 'Your order has been cancelled.');
             } catch (err: any) {
-              Alert.alert(
-                'Unable to Cancel',
-                err?.message || 'Please try again.',
-              );
+              Alert.alert('Unable to Cancel', err?.message || 'Please try again.');
             } finally {
               setCancellingOrderId(null);
             }
@@ -519,268 +388,219 @@ const OrdersScreen: React.FC = () => {
   };
 
   // =====================================================
-  // REVIEW
+  // RATE & REVIEW HANDLER
   // =====================================================
 
   const handleReview = (order: UserOrder) => {
-    if (order.status !== 'DELIVERED') {
-      return;
-    }
-
+    if (order.status !== 'DELIVERED') return;
     navigation.navigate('Review', {order});
   };
 
   // =====================================================
-  // ORDER CARD
+  // RENDER ORDER CARD (SUPER CLEAN, LIKE CART SCREEN)
   // =====================================================
 
   const renderOrder = ({item}: {item: UserOrder}) => {
-    const statusColor = getStatusColor(item.status);
-
+    const status = getStatusConfig(item.status);
     const itemCount = item.items.reduce(
-      (total, food) =>
-        total + toNumber(food.quantity),
+      (total, food) => total + toNumber(food.quantity),
       0,
     );
-
     const subtotal = getSubtotal(item);
     const deliveryFee = toNumber(item.deliveryFee);
     const discount = toNumber(item.discount);
     const orderTotal = getOrderTotal(item);
+    const slotLabel = formatDeliverySlot(item.deliverySlot);
+    const review = item.review;
 
     return (
-      <View
-        style={[
-          styles.orderCard,
-          {
-            padding: cardPadding,
-          },
-        ]}>
-        {/* HEADER */}
-
-        <View style={styles.orderHeader}>
+      <View style={styles.orderCard}>
+        {/* RESTAURANT TOP HEADER */}
+        <View style={styles.orderTopHeader}>
           <View style={styles.restaurantSection}>
             <View style={styles.restaurantIcon}>
-              <Storefront
-                size={23}
-                color={ORANGE}
-                weight="duotone"
-              />
+              <Storefront size={20} color={ORANGE} weight="duotone" />
             </View>
 
             <View style={styles.restaurantInfo}>
-              <Text
-                style={styles.restaurantName}
-                numberOfLines={1}>
+              <Text style={styles.restaurantName} numberOfLines={1}>
                 {getRestaurantName(item)}
               </Text>
-
-              <Text
-                style={styles.orderNumber}
-                numberOfLines={1}>
-                Order #{item.orderNumber}
+              <Text style={styles.orderMetaText} numberOfLines={1}>
+                #{item.orderNumber} • {formatDate(item.createdAt)}
               </Text>
             </View>
           </View>
 
+          {/* STATUS BADGE */}
           <View
             style={[
               styles.statusBadge,
               {
-                backgroundColor: `${statusColor}14`,
+                backgroundColor: status.bg,
+                borderColor: status.borderColor,
               },
             ]}>
             <View
               style={[
                 styles.statusDot,
-                {
-                  backgroundColor: statusColor,
-                },
+                {backgroundColor: status.color},
               ]}
             />
-
-            <Text
-              style={[
-                styles.statusText,
-                {
-                  color: statusColor,
-                },
-              ]}>
-              {getStatusLabel(item.status)}
+            <Text style={[styles.statusText, {color: status.color}]}>
+              {status.label}
             </Text>
           </View>
         </View>
 
-        {/* META */}
-
-        <View style={styles.metaRow}>
-          <CalendarBlank
-            size={14}
-            color="#8A8F98"
-            weight="regular"
-          />
-
-          <Text style={styles.orderDate}>
-            {formatDate(item.createdAt)}
-          </Text>
-
-          <View style={styles.metaDot} />
-
-          <Text style={styles.itemCount}>
-            {itemCount} {itemCount === 1 ? 'item' : 'items'}
-          </Text>
-        </View>
-
-        {/* ITEMS */}
-
-        <View style={styles.itemsContainer}>
+        {/* ITEMS LIST */}
+        <View style={styles.itemsSection}>
           {item.items.map((food, index) => {
-            const quantity = Math.max(
-              1,
-              toNumber(food.quantity),
-            );
-
-            const unitPrice = getUnitPrice(food);
+            const quantity = Math.max(1, toNumber(food.quantity));
             const itemTotal = getItemTotal(food);
 
             return (
               <View
-                key={`${item._id}-${index}`}
-                style={styles.itemBlock}>
-                <View style={styles.itemRow}>
-                  <View style={styles.quantityPill}>
-                    <Text style={styles.itemQuantity}>
-                      {quantity}×
-                    </Text>
-                  </View>
-
-                  <Text
-                    style={styles.itemName}
-                    numberOfLines={2}>
-                    {food.name || 'Food Item'}
-                  </Text>
-
-                  <Text style={styles.itemTotal}>
-                    ₹{itemTotal.toFixed(2)}
-                  </Text>
+                key={`${item._id}-food-${index}`}
+                style={[
+                  styles.itemRow,
+                  index === item.items.length - 1 && styles.itemRowLast,
+                ]}>
+                <View style={styles.itemQuantityBadge}>
+                  <Text style={styles.itemQuantityText}>{quantity}x</Text>
                 </View>
 
-                <View style={styles.itemPriceDetails}>
-                  <Text style={styles.unitPriceText}>
-                    ₹{unitPrice.toFixed(2)} × {quantity}
-                  </Text>
+                <Text style={styles.itemName} numberOfLines={2}>
+                  {food.name || 'Food Item'}
+                </Text>
 
-                  <Text style={styles.itemCalculation}>
-                    = ₹{itemTotal.toFixed(2)}
-                  </Text>
-                </View>
+                <Text style={styles.itemPrice}>
+                  ₹{itemTotal.toFixed(2)}
+                </Text>
               </View>
             );
           })}
         </View>
 
-        {/* PRICE BREAKDOWN
-            Hidden for cancelled orders.
-        */}
+        {/* DELIVERY SLOT (IF PROVIDED) */}
+        {slotLabel ? (
+          <View style={styles.slotRow}>
+            <Bicycle size={16} color={ORANGE} weight="duotone" />
+            <Text style={styles.slotText}>
+              Delivery slot: <Text style={styles.slotValue}>{slotLabel}</Text>
+            </Text>
+          </View>
+        ) : null}
 
+        {/* BILL SUMMARY */}
         {item.status !== 'CANCELLED' && (
-          <View style={styles.priceBreakdown}>
-            <View style={styles.priceRow}>
-              <Text style={styles.priceLabel}>
-                Subtotal
+          <View style={styles.billCard}>
+            <View style={styles.billRow}>
+              <Text style={styles.billLabel}>
+                Subtotal ({itemCount} {itemCount === 1 ? 'item' : 'items'})
               </Text>
-
-              <Text style={styles.priceValue}>
-                ₹{subtotal.toFixed(2)}
-              </Text>
+              <Text style={styles.billValue}>₹{subtotal.toFixed(2)}</Text>
             </View>
 
-            <View style={styles.priceRow}>
-              <Text style={styles.priceLabel}>
-                Delivery fee
-              </Text>
-
-              <Text style={styles.priceValue}>
-                ₹{deliveryFee.toFixed(2)}
+            <View style={styles.billRow}>
+              <Text style={styles.billLabel}>Delivery Fee</Text>
+              <Text style={styles.billValue}>
+                {deliveryFee === 0 ? 'FREE' : `₹${deliveryFee.toFixed(2)}`}
               </Text>
             </View>
 
             {discount > 0 && (
-              <View style={styles.priceRow}>
-                <Text style={styles.discountLabel}>
-                  Discount
-                </Text>
-
-                <Text style={styles.discountValue}>
-                  -₹{discount.toFixed(2)}
-                </Text>
+              <View style={styles.billRow}>
+                <Text style={styles.discountLabel}>Discount</Text>
+                <Text style={styles.discountValue}>-₹{discount.toFixed(2)}</Text>
               </View>
             )}
 
-            <View style={styles.priceDivider} />
+            <View style={styles.billDivider} />
 
             <View style={styles.totalRow}>
               <Text style={styles.totalLabel}>
-                To be paid
+                {String(item.status).toUpperCase() === 'DELIVERED'
+                  ? 'Total Paid'
+                  : 'To be paid'}
               </Text>
-
-              <Text style={styles.totalValue}>
-                ₹{orderTotal.toFixed(2)}
-              </Text>
+              <Text style={styles.totalValue}>₹{orderTotal.toFixed(2)}</Text>
             </View>
           </View>
         )}
 
-        {/* REVIEW */}
+        {/* REQUIREMENT 3: USER REVIEW DISPLAY UNDER ORDER DETAILS */}
+        {review ? (
+          <View style={styles.userReviewCard}>
+            <View style={styles.reviewHeader}>
+              <View style={styles.reviewTitleRow}>
+                <View style={styles.starsRow}>
+                  {[1, 2, 3, 4, 5].map(starIndex => (
+                    <Star
+                      key={starIndex}
+                      size={15}
+                      weight="fill"
+                      color={
+                        starIndex <= Number(review.rating)
+                          ? '#F59E0B'
+                          : '#E5E7EB'
+                      }
+                    />
+                  ))}
+                </View>
+                <Text style={styles.reviewScoreText}>
+                  {Number(review.rating).toFixed(1)}
+                </Text>
+              </View>
+            </View>
 
-        {item.status === 'DELIVERED' && (
+            {review.comment ? (
+              <Text style={styles.reviewComment}>
+                "{review.comment}"
+              </Text>
+            ) : null}
+
+            {review.response ? (
+              <View style={styles.restaurantReplyBox}>
+                <View style={styles.replyHeader}>
+                  <ChatCircleDots size={14} color="#4B5563" weight="bold" />
+                  <Text style={styles.replyHeaderText}>
+                    Restaurant Response
+                  </Text>
+                </View>
+                <Text style={styles.replyCommentText}>
+                  {review.response}
+                </Text>
+              </View>
+            ) : null}
+          </View>
+        ) : null}
+
+        {/* RATE & REVIEW BUTTON (DELIVERED & NOT YET REVIEWED) */}
+        {item.status === 'DELIVERED' && !review && (
           <TouchableOpacity
-            activeOpacity={0.85}
+            activeOpacity={0.88}
             onPress={() => handleReview(item)}
-            style={styles.reviewButton}>
-            <Star
-              size={16}
-              color="#FFFFFF"
-              weight="fill"
-            />
-
-            <Text style={styles.reviewButtonText}>
-              Rate & Review
-            </Text>
-
-            <CaretRight
-              size={16}
-              color="#FFFFFF"
-              weight="bold"
-              style={styles.reviewChevron}
-            />
+            style={styles.rateButton}>
+            <Star size={16} color="#FFFFFF" weight="fill" />
+            <Text style={styles.rateButtonText}>Rate & Review Order</Text>
+            <CaretRight size={14} color="#FFFFFF" weight="bold" />
           </TouchableOpacity>
         )}
 
-        {/* CANCEL ORDER — ONLY WHEN PLACED */}
-
+        {/* CANCEL BUTTON (PLACED) */}
         {item.status === 'PLACED' && (
           <TouchableOpacity
             activeOpacity={0.85}
             disabled={cancellingOrderId === item._id}
             onPress={() => handleCancelOrder(item)}
-            style={styles.cancelOrderButton}>
+            style={styles.cancelButton}>
             {cancellingOrderId === item._id ? (
-              <ActivityIndicator
-                size="small"
-                color="#DC2626"
-              />
+              <ActivityIndicator size="small" color="#DC2626" />
             ) : (
               <>
-                <XCircle
-                  size={16}
-                  color="#DC2626"
-                  weight="bold"
-                />
-
-                <Text style={styles.cancelOrderText}>
-                  Cancel Order
-                </Text>
+                <XCircle size={16} color="#DC2626" weight="bold" />
+                <Text style={styles.cancelButtonText}>Cancel Order</Text>
               </>
             )}
           </TouchableOpacity>
@@ -790,13 +610,11 @@ const OrdersScreen: React.FC = () => {
   };
 
   // =====================================================
-  // SCREEN
+  // SCREEN RENDER
   // =====================================================
 
   return (
-    <SafeAreaView
-      style={styles.container}
-      edges={['left', 'right']}>
+    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
       <StatusBar
         backgroundColor="#FF7A00"
         barStyle="light-content"
@@ -804,93 +622,49 @@ const OrdersScreen: React.FC = () => {
         translucent={false}
       />
 
-      {/* HEADER */}
+      {/* HEADER (MATCHING CART SCREEN) */}
+      <View style={[styles.header, {paddingHorizontal: horizontalPadding}]}>
+        <View style={styles.headerLeft}>
+          {navigation.canGoBack() && (
+            <AppBackButton />
+          )}
 
-      <View
-        style={[
-          styles.pageHeader,
-          {
-            paddingHorizontal: horizontalPadding,
-            paddingTop: isShortScreen ? 12 : 16,
-            paddingBottom: isShortScreen ? 12 : 16,
-          },
-        ]}>
-        {navigation.canGoBack() ? (
-          <TouchableOpacity
-            accessibilityRole="button"
-            accessibilityLabel="Go back"
-            activeOpacity={0.75}
-            onPress={() => navigation.goBack()}
-            style={styles.backButton}>
-            <ArrowLeft
-              size={22}
-              color="#1E232C"
-              weight="bold"
-            />
-          </TouchableOpacity>
-        ) : (
-          <View style={styles.headerIcon}>
-            <Receipt
-              size={23}
-              color={ORANGE}
-              weight="duotone"
-            />
+          <View>
+            <Text style={styles.heading}>My Orders</Text>
+            <Text style={styles.subheading}>
+              {loading
+                ? 'Checking orders...'
+                : `${orders.length} ${
+                    orders.length === 1 ? 'order' : 'orders'
+                  } on this date`}
+            </Text>
           </View>
-        )}
-
-        <View style={styles.headerTextContainer}>
-          <Text
-            style={[
-              styles.title,
-              {
-                fontSize: isCompactWidth ? 22 : 25,
-              },
-            ]}>
-            My Orders
-          </Text>
-
-          <Text style={styles.subtitle}>
-            Your FoodE order history
-          </Text>
         </View>
 
         {!loading && orders.length > 0 && (
-          <View style={styles.orderCountBadge}>
-            <Text style={styles.orderCountText}>
-              {orders.length}
-            </Text>
+          <View style={styles.orderBadge}>
+            <Text style={styles.orderBadgeText}>{orders.length}</Text>
           </View>
         )}
       </View>
 
-      <DateFilterCalendar
-        value={selectedDate}
-        onChange={handleDateChange}
-      />
+      {/* DATE FILTER CALENDAR BAR */}
+      <View style={styles.calendarContainer}>
+        <DateFilterCalendar
+          value={selectedDate}
+          onChange={handleDateChange}
+        />
+      </View>
 
-      {/* LOADING */}
-
+      {/* BODY CONTENT */}
       {loading ? (
-        <View style={styles.loadingContainer}>
-          <View style={styles.loadingIcon}>
-            <ActivityIndicator
-              size="large"
-              color={ORANGE}
-            />
-          </View>
-
-          <Text style={styles.loadingTitle}>
-            Loading your orders
-          </Text>
-
-          <Text style={styles.loadingText}>
-            Just a moment...
-          </Text>
+        <View style={styles.centerContainer}>
+          <ActivityIndicator size="large" color={ORANGE} />
+          <Text style={styles.loadingText}>Loading your orders...</Text>
         </View>
       ) : orders.length === 0 ? (
-        /* EMPTY */
         <ScrollView
-          contentContainerStyle={styles.emptyContent}
+          contentContainerStyle={styles.emptyContainer}
           refreshControl={
             <RefreshControl
               refreshing={refreshing}
@@ -902,7 +676,6 @@ const OrdersScreen: React.FC = () => {
           <EmptyOrders />
         </ScrollView>
       ) : (
-        /* ORDERS */
         <FlatList
           data={orders}
           keyExtractor={item => item._id}
@@ -911,18 +684,15 @@ const OrdersScreen: React.FC = () => {
           onEndReachedThreshold={0.4}
           ListFooterComponent={
             loadingMore ? (
-              <ActivityIndicator
-                style={styles.loadingMore}
-                color={ORANGE}
-              />
-            ) : null
+              <ActivityIndicator style={styles.loadingMore} color={ORANGE} />
+            ) : (
+              <View style={styles.footerSpacing} />
+            )
           }
           showsVerticalScrollIndicator={false}
           contentContainerStyle={[
             styles.listContent,
-            {
-              paddingHorizontal: horizontalPadding,
-            },
+            {paddingHorizontal: horizontalPadding},
           ]}
           refreshControl={
             <RefreshControl
@@ -941,436 +711,389 @@ const OrdersScreen: React.FC = () => {
 export default OrdersScreen;
 
 // =====================================================
-// STYLES
+// STYLES (MATCHING CART SCREEN DESIGN LANGUAGE)
 // =====================================================
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F7F8FA',
-  },
-
-  // HEADER
-
-  pageHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FFFCF8',
-    paddingHorizontal: 20,
-    paddingTop: 16,
-    paddingBottom: 16,
-    borderBottomLeftRadius: 24,
-    borderBottomRightRadius: 24,
-    elevation: 2,
-    shadowColor: '#000000',
-    shadowOpacity: 0.04,
-    shadowRadius: 8,
-    shadowOffset: {
-      width: 0,
-      height: 3,
-    },
-  },
-
-  backButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 14,
     backgroundColor: '#FFFFFF',
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 13,
-    borderWidth: 1,
-    borderColor: '#E8ECF4',
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: {width: 0, height: 2},
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
+    paddingTop: 8,
+    paddingBottom: 12,
   },
-
-  headerIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 15,
-    backgroundColor: '#FFF2E8',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 13,
-  },
-
-  headerTextContainer: {
-    flex: 1,
-    minWidth: 0,
-  },
-
-  title: {
-    fontSize: 25,
-    fontWeight: '800',
-    color: '#111827',
-    letterSpacing: -0.5,
-  },
-
-  subtitle: {
-    marginTop: 4,
-    fontSize: 13,
-    color: '#7B8190',
-  },
-
-  orderCountBadge: {
-    minWidth: 30,
-    height: 30,
-    paddingHorizontal: 8,
-    borderRadius: 15,
-    backgroundColor: '#FFF0E5',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-
-  orderCountText: {
-    fontSize: 12,
-    fontWeight: '800',
-    color: ORANGE,
-  },
-
-  // LIST
-
-  listContent: {
-    paddingTop: 16,
-    paddingBottom: 100,
-    flexGrow: 1,
-  },
-
-  loadingMore: {
-    paddingVertical: 18,
-  },
-
-  // ORDER CARD
-
-  orderCard: {
-    backgroundColor: '#FFFCF8',
-    borderRadius: 20,
-    padding: 16,
-    marginBottom: 15,
-    borderWidth: 1,
-    borderColor: '#F0F0F0',
-    elevation: 2,
-    shadowColor: '#000000',
-    shadowOpacity: 0.04,
-    shadowRadius: 8,
-    shadowOffset: {
-      width: 0,
-      height: 3,
-    },
-  },
-
-  orderHeader: {
+  headerLeft: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    flexWrap: 'wrap',
-    rowGap: 8,
+    gap: 12,
+  },
+  headerBackButton: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: '#F5F5F7',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  heading: {
+    fontSize: 22,
+    fontWeight: '800',
+    color: '#1E232C',
+    letterSpacing: -0.3,
+  },
+  subheading: {
+    fontSize: 13,
+    color: '#8A92A0',
+    fontWeight: '500',
+    marginTop: 2,
+  },
+  orderBadge: {
+    backgroundColor: '#FFF2E6',
+    borderWidth: 1,
+    borderColor: '#FFE0C2',
+    borderRadius: 16,
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+  },
+  orderBadgeText: {
+    color: ORANGE,
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  calendarContainer: {
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F0F2',
+    backgroundColor: '#FFFFFF',
+  },
+  centerContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 60,
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 14,
+    color: '#6B7280',
+    fontWeight: '500',
+  },
+  emptyContainer: {
+    flexGrow: 1,
+    paddingVertical: 24,
+  },
+  listContent: {
+    paddingTop: 14,
+    paddingBottom: 28,
+  },
+  loadingMore: {
+    paddingVertical: 16,
+  },
+  footerSpacing: {
+    height: 24,
   },
 
+  // ORDER CARD STYLES
+  orderCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#ECECEC',
+    padding: 16,
+    marginBottom: 14,
+    shadowColor: '#000000',
+    shadowOffset: {width: 0, height: 2},
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  orderTopHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F4F5F7',
+  },
   restaurantSection: {
     flexDirection: 'row',
     alignItems: 'center',
     flex: 1,
     marginRight: 8,
   },
-
   restaurantIcon: {
-    width: 46,
-    height: 46,
-    borderRadius: 14,
-    backgroundColor: '#FFF2E8',
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#FFF4EB',
     alignItems: 'center',
     justifyContent: 'center',
+    marginRight: 10,
   },
-
   restaurantInfo: {
     flex: 1,
-    marginLeft: 11,
   },
-
   restaurantName: {
     fontSize: 15,
-    fontWeight: '800',
-    color: '#171923',
+    fontWeight: '700',
+    color: '#1E232C',
+    letterSpacing: -0.2,
   },
-
-  orderNumber: {
-    marginTop: 4,
-    fontSize: 11,
-    color: '#9297A2',
+  orderMetaText: {
+    fontSize: 12,
+    color: '#8A92A0',
+    marginTop: 2,
+    fontWeight: '500',
   },
-
-  // STATUS
-
   statusBadge: {
     flexDirection: 'row',
-    flexShrink: 0,
     alignItems: 'center',
     paddingHorizontal: 9,
-    paddingVertical: 7,
-    borderRadius: 9,
-    maxWidth: 118,
+    paddingVertical: 4,
+    borderRadius: 12,
+    borderWidth: 1,
+    gap: 5,
   },
-
   statusDot: {
     width: 6,
     height: 6,
     borderRadius: 3,
-    marginRight: 5,
   },
-
   statusText: {
-    fontSize: 10,
-    fontWeight: '800',
-  },
-
-  // META
-
-  metaRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 15,
-  },
-
-  orderDate: {
-    marginLeft: 6,
     fontSize: 11,
-    color: '#858B96',
+    fontWeight: '700',
   },
 
-  metaDot: {
-    width: 3,
-    height: 3,
-    borderRadius: 2,
-    backgroundColor: '#C2C6CE',
-    marginHorizontal: 9,
+  // ITEMS LIST
+  itemsSection: {
+    paddingVertical: 10,
   },
-
-  itemCount: {
-    fontSize: 11,
-    color: '#858B96',
-  },
-
-  // ITEMS
-
-  itemsContainer: {
-    marginTop: 14,
-    paddingTop: 13,
-    borderTopWidth: 1,
-    borderTopColor: '#F0F1F3',
-  },
-
-  itemBlock: {
-    paddingBottom: 11,
-    marginBottom: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F3F3F4',
-  },
-
   itemRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    paddingVertical: 6,
   },
-
-  quantityPill: {
-    minWidth: 34,
-    paddingHorizontal: 5,
-    paddingVertical: 5,
-    borderRadius: 7,
-    backgroundColor: '#FFF3E9',
-    alignItems: 'center',
-    marginRight: 9,
+  itemRowLast: {
+    paddingBottom: 2,
   },
-
-  itemQuantity: {
+  itemQuantityBadge: {
+    backgroundColor: '#F3F4F6',
+    borderRadius: 6,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    marginRight: 10,
+  },
+  itemQuantityText: {
     fontSize: 11,
-    fontWeight: '800',
-    color: ORANGE,
+    fontWeight: '700',
+    color: '#4B5563',
   },
-
   itemName: {
     flex: 1,
     fontSize: 13,
-    color: '#454B56',
-    lineHeight: 18,
+    color: '#1F2937',
+    fontWeight: '600',
+    marginRight: 8,
   },
-
-  itemTotal: {
-    marginLeft: 8,
-    fontSize: 14,
-    fontWeight: '800',
-    color: '#171923',
-  },
-
-  itemPriceDetails: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginLeft: 43,
-    marginTop: 5,
-  },
-
-  unitPriceText: {
-    fontSize: 11,
-    color: '#858B96',
-  },
-
-  itemCalculation: {
-    marginLeft: 8,
-    fontSize: 11,
+  itemPrice: {
+    fontSize: 13,
     fontWeight: '700',
-    color: '#454B56',
+    color: '#1E232C',
   },
 
-  // PRICE BREAKDOWN
-
-  priceBreakdown: {
-    marginTop: 4,
-    paddingTop: 13,
-    borderTopWidth: 1,
-    borderTopColor: '#F0F1F3',
-  },
-
-  priceRow: {
+  // DELIVERY SLOT
+  slotRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    gap: 6,
+    backgroundColor: '#FFF8F2',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+    marginTop: 4,
+    marginBottom: 10,
+  },
+  slotText: {
+    fontSize: 12,
+    color: '#6B7280',
+    fontWeight: '500',
+  },
+  slotValue: {
+    color: '#1E232C',
+    fontWeight: '700',
+  },
+
+  // BILL SUMMARY
+  billCard: {
+    backgroundColor: '#FAFAFB',
+    borderRadius: 12,
+    padding: 12,
+    marginTop: 4,
     marginBottom: 8,
   },
-
-  priceLabel: {
-    fontSize: 12,
-    color: '#737986',
+  billRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingVertical: 3,
   },
-
-  priceValue: {
+  billLabel: {
     fontSize: 12,
+    color: '#6B7280',
+    fontWeight: '500',
+  },
+  billValue: {
+    fontSize: 12,
+    color: '#1E232C',
     fontWeight: '600',
-    color: '#454B56',
   },
-
   discountLabel: {
     fontSize: 12,
-    color: '#15803D',
+    color: '#16A34A',
+    fontWeight: '600',
   },
-
   discountValue: {
     fontSize: 12,
+    color: '#16A34A',
     fontWeight: '700',
-    color: '#15803D',
   },
-
-  priceDivider: {
+  billDivider: {
     height: 1,
-    backgroundColor: '#F0F1F3',
-    marginVertical: 5,
+    backgroundColor: '#E5E7EB',
+    marginVertical: 8,
   },
-
   totalRow: {
     flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'space-between',
-    paddingTop: 4,
+    alignItems: 'center',
   },
-
   totalLabel: {
     fontSize: 13,
     fontWeight: '700',
-    color: '#737986',
+    color: '#1E232C',
   },
-
   totalValue: {
-    fontSize: 19,
+    fontSize: 15,
     fontWeight: '800',
-    color: '#171923',
+    color: '#1E232C',
   },
 
-  // REVIEW
-
-  reviewButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 14,
-    backgroundColor: ORANGE,
-    borderRadius: 12,
-    paddingVertical: 13,
-  },
-
-  reviewButtonText: {
-    marginLeft: 7,
-    fontSize: 13,
-    fontWeight: '800',
-    color: '#FFFFFF',
-  },
-
-  reviewChevron: {
-    position: 'absolute',
-    right: 13,
-  },
-
-  // CANCEL ORDER
-
-  cancelOrderButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 12,
-    backgroundColor: '#FEF2F2',
+  // REQUIREMENT 3: USER REVIEW DISPLAY
+  userReviewCard: {
+    backgroundColor: '#FFFBF5',
     borderWidth: 1,
-    borderColor: '#FECACA',
+    borderColor: '#FFE8D6',
     borderRadius: 12,
-    paddingVertical: 11,
+    padding: 12,
+    marginTop: 10,
   },
-
-  cancelOrderText: {
-    marginLeft: 7,
-    fontSize: 13,
+  reviewHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  reviewTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  starsRow: {
+    flexDirection: 'row',
+    gap: 2,
+  },
+  reviewScoreText: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#B45309',
+    marginLeft: 2,
+  },
+  editReviewButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#FFE0C2',
+  },
+  editReviewText: {
+    fontSize: 11,
     fontWeight: '700',
-    color: '#DC2626',
+    color: ORANGE,
+  },
+  reviewComment: {
+    fontSize: 13,
+    color: '#374151',
+    lineHeight: 18,
+    fontStyle: 'italic',
+    marginTop: 2,
+  },
+  restaurantReplyBox: {
+    backgroundColor: '#FFFFFF',
+    borderLeftWidth: 3,
+    borderLeftColor: ORANGE,
+    padding: 8,
+    borderRadius: 6,
+    marginTop: 8,
+  },
+  replyHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    marginBottom: 3,
+  },
+  replyHeaderText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#374151',
+  },
+  replyCommentText: {
+    fontSize: 12,
+    color: '#4B5563',
+    lineHeight: 16,
   },
 
-  // LOADING
-
-  loadingContainer: {
-    flex: 1,
+  // BUTTONS
+  rateButton: {
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 24,
-  },
-
-  loadingIcon: {
-    width: 72,
-    height: 72,
-    borderRadius: 22,
-    backgroundColor: '#FFFCF8',
-    alignItems: 'center',
-    justifyContent: 'center',
+    backgroundColor: ORANGE,
+    borderRadius: 10,
+    paddingVertical: 10,
+    marginTop: 10,
+    gap: 6,
+    shadowColor: ORANGE,
+    shadowOffset: {width: 0, height: 2},
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
     elevation: 2,
   },
-
-  loadingTitle: {
-    marginTop: 18,
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#20232B',
-  },
-
-  loadingText: {
-    marginTop: 6,
+  rateButtonText: {
+    color: '#FFFFFF',
     fontSize: 13,
-    color: '#858B96',
+    fontWeight: '700',
   },
-
-  // EMPTY
-
-  emptyContent: {
-    flexGrow: 1,
-    paddingHorizontal: 16,
-    paddingTop: 16,
-    paddingBottom: 100,
+  cancelButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#FCA5A5',
+    backgroundColor: '#FEF2F2',
+    borderRadius: 10,
+    paddingVertical: 9,
+    marginTop: 10,
+    gap: 6,
+  },
+  cancelButtonText: {
+    color: '#DC2626',
+    fontSize: 13,
+    fontWeight: '700',
   },
 });

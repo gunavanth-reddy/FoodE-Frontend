@@ -17,7 +17,6 @@ import AppTextInput from "../../../components/inputs/AppTextInput";
 
 import {useNavigation} from '@react-navigation/native';
 import {
-  ArrowLeft,
   User,
   Check,
   CheckCircle,
@@ -28,6 +27,7 @@ import {
   Info,
   LockKey,
 } from 'phosphor-react-native';
+import AppBackButton from '../../../components/buttons/AppBackButton';
 
 import {useAuth} from '../../../context/AuthContext';
 
@@ -98,12 +98,7 @@ const PersonalInfoScreen = () => {
         <View style={styles.header}>
           <View style={{flexDirection: 'row', alignItems: 'center', gap: 12}}>
             {navigation.canGoBack() ? (
-              <TouchableOpacity
-                activeOpacity={0.75}
-                onPress={() => navigation.goBack()}
-                style={styles.backButton}>
-                <ArrowLeft size={22} color="#1E232C" weight="bold" />
-              </TouchableOpacity>
+              <AppBackButton />
             ) : (
               <View style={styles.headerIcon}>
                 <User

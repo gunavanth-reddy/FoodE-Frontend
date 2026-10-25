@@ -18,6 +18,7 @@ import {
   Bell,
   Trash,
 } from 'phosphor-react-native';
+import AppBackButton from '../../../components/buttons/AppBackButton';
 
 import NotificationCard, {
   Notification,
@@ -480,20 +481,15 @@ const NotificationsScreen: React.FC = () => {
     return (
       <SafeAreaView
         style={styles.container} edges={['top', 'left', 'right']}>
-        <StatusBar backgroundColor="#FF7A00" barStyle="light-content" hidden={false} translucent={false} />
+        <StatusBar backgroundColor="#FFFFFF" barStyle="dark-content" hidden={false} translucent={false} />
 
         <View style={styles.header}>
           {navigation.canGoBack() ? (
-            <TouchableOpacity
-              activeOpacity={0.75}
-              onPress={() => navigation.goBack()}
-              style={styles.backButton}>
-              <ArrowLeft size={22} color="#1E232C" weight="bold" />
-            </TouchableOpacity>
+            <AppBackButton />
           ) : (
             <View style={styles.headerIcon}>
               <Bell
-                size={24}
+                size={22}
                 color={ORANGE}
                 weight="regular"
               />
@@ -535,7 +531,7 @@ const NotificationsScreen: React.FC = () => {
   return (
     <SafeAreaView
       style={styles.container} edges={['top', 'left', 'right']}>
-      <StatusBar backgroundColor="#FF7A00" barStyle="light-content" hidden={false} translucent={false} />
+      <StatusBar backgroundColor="#FFFFFF" barStyle="dark-content" hidden={false} translucent={false} />
 
       {/* ============================================== */}
       {/* HEADER */}
@@ -543,16 +539,11 @@ const NotificationsScreen: React.FC = () => {
 
       <View style={styles.header}>
         {navigation.canGoBack() ? (
-          <TouchableOpacity
-            activeOpacity={0.75}
-            onPress={() => navigation.goBack()}
-            style={styles.backButton}>
-            <ArrowLeft size={22} color="#1E232C" weight="bold" />
-          </TouchableOpacity>
+          <AppBackButton />
         ) : (
           <View style={styles.headerIcon}>
             <Bell
-              size={24}
+              size={22}
               color={ORANGE}
               weight="regular"
             />
@@ -704,93 +695,74 @@ export default NotificationsScreen;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F7F8FA',
+    backgroundColor: '#FAFAF9',
   },
 
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFFCF8',
-    paddingHorizontal: 20,
-    paddingTop: 18,
-    paddingBottom: 20,
-    borderBottomLeftRadius: 24,
-    borderBottomRightRadius: 24,
-    elevation: 2,
-    shadowColor: '#000000',
-    shadowOffset: {
-      width: 0,
-      height: 3,
-    },
-    shadowOpacity: 0.04,
-    shadowRadius: 8,
-  },
-
-  backButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
     backgroundColor: '#FFFFFF',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 13,
-    shadowColor: '#000000',
-    shadowOffset: {width: 0, height: 2},
-    shadowOpacity: 0.08,
-    shadowRadius: 4,
-    elevation: 3,
+    paddingHorizontal: 18,
+    paddingTop: 14,
+    paddingBottom: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F3F4F6',
   },
 
   headerIcon: {
-    width: 50,
-    height: 50,
-    borderRadius: 16,
-    backgroundColor: '#FFF2E8',
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#FFF2EA',
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 13,
+    borderWidth: 1,
+    borderColor: '#FFE2D1',
   },
 
   headerDot: {
     position: 'absolute',
-    top: 9,
-    right: 10,
+    top: 7,
+    right: 8,
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: '#EF4444',
+    backgroundColor: ORANGE,
     borderWidth: 1.5,
-    borderColor: '#FFF2E8',
+    borderColor: '#FFFFFF',
   },
 
   headerTextContainer: {
     flex: 1,
+    marginLeft: 12,
   },
 
   title: {
-    fontSize: 25,
+    fontSize: 22,
     fontWeight: '800',
-    color: '#111827',
-    letterSpacing: -0.5,
+    color: '#1E232C',
   },
 
   subtitle: {
-    marginTop: 4,
+    marginTop: 2,
     fontSize: 13,
-    color: '#7B8190',
+    color: '#6B7280',
+    fontWeight: '500',
   },
 
   unreadBadge: {
-    backgroundColor: '#FFF0E5',
+    backgroundColor: '#FFF2EA',
     paddingHorizontal: 10,
-    paddingVertical: 7,
+    paddingVertical: 5,
     borderRadius: 12,
     marginLeft: 8,
+    borderWidth: 1,
+    borderColor: '#FFE2D1',
   },
 
   unreadBadgeText: {
-    fontSize: 11,
-    fontWeight: '800',
+    fontSize: 12,
+    fontWeight: '700',
     color: ORANGE,
   },
 

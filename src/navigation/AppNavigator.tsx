@@ -24,6 +24,7 @@ import BottomTabNavigator from './BottomTabNavigator';
 // User screens
 import RestaurantDetailsScreen from '../features/user/screens/RestaurantDetailsScreen';
 import CategoryFoodsScreen from '../features/user/screens/CategoryFoodsScreen';
+import AllCategoriesScreen from '../features/user/screens/AllCategoriesScreen';
 import CartScreen from '../features/user/screens/CartScreen';
 import CheckoutScreen from '../features/user/screens/CheckoutScreen';
 import PaymentScreen from '../features/user/screens/PaymentScreen';
@@ -95,6 +96,7 @@ export type RootStackParamList = {
     | {restaurant: any}
     | {restaurantId: string};
   CategoryFoods: {categoryName: string};
+  AllCategories: undefined;
 
   // Cart and checkout
   Cart: undefined;
@@ -287,6 +289,11 @@ const AppNavigator = () => {
           <Stack.Screen
             name="CategoryFoods"
             component={CategoryFoodsScreen}
+          />
+
+          <Stack.Screen
+            name="AllCategories"
+            component={AllCategoriesScreen}
           />
 
           {/* Cart and checkout */}

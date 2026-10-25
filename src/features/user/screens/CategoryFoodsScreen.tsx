@@ -14,9 +14,9 @@ import {
   ForkKnife,
   Star,
   CaretRight,
-  ArrowLeft,
   Warning,
 } from 'phosphor-react-native';
+import AppBackButton from '../../../components/buttons/AppBackButton';
 
 import {useNavigation, useRoute} from '@react-navigation/native';
 
@@ -65,6 +65,12 @@ const CategoryFoodsScreen = () => {
   const isAll =
     categoryName.toLowerCase() === 'all' ||
     categoryName.toLowerCase() === 'all foods';
+
+  useEffect(() => {
+    if (isAll) {
+      navigation.replace('AllCategories');
+    }
+  }, [isAll, navigation]);
 
   const isUnder20 =
     categoryName.toLowerCase() === 'under 20 mins' ||
@@ -480,17 +486,7 @@ const CategoryFoodsScreen = () => {
       ============================================ */}
 
       <View style={styles.header}>
-        <TouchableOpacity
-          activeOpacity={0.7}
-          onPress={handleBack}
-          style={styles.backButton}>
-
-          <ArrowLeft
-            size={23}
-            color="#171717"
-            weight="bold"
-          />
-        </TouchableOpacity>
+        <AppBackButton onPress={handleBack} />
 
         <View
           style={

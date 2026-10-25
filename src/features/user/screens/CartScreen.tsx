@@ -1,6 +1,7 @@
 import {SafeAreaView} from 'react-native-safe-area-context';
 import React, {useEffect, useState} from 'react';
-import {ArrowLeft, Bicycle, ForkKnife} from 'phosphor-react-native';
+import {Bicycle, ForkKnife} from 'phosphor-react-native';
+import AppBackButton from '../../../components/buttons/AppBackButton';
 
 import {
   ActivityIndicator,
@@ -303,11 +304,7 @@ const CartScreen: React.FC = () => {
 
           <View style={{flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 8}}>
             {navigation.canGoBack() && (
-              <TouchableOpacity
-                onPress={() => navigation.goBack()}
-                style={styles.headerBackButton}>
-                <ArrowLeft size={22} color="#1E232C" weight="bold" />
-              </TouchableOpacity>
+              <AppBackButton />
             )}
             <Text
               style={styles.emptyTitle}>
@@ -382,11 +379,7 @@ const CartScreen: React.FC = () => {
 
               <View style={{flexDirection: 'row', alignItems: 'center', gap: 12}}>
                 {navigation.canGoBack() && (
-                  <TouchableOpacity
-                    onPress={() => navigation.goBack()}
-                    style={styles.headerBackButton}>
-                    <ArrowLeft size={22} color="#1E232C" weight="bold" />
-                  </TouchableOpacity>
+                  <AppBackButton />
                 )}
 
                 <View>

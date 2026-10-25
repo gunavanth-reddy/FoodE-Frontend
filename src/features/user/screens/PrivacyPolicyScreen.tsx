@@ -14,10 +14,10 @@ import {
 } from 'react-native';
 
 import {
-  ArrowLeft,
   LockKey,
   CheckCircle,
 } from 'phosphor-react-native';
+import AppBackButton from '../../../components/buttons/AppBackButton';
 
 const ORANGE = '#FF7A00';
 
@@ -63,18 +63,7 @@ const PrivacyPolicyScreen: React.FC = () => {
         <View style={styles.header}>
           <View style={styles.titleRow}>
             {navigation.canGoBack() && (
-              <TouchableOpacity
-                onPress={() => navigation.goBack()}
-                style={styles.backButton}
-                activeOpacity={0.7}
-                accessibilityLabel="Go back">
-
-                <ArrowLeft
-                  size={22}
-                  color="#1E232C"
-                  weight="bold"
-                />
-              </TouchableOpacity>
+              <AppBackButton />
             )}
 
             <View style={styles.titleIcon}>
