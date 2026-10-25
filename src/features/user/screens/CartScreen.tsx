@@ -1,5 +1,5 @@
 import {SafeAreaView} from 'react-native-safe-area-context';
-import React, {useEffect, useState} from 'react';
+import React, {useCallback, useState} from 'react';
 import {Bicycle, ForkKnife} from 'phosphor-react-native';
 import AppBackButton from '../../../components/buttons/AppBackButton';
 
@@ -18,6 +18,7 @@ import {
 
 import {
   useNavigation,
+  useFocusEffect,
 } from '@react-navigation/native';
 
 import {
@@ -41,6 +42,7 @@ import EmptyCart from '../components/cart/EmptyCart';
 import CartItemCard from '../components/cart/CartItemCard';
 
 import BillSummary from '../components/cart/BillSummary';
+import {navigationRef} from '../../../navigation/navigationRef';
 
 // =====================================================
 // TYPES
@@ -109,76 +111,32 @@ const CartScreen: React.FC = () => {
   ] = useState(false);
 
   // ===================================================
-  // LOGIN ALERT CONTROL
-  // ===================================================
-
-  const [
-    loginAlertShown,
-    setLoginAlertShown,
-  ] = useState(false);
-
-  // ===================================================
   // LOGIN CHECK
   // ===================================================
 
-  useEffect(() => {
+  useFocusEffect(
+    useCallback(() => {
+      if (authLoading || isLoggedIn) {
+        return;
+      }
 
-    if (
-      authLoading ||
-      isLoggedIn ||
-      loginAlertShown
-    ) {
-      return;
-    }
-
-    setLoginAlertShown(true);
-
-    Alert.alert(
-      'Login Required',
-      'Please login to access your cart.',
-      [
-        {
-          text: 'Cancel',
-
-          style: 'cancel',
-
-          onPress: () => {
-
-            setLoginAlertShown(false);
-
-            if (
-              navigation.canGoBack()
-            ) {
-              navigation.goBack();
-            } else {
-              navigation.replace(
-                'Main',
-              );
-            }
+      Alert.alert(
+        'Login Required',
+        'Please login to access your cart.',
+        [
+          {text: 'Not Now', style: 'cancel'},
+          {
+            text: 'Login',
+            onPress: () => {
+              if (navigationRef.isReady()) {
+                navigationRef.navigate('Login');
+              }
+            },
           },
-        },
-
-        {
-          text: 'Login',
-
-          onPress: () => {
-
-            setLoginAlertShown(false);
-
-            navigation.replace(
-              'Login',
-            );
-          },
-        },
-      ],
-    );
-
-  }, [
-    authLoading,
-    isLoggedIn,
-    loginAlertShown,
-    navigation,
-  ]);
+        ],
+      );
+    }, [authLoading, isLoggedIn]),
+  );
 
   const handleClearCart = () => {
     Alert.alert(

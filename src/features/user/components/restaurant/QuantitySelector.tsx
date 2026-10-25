@@ -45,7 +45,9 @@ const QuantitySelector: React.FC<QuantitySelectorProps> = ({
 
   const quantity = getQuantity(item.id);
 
-  const handleAddItem = async () => {
+  const handleAddItem = async (event?: any) => {
+    event?.stopPropagation?.();
+
     if (onAdd) {
       onAdd();
       return;

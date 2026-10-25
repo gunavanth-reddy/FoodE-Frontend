@@ -5,6 +5,7 @@ import React, {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from 'react';
 
@@ -204,6 +205,8 @@ export const CartProvider = ({
     isLoggedIn,
     loading: authLoading,
   } = useAuth();
+
+  const guestLoginPromptOpen = useRef(false);
 
   // ===================================================
   // STATE
@@ -602,16 +605,31 @@ export const CartProvider = ({
       !token
     ) {
 
-      Alert.alert(
-        'Login Required',
-        'Please login to add food to your cart.',
-        [
-          {
-            text: 'Login Now',
-            onPress: () => navigationRef.navigate('Login'),
-          },
-        ],
-      );
+      if (!guestLoginPromptOpen.current) {
+        guestLoginPromptOpen.current = true;
+        Alert.alert(
+          'Login Required',
+          'Please login to add food to your cart.',
+          [
+            {
+              text: 'Not Now',
+              style: 'cancel',
+              onPress: () => {
+                guestLoginPromptOpen.current = false;
+              },
+            },
+            {
+              text: 'Login Now',
+              onPress: () => {
+                if (navigationRef.isReady()) {
+                  navigationRef.navigate('Login');
+                }
+                guestLoginPromptOpen.current = false;
+              },
+            },
+          ],
+        );
+      }
 
       return false;
     }
