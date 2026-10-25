@@ -1,7 +1,6 @@
-import React, {memo, useCallback} from 'react';
+import React, {memo} from 'react';
 
 import {
-  FlatList,
   Pressable,
   StyleSheet,
   Text,
@@ -29,28 +28,6 @@ const RestaurantList: React.FC<RestaurantListProps> = ({
   onRestaurantPress,
   onSeeAll,
 }) => {
-  const getRestaurantId = useCallback(
-    (restaurant: Restaurant): string => {
-      const item = restaurant as Restaurant & {
-        _id?: string;
-        id?: string;
-      };
-
-      return String(item._id || item.id || '');
-    },
-    [],
-  );
-
-  const renderRestaurant = useCallback(
-    ({item}: {item: Restaurant}) => (
-      <RestaurantCard
-        restaurant={item}
-        onPress={() => onRestaurantPress(item)}
-      />
-    ),
-    [onRestaurantPress],
-  );
-
   if (!data.length) {
     return null;
   }
@@ -101,15 +78,23 @@ const RestaurantList: React.FC<RestaurantListProps> = ({
       </View>
 
       {/* Restaurant cards */}
-      <FlatList
-        data={data}
-        keyExtractor={getRestaurantId}
-        renderItem={renderRestaurant}
-        scrollEnabled={false}
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.list}
-        removeClippedSubviews={false}
-      />
+      <View style={styles.list}>
+        {data.map((restaurant, index) => {
+          const item = restaurant as Restaurant & {
+            _id?: string;
+            id?: string;
+          };
+          const key = String(item._id || item.id || `restaurant-${index}`);
+
+          return (
+            <RestaurantCard
+              key={key}
+              restaurant={restaurant}
+              onPress={() => onRestaurantPress(restaurant)}
+            />
+          );
+        })}
+      </View>
 
       {/* Bottom separator */}
       <View style={styles.bottomAccent}>

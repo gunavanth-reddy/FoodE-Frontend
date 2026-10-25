@@ -3,6 +3,7 @@ import React, {memo, useMemo, useState} from 'react';
 import {
   Alert,
   ActivityIndicator,
+  Platform,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -151,7 +152,13 @@ const RestaurantCard: React.FC<RestaurantCardProps> = ({
   return (
     <TouchableOpacity
       activeOpacity={0.96}
-      style={[styles.card, !isOpen && styles.closedCard]}
+      style={[
+        styles.card,
+        !isOpen && styles.closedCard,
+        // Override RN Web's `touch-action: manipulation` so vertical swipes
+        // that begin on a tappable card continue scrolling the parent feed in Safari.
+        Platform.OS === 'web' ? ({touchAction: 'pan-y'} as any) : null,
+      ]}
       onPress={handlePress}
       accessibilityRole="button"
       accessibilityLabel={`View ${restaurant.name || 'Restaurant'}${isOpen ? '' : ', currently closed'}`}>
@@ -194,10 +201,11 @@ const RestaurantCard: React.FC<RestaurantCardProps> = ({
         </TouchableOpacity>
 
         {/* Dark overlay for closed restaurants */}
-        {!isOpen && <View style={styles.closedImageOverlay} />}
+        {!isOpen && <View pointerEvents="none" style={styles.closedImageOverlay} />}
 
         {/* Open/closed status badge (top-left) */}
         <View
+          pointerEvents="none"
           style={[
             styles.statusBadge,
             isOpen ? styles.openBadge : styles.closedBadge,
@@ -210,6 +218,7 @@ const RestaurantCard: React.FC<RestaurantCardProps> = ({
 
         {/* Rating badge (top-right) */}
         <View
+          pointerEvents="none"
           style={[
             styles.ratingBadge,
             styles.ratingBadgeWithFavorite,
