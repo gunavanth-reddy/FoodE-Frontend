@@ -32,6 +32,11 @@ export const categories: CategoryItem[] = [
     image: {uri: 'https://cdn.foode.site/categories/bakery.png'},
   },
   {
+    id: '16',
+    name: 'Curries',
+    image: {uri: 'https://cdn.foode.site/categories/curry.png'},
+  },
+  {
     id: '4',
     name: 'Cakes',
     image: {uri: 'https://cdn.foode.site/categories/cakes.png'},

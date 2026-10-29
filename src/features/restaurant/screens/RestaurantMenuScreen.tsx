@@ -851,26 +851,6 @@ const RestaurantMenuScreen = ({
         {/* HEADER */}
         {/* ========================================= */}
 
-        {activeMenuTab === 'categories' && <View
-          style={
-            styles.header
-          }>
-          <TouchableOpacity
-            activeOpacity={0.8}
-            onPress={handleAddCategory}
-            style={styles.categoryButton}>
-
-            <View style={styles.buttonContent}>
-              <Plus size={17} color="#FF7A00" weight="bold" />
-              <Text style={styles.categoryButtonText}>
-                Add Category
-              </Text>
-            </View>
-
-          </TouchableOpacity>
-
-        </View>}
-
         <View style={styles.menuTabs} accessibilityRole="tablist">
           <TouchableOpacity
             activeOpacity={0.8}
@@ -1007,6 +987,18 @@ const RestaurantMenuScreen = ({
               Manage your menu categories
             </Text>
           </View>
+
+          <TouchableOpacity
+            activeOpacity={0.8}
+            onPress={handleAddCategory}
+            style={styles.categoryButton}>
+            <View style={styles.buttonContent}>
+              <Plus size={17} color="#FF7A00" weight="bold" />
+              <Text style={styles.categoryButtonText}>
+                Add Category
+              </Text>
+            </View>
+          </TouchableOpacity>
 
         </View>
 

@@ -38,6 +38,11 @@ export const categories: CategoryItem[] = [
     image: require('../../../../../assets/categories/bakery.png'),
   },
   {
+    id: '16',
+    name: 'Curries',
+    image: require('../../../../../assets/categories/curry.png'),
+  },
+  {
     id: '4',
     name: 'Cakes',
     image: require('../../../../../assets/categories/cakes.png'),
