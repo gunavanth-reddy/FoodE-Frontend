@@ -1,9 +1,11 @@
 import React, {
   useCallback,
   useMemo,
+  useRef,
   useState,
 } from 'react';
 import {
+  Animated,
   ActivityIndicator,
   RefreshControl,
   ScrollView,
@@ -70,6 +72,7 @@ type NavigationProp =
 const HomeScreen: React.FC = () => {
   const navigation =
     useNavigation<NavigationProp>();
+  const scrollOffset = useRef(new Animated.Value(0)).current;
 
   const [restaurants, setRestaurants] = useState<RestaurantCardData[]>([]);
   const [loadingRestaurants, setLoadingRestaurants] = useState(true);
@@ -270,6 +273,10 @@ const HomeScreen: React.FC = () => {
       <View style={styles.body}>
         <ScrollView
           showsVerticalScrollIndicator={false}
+          onScroll={event => {
+            scrollOffset.setValue(event.nativeEvent.contentOffset.y);
+          }}
+          scrollEventThrottle={16}
           bounces
           contentContainerStyle={
             styles.scrollContent
@@ -441,6 +448,7 @@ const HomeScreen: React.FC = () => {
             <RestaurantList
               title="Restaurants"
               data={topRatedRestaurants}
+              scrollOffset={scrollOffset}
               onSeeAll={() => navigation.navigate('Restaurants')}
               onRestaurantPress={restaurant =>
                 navigation.navigate('RestaurantDetails', {restaurant})

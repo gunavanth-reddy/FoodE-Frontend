@@ -1,8 +1,9 @@
-import React, {memo, useMemo, useState} from 'react';
+import React, {memo, useEffect, useMemo, useRef, useState} from 'react';
 
 import {
   Alert,
   ActivityIndicator,
+  Animated,
   Platform,
   StyleSheet,
   Text,
@@ -30,6 +31,7 @@ interface RestaurantCardProps {
   showDeliveryChip?: boolean;
   isFavorite?: boolean;
   onFavoritePress?: () => void | Promise<void>;
+  scrollOffset?: Animated.Value;
 }
 
 const COLORS = {
@@ -53,12 +55,66 @@ const RestaurantCard: React.FC<RestaurantCardProps> = ({
   showDeliveryChip = true,
   isFavorite = false,
   onFavoritePress,
+  scrollOffset,
 }) => {
   // Use the actual restaurant status supplied by the backend.
   const isOpen = restaurant.isOpen !== false;
   const {isRestaurantFavorite, toggleRestaurantFavorite} = useFavorites();
   const favoriteActive = isFavorite || isRestaurantFavorite(restaurant);
   const [favoriteLoading, setFavoriteLoading] = useState(false);
+  const swingAngle = useRef(new Animated.Value(0)).current;
+  const swingResetTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    if (isOpen || !scrollOffset) {
+      return;
+    }
+
+    let previousOffset: number | null = null;
+    let previousTime = 0;
+    const listenerId = scrollOffset.addListener(({value}) => {
+      const now = Date.now();
+      if (previousOffset !== null) {
+        const elapsed = Math.max(now - previousTime, 1);
+        const velocity = (value - previousOffset) / elapsed;
+        if (Math.abs(velocity) > 0.12) {
+          const oppositeSwing = Math.max(-22, Math.min(22, -velocity * 7));
+          Animated.spring(swingAngle, {
+            toValue: oppositeSwing,
+            useNativeDriver: true,
+            tension: 95,
+            friction: 9,
+          }).start();
+
+          if (swingResetTimer.current) {
+            clearTimeout(swingResetTimer.current);
+          }
+          swingResetTimer.current = setTimeout(() => {
+            Animated.spring(swingAngle, {
+              toValue: 0,
+              velocity: -oppositeSwing / 12,
+              useNativeDriver: true,
+              tension: 34,
+              friction: 4,
+            }).start();
+            swingResetTimer.current = null;
+          }, 90);
+        }
+      }
+      previousOffset = value;
+      previousTime = now;
+    });
+
+    return () => {
+      scrollOffset.removeListener(listenerId);
+      if (swingResetTimer.current) {
+        clearTimeout(swingResetTimer.current);
+        swingResetTimer.current = null;
+      }
+      swingAngle.stopAnimation();
+      swingAngle.setValue(0);
+    };
+  }, [isOpen, scrollOffset, swingAngle]);
 
   const handleFavoritePress = async () => {
     if (favoriteLoading) return;
@@ -209,9 +265,23 @@ const RestaurantCard: React.FC<RestaurantCardProps> = ({
             <Text style={styles.statusText}>OPEN NOW</Text>
           </View>
         ) : (
-          <View
+          <Animated.View
             pointerEvents="none"
-            style={styles.closedHanger}>
+            style={[
+              styles.closedHanger,
+              {
+                transformOrigin: '50% 8%',
+                transform: [
+                  {
+                    rotate: swingAngle.interpolate({
+                      inputRange: [-22, 22],
+                      outputRange: ['-22deg', '22deg'],
+                      extrapolate: 'clamp',
+                    }),
+                  },
+                ],
+              },
+            ]}>
             <View style={styles.hangerAnchor} />
             <View style={[styles.hangerCord, styles.leftHangerCord]} />
             <View style={[styles.hangerCord, styles.rightHangerCord]} />
@@ -222,7 +292,7 @@ const RestaurantCard: React.FC<RestaurantCardProps> = ({
                 <Text style={styles.hangingSignText}>CLOSED</Text>
               </View>
             </View>
-          </View>
+          </Animated.View>
         )}
 
         {/* Rating badge (top-right) */}

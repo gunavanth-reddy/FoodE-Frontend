@@ -1,6 +1,7 @@
 import React, {memo} from 'react';
 
 import {
+  Animated,
   Pressable,
   StyleSheet,
   Text,
@@ -18,6 +19,7 @@ interface RestaurantListProps {
   data: Restaurant[];
   onRestaurantPress: (restaurant: Restaurant) => void;
   onSeeAll?: () => void;
+  scrollOffset?: Animated.Value;
 }
 
 const ORANGE = '#FF7A00';
@@ -27,6 +29,7 @@ const RestaurantList: React.FC<RestaurantListProps> = ({
   data,
   onRestaurantPress,
   onSeeAll,
+  scrollOffset,
 }) => {
   if (!data.length) {
     return null;
@@ -91,6 +94,7 @@ const RestaurantList: React.FC<RestaurantListProps> = ({
               key={key}
               restaurant={restaurant}
               onPress={() => onRestaurantPress(restaurant)}
+              scrollOffset={scrollOffset}
             />
           );
         })}
