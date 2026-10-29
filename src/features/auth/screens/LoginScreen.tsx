@@ -152,7 +152,7 @@ const LoginScreen = ({navigation}: any) => {
         role: normalizedRole,
       };
 
-      await login(normalizedUser, response.token);
+      await login(normalizedUser, response.token, response.refreshToken);
 
       if (normalizedRole === 'restaurant_owner') {
         navigation.replace('RestaurantOwner');

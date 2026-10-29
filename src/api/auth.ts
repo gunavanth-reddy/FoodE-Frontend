@@ -62,7 +62,16 @@ export interface LoginResponse {
   success: boolean;
   message: string;
   token?: string;
+  refreshToken?: string;
   user?: AuthUser;
+}
+
+export interface RefreshedSession {
+  success: boolean;
+  message: string;
+  token: string;
+  refreshToken: string;
+  user: AuthUser;
 }
 
 export interface ApiResponse {
@@ -243,6 +252,16 @@ export const loginUser = async (
     normalizedError.code = originalError?.code;
     throw normalizedError;
   }
+};
+
+export const refreshSession = async (
+  refreshToken: string,
+): Promise<RefreshedSession> => {
+  const response = await api.post<RefreshedSession>(
+    '/auth/refresh',
+    {refreshToken},
+  );
+  return response.data;
 };
 
 // =========================

@@ -1,12 +1,16 @@
 import React, {
+  useCallback,
   createContext,
   ReactNode,
   useContext,
   useEffect,
+  useRef,
   useState,
 } from 'react';
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import {AppState} from 'react-native';
+import {refreshSession} from '../api/auth';
 
 // =====================================================
 // USER ROLE
@@ -108,6 +112,7 @@ interface AuthContextType {
   login: (
     user: User,
     token: string,
+    refreshToken?: string,
   ) => Promise<void>;
 
   logout: () => Promise<void>;
@@ -141,6 +146,54 @@ export const AuthProvider = ({
 
   const [loading, setLoading] =
     useState<boolean>(true);
+  const refreshInFlight = useRef<Promise<boolean> | null>(null);
+
+  const refreshSavedSession = useCallback(async (): Promise<boolean> => {
+    if (!token || !user) {
+      return false;
+    }
+    if (refreshInFlight.current) {
+      return refreshInFlight.current;
+    }
+
+    const refreshTask = (async () => {
+      try {
+        const savedRefreshToken = await AsyncStorage.getItem('refreshToken');
+        const session = await refreshSession(savedRefreshToken || token);
+        const normalizedUser = normalizeUser(session.user);
+        if (!session.token || !session.refreshToken || !normalizedUser) {
+          return false;
+        }
+
+        await Promise.all([
+          AsyncStorage.setItem('user', JSON.stringify(normalizedUser)),
+          AsyncStorage.setItem('token', session.token),
+          AsyncStorage.setItem('refreshToken', session.refreshToken),
+        ]);
+        setUser(normalizedUser);
+        setToken(session.token);
+        return true;
+      } catch (error) {
+        const status = (error as any)?.response?.status;
+        if (status === 401 || status === 403) {
+          await Promise.all([
+            AsyncStorage.removeItem('user'),
+            AsyncStorage.removeItem('token'),
+            AsyncStorage.removeItem('refreshToken'),
+          ]);
+          setUser(null);
+          setToken(null);
+        }
+        // Keep a saved session on transient network/server failures and retry later.
+        return false;
+      } finally {
+        refreshInFlight.current = null;
+      }
+    })();
+
+    refreshInFlight.current = refreshTask;
+    return refreshTask;
+  }, [token, user]);
 
   // ===================================================
   // LOAD SAVED SESSION
@@ -154,6 +207,8 @@ export const AuthProvider = ({
 
         const savedToken =
           await AsyncStorage.getItem('token');
+        const savedRefreshToken =
+          await AsyncStorage.getItem('refreshToken');
 
         if (savedUser && savedToken) {
           const parsedUser =
@@ -169,14 +224,46 @@ export const AuthProvider = ({
               JSON.stringify(normalizedUser),
             );
 
-            setUser(normalizedUser);
-            setToken(savedToken);
+            try {
+              // Refresh on app startup. This also upgrades still-valid legacy
+              // 7-day access tokens to a refresh-token session.
+              const session = await refreshSession(
+                savedRefreshToken || savedToken,
+              );
+              const refreshedUser = normalizeUser(session.user);
+              if (!session.token || !session.refreshToken || !refreshedUser) {
+                throw new Error('Invalid refreshed session response.');
+              }
+              await Promise.all([
+                AsyncStorage.setItem('user', JSON.stringify(refreshedUser)),
+                AsyncStorage.setItem('token', session.token),
+                AsyncStorage.setItem('refreshToken', session.refreshToken),
+              ]);
+              setUser(refreshedUser);
+              setToken(session.token);
+            } catch (refreshError) {
+              const status = (refreshError as any)?.response?.status;
+              if (status === 401 || status === 403) {
+                await Promise.all([
+                  AsyncStorage.removeItem('user'),
+                  AsyncStorage.removeItem('token'),
+                  AsyncStorage.removeItem('refreshToken'),
+                ]);
+                setUser(null);
+                setToken(null);
+              } else {
+                // Stay signed in if the refresh service is temporarily offline.
+                setUser(normalizedUser);
+                setToken(savedToken);
+              }
+            }
           } else {
             // Invalid role/session.
             // Do NOT fall back to customer.
             await Promise.all([
               AsyncStorage.removeItem('user'),
               AsyncStorage.removeItem('token'),
+              AsyncStorage.removeItem('refreshToken'),
             ]);
 
             setUser(null);
@@ -199,6 +286,7 @@ export const AuthProvider = ({
         await Promise.all([
           AsyncStorage.removeItem('user'),
           AsyncStorage.removeItem('token'),
+          AsyncStorage.removeItem('refreshToken'),
         ]);
 
         setUser(null);
@@ -211,6 +299,28 @@ export const AuthProvider = ({
     loadUser();
   }, []);
 
+  // Refresh in the background and when the app returns to the foreground,
+  // before the 7-day access token expires.
+  useEffect(() => {
+    if (!user || !token) {
+      return;
+    }
+
+    const interval = setInterval(() => {
+      void refreshSavedSession();
+    }, 24 * 60 * 60 * 1000);
+    const appStateSubscription = AppState.addEventListener('change', state => {
+      if (state === 'active') {
+        void refreshSavedSession();
+      }
+    });
+
+    return () => {
+      clearInterval(interval);
+      appStateSubscription.remove();
+    };
+  }, [refreshSavedSession, token, user]);
+
   // ===================================================
   // LOGIN
   // ===================================================
@@ -218,6 +328,7 @@ export const AuthProvider = ({
   const login = async (
     loggedInUser: User,
     jwtToken: string,
+    jwtRefreshToken?: string,
   ): Promise<void> => {
     try {
       const normalizedUser =
@@ -238,6 +349,11 @@ export const AuthProvider = ({
         'token',
         jwtToken,
       );
+      if (jwtRefreshToken) {
+        await AsyncStorage.setItem('refreshToken', jwtRefreshToken);
+      } else {
+        await AsyncStorage.removeItem('refreshToken');
+      }
 
       setUser(normalizedUser);
       setToken(jwtToken);
@@ -305,6 +421,7 @@ export const AuthProvider = ({
       await Promise.all([
         AsyncStorage.removeItem('user'),
         AsyncStorage.removeItem('token'),
+        AsyncStorage.removeItem('refreshToken'),
       ]);
 
       setUser(null);
