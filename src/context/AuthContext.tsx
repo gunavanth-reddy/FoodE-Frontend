@@ -99,6 +99,54 @@ const normalizeUser = (
   };
 };
 
+const ACCESS_TOKEN_REFRESH_WINDOW_MS = 5 * 60 * 1000;
+
+const getAccessTokenExpiry = (accessToken: string): number | null => {
+  try {
+    const payload = accessToken.split('.')[1];
+    if (!payload) {
+      return null;
+    }
+
+    const base64 = payload.replace(/-/g, '+').replace(/_/g, '/');
+    const paddedBase64 = base64.padEnd(
+      base64.length + ((4 - (base64.length % 4)) % 4),
+      '=',
+    );
+    const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+    let decoded = '';
+    let bitBuffer = 0;
+    let bitCount = 0;
+    for (const character of paddedBase64) {
+      if (character === '=') {
+        break;
+      }
+      const value = alphabet.indexOf(character);
+      if (value < 0) {
+        return null;
+      }
+      bitBuffer = (bitBuffer << 6) | value;
+      bitCount += 6;
+      if (bitCount >= 8) {
+        bitCount -= 8;
+        decoded += String.fromCharCode((bitBuffer >> bitCount) & 0xff);
+      }
+    }
+    const claims = JSON.parse(decoded);
+    return typeof claims.exp === 'number' ? claims.exp * 1000 : null;
+  } catch {
+    return null;
+  }
+};
+
+const accessTokenNeedsRefresh = (accessToken: string): boolean => {
+  const expiresAt = getAccessTokenExpiry(accessToken);
+  return (
+    expiresAt === null ||
+    expiresAt <= Date.now() + ACCESS_TOKEN_REFRESH_WINDOW_MS
+  );
+};
+
 // =====================================================
 // AUTH CONTEXT TYPE
 // =====================================================
@@ -149,7 +197,7 @@ export const AuthProvider = ({
   const refreshInFlight = useRef<Promise<boolean> | null>(null);
 
   const refreshSavedSession = useCallback(async (): Promise<boolean> => {
-    if (!token || !user) {
+    if (!token || !user || !accessTokenNeedsRefresh(token)) {
       return false;
     }
     if (refreshInFlight.current) {
@@ -224,37 +272,42 @@ export const AuthProvider = ({
               JSON.stringify(normalizedUser),
             );
 
-            try {
-              // Refresh on app startup. This also upgrades still-valid legacy
-              // 7-day access tokens to a refresh-token session.
-              const session = await refreshSession(
-                savedRefreshToken || savedToken,
-              );
-              const refreshedUser = normalizeUser(session.user);
-              if (!session.token || !session.refreshToken || !refreshedUser) {
-                throw new Error('Invalid refreshed session response.');
-              }
-              await Promise.all([
-                AsyncStorage.setItem('user', JSON.stringify(refreshedUser)),
-                AsyncStorage.setItem('token', session.token),
-                AsyncStorage.setItem('refreshToken', session.refreshToken),
-              ]);
-              setUser(refreshedUser);
-              setToken(session.token);
-            } catch (refreshError) {
-              const status = (refreshError as any)?.response?.status;
-              if (status === 401 || status === 403) {
+            if (!accessTokenNeedsRefresh(savedToken)) {
+              setUser(normalizedUser);
+              setToken(savedToken);
+            } else {
+              try {
+                // Refresh only when the access token is expired or close to
+                // expiry. This also upgrades valid legacy access tokens.
+                const session = await refreshSession(
+                  savedRefreshToken || savedToken,
+                );
+                const refreshedUser = normalizeUser(session.user);
+                if (!session.token || !session.refreshToken || !refreshedUser) {
+                  throw new Error('Invalid refreshed session response.');
+                }
                 await Promise.all([
-                  AsyncStorage.removeItem('user'),
-                  AsyncStorage.removeItem('token'),
-                  AsyncStorage.removeItem('refreshToken'),
+                  AsyncStorage.setItem('user', JSON.stringify(refreshedUser)),
+                  AsyncStorage.setItem('token', session.token),
+                  AsyncStorage.setItem('refreshToken', session.refreshToken),
                 ]);
-                setUser(null);
-                setToken(null);
-              } else {
-                // Stay signed in if the refresh service is temporarily offline.
-                setUser(normalizedUser);
-                setToken(savedToken);
+                setUser(refreshedUser);
+                setToken(session.token);
+              } catch (refreshError) {
+                const status = (refreshError as any)?.response?.status;
+                if (status === 401 || status === 403) {
+                  await Promise.all([
+                    AsyncStorage.removeItem('user'),
+                    AsyncStorage.removeItem('token'),
+                    AsyncStorage.removeItem('refreshToken'),
+                  ]);
+                  setUser(null);
+                  setToken(null);
+                } else {
+                  // Stay signed in if the refresh service is temporarily offline.
+                  setUser(normalizedUser);
+                  setToken(savedToken);
+                }
               }
             }
           } else {
@@ -299,8 +352,8 @@ export const AuthProvider = ({
     loadUser();
   }, []);
 
-  // Refresh in the background and when the app returns to the foreground,
-  // before the 7-day access token expires.
+  // Check periodically and when the app returns to the foreground, but only
+  // contact /refresh when the access token is within five minutes of expiry.
   useEffect(() => {
     if (!user || !token) {
       return;
@@ -308,7 +361,7 @@ export const AuthProvider = ({
 
     const interval = setInterval(() => {
       void refreshSavedSession();
-    }, 24 * 60 * 60 * 1000);
+    }, 15 * 60 * 1000);
     const appStateSubscription = AppState.addEventListener('change', state => {
       if (state === 'active') {
         void refreshSavedSession();
