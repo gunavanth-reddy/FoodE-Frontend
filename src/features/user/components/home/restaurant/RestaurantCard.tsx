@@ -12,7 +12,6 @@ import {
 
 import {
   Star,
-  Clock,
   Heart,
   MapPin,
   Bicycle,
@@ -45,7 +44,6 @@ const COLORS = {
   green: '#168348',
   greenLight: '#E8F7ED',
   red: '#D93636',
-  redLight: '#FDECEC',
 };
 
 const RestaurantCard: React.FC<RestaurantCardProps> = ({
@@ -203,18 +201,29 @@ const RestaurantCard: React.FC<RestaurantCardProps> = ({
         {/* Dark overlay for closed restaurants */}
         {!isOpen && <View pointerEvents="none" style={styles.closedImageOverlay} />}
 
-        {/* Open/closed status badge (top-left) */}
-        <View
-          pointerEvents="none"
-          style={[
-            styles.statusBadge,
-            isOpen ? styles.openBadge : styles.closedBadge,
-          ]}>
-          <View style={styles.statusDot} />
-          <Text style={styles.statusText}>
-            {isOpen ? 'OPEN NOW' : 'CLOSED'}
-          </Text>
-        </View>
+        {isOpen ? (
+          <View
+            pointerEvents="none"
+            style={[styles.statusBadge, styles.openBadge]}>
+            <View style={styles.statusDot} />
+            <Text style={styles.statusText}>OPEN NOW</Text>
+          </View>
+        ) : (
+          <View
+            pointerEvents="none"
+            style={styles.closedHanger}>
+            <View style={styles.hangerAnchor} />
+            <View style={[styles.hangerCord, styles.leftHangerCord]} />
+            <View style={[styles.hangerCord, styles.rightHangerCord]} />
+            <View style={styles.hangingSignOuter}>
+              <View style={styles.hangingSignInner}>
+                <View style={[styles.signRivet, styles.leftSignRivet]} />
+                <View style={[styles.signRivet, styles.rightSignRivet]} />
+                <Text style={styles.hangingSignText}>CLOSED</Text>
+              </View>
+            </View>
+          </View>
+        )}
 
         {/* Rating badge (top-right) */}
         <View
@@ -302,14 +311,6 @@ const RestaurantCard: React.FC<RestaurantCardProps> = ({
           </View>
         ) : null}
 
-        {/* Closed notice */}
-        {!isOpen && (
-          <View style={styles.closedNotice}>
-            <Text style={styles.closedNoticeText}>
-              Restaurant is closed right now
-            </Text>
-          </View>
-        )}
       </View>
     </TouchableOpacity>
   );
@@ -370,7 +371,7 @@ const styles = StyleSheet.create({
 
   closedImageOverlay: {
     ...StyleSheet.absoluteFill,
-    backgroundColor: 'rgba(25, 18, 15, 0.32)',
+    backgroundColor: 'rgba(25, 18, 15, 0.2)',
   },
 
   statusBadge: {
@@ -390,10 +391,6 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.green,
   },
 
-  closedBadge: {
-    backgroundColor: COLORS.red,
-  },
-
   statusDot: {
     width: 6,
     height: 6,
@@ -407,6 +404,108 @@ const styles = StyleSheet.create({
     fontSize: 9,
     fontWeight: '900',
     letterSpacing: 0.65,
+  },
+
+  closedHanger: {
+    ...StyleSheet.absoluteFill,
+    zIndex: 1,
+  },
+
+  hangerAnchor: {
+    position: 'absolute',
+    top: '8%',
+    left: '50%',
+    marginLeft: -5,
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: '#F5F1ED',
+    borderWidth: 1,
+    borderColor: '#BEB6AF',
+    zIndex: 2,
+  },
+
+  hangerCord: {
+    position: 'absolute',
+    top: '31%',
+    width: '40%',
+    height: 2,
+    borderRadius: 1,
+    backgroundColor: '#E7E0DA',
+    shadowColor: '#24180F',
+    shadowOffset: {width: 0, height: 1},
+    shadowOpacity: 0.26,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+
+  leftHangerCord: {
+    left: '15%',
+    transform: [{rotate: '-34deg'}],
+  },
+
+  rightHangerCord: {
+    left: '45%',
+    transform: [{rotate: '34deg'}],
+  },
+
+  hangingSignOuter: {
+    position: 'absolute',
+    top: '49%',
+    left: '14%',
+    width: '72%',
+    height: 62,
+    padding: 5,
+    borderRadius: 13,
+    backgroundColor: '#A7191D',
+    borderWidth: 1,
+    borderColor: '#871216',
+    shadowColor: '#21100D',
+    shadowOffset: {width: 0, height: 5},
+    shadowOpacity: 0.32,
+    shadowRadius: 8,
+    elevation: 7,
+    transform: [{rotate: '-1.5deg'}],
+  },
+
+  hangingSignInner: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 9,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.72)',
+    backgroundColor: '#D93636',
+  },
+
+  signRivet: {
+    position: 'absolute',
+    top: 5,
+    width: 5,
+    height: 5,
+    borderRadius: 3,
+    backgroundColor: '#F8D9D4',
+    borderWidth: 1,
+    borderColor: '#A7191D',
+  },
+
+  leftSignRivet: {
+    left: 6,
+  },
+
+  rightSignRivet: {
+    right: 6,
+  },
+
+  hangingSignText: {
+    color: '#FFFFFF',
+    fontSize: 20,
+    lineHeight: 24,
+    fontWeight: '900',
+    letterSpacing: 2.4,
+    textShadowColor: 'rgba(80, 0, 0, 0.25)',
+    textShadowOffset: {width: 0, height: 1},
+    textShadowRadius: 1,
   },
 
   ratingBadge: {
@@ -526,18 +625,4 @@ const styles = StyleSheet.create({
     marginLeft: 4,
   },
 
-  closedNotice: {
-    marginTop: 8,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 8,
-    backgroundColor: '#FEE2E2',
-    alignSelf: 'flex-start',
-  },
-
-  closedNoticeText: {
-    color: COLORS.red,
-    fontSize: 11,
-    fontWeight: '800',
-  },
 });
