@@ -170,6 +170,33 @@ const timeToMinutes = (
   return hours * 60 + minutes;
 };
 
+type DeliveryTimeWindowId = '11-15' | '15-18' | '18-21';
+
+const DELIVERY_TIME_WINDOWS: Array<{
+  id: DeliveryTimeWindowId;
+  label: string;
+  start: number;
+  end: number;
+}> = [
+  {id: '11-15', label: '11 AM – 3 PM', start: 11 * 60, end: 15 * 60},
+  {id: '15-18', label: '3 PM – 6 PM', start: 15 * 60, end: 18 * 60},
+  {id: '18-21', label: '6 PM – 9 PM', start: 18 * 60, end: 21 * 60},
+];
+
+const getCurrentDeliveryTimeWindow = (
+  currentMinutes: number,
+): DeliveryTimeWindowId => {
+  if (currentMinutes >= 18 * 60 && currentMinutes < 21 * 60) {
+    return '18-21';
+  }
+  if (currentMinutes >= 15 * 60 && currentMinutes < 18 * 60) {
+    return '15-18';
+  }
+  // Before 3 PM (including before 11 AM) the next useful window is 11 AM–3 PM.
+  // After 9 PM, tomorrow's first window is the next available period.
+  return '11-15';
+};
+
 // =====================================================
 // CURRENT INDIA TIME
 // =====================================================
@@ -598,6 +625,10 @@ const CheckoutScreen = () => {
   );
 
   const [dateTab, setDateTab] = useState<'all' | 'today' | 'tomorrow'>('all');
+  const [selectedTimeWindow, setSelectedTimeWindow] =
+    useState<DeliveryTimeWindowId>(() =>
+      getCurrentDeliveryTimeWindow(getCurrentIndiaMinutes()),
+    );
 
   const todaySlots = useMemo(
     () => deliverySlots.filter(s => (s.date || todayDateStr) === todayDateStr),
@@ -619,10 +650,24 @@ const CheckoutScreen = () => {
   }, [deliverySlots, todaySlots.length, tomorrowSlots.length]);
 
   const visibleSlots = useMemo(() => {
-    if (dateTab === 'today') return todaySlots;
-    if (dateTab === 'tomorrow') return tomorrowSlots;
-    return deliverySlots;
-  }, [dateTab, todaySlots, tomorrowSlots, deliverySlots]);
+    const slotsForDate =
+      dateTab === 'today'
+        ? todaySlots
+        : dateTab === 'tomorrow'
+          ? tomorrowSlots
+          : deliverySlots;
+    const timeWindow = DELIVERY_TIME_WINDOWS.find(
+      window => window.id === selectedTimeWindow,
+    );
+    if (!timeWindow) return slotsForDate;
+    const slotsInCurrentWindow = slotsForDate.filter(slot => {
+      const startMinutes = timeToMinutes(slot.startTime);
+      return startMinutes >= timeWindow.start && startMinutes < timeWindow.end;
+    });
+    // Keep any configured slots visible when a restaurant has no slots in
+    // the current time window (for example, a restaurant with custom hours).
+    return slotsInCurrentWindow.length > 0 ? slotsInCurrentWindow : slotsForDate;
+  }, [dateTab, todaySlots, tomorrowSlots, deliverySlots, selectedTimeWindow]);
 
   // ===================================================
   // DELIVERY ADDRESS
@@ -877,6 +922,8 @@ const CheckoutScreen = () => {
               ? backendCurrentMinutes
               : getCurrentIndiaMinutes();
 
+          setSelectedTimeWindow(getCurrentDeliveryTimeWindow(currentMinutes));
+
           console.log(
             'FoodE: Current India minutes:',
             currentMinutes,
@@ -1096,30 +1143,6 @@ const CheckoutScreen = () => {
     const datePrefix =
       slot.date === today ? 'Today' : slot.date === tomorrow ? 'Tomorrow' : slot.date;
     return `${datePrefix} • ${time}`;
-  };
-
-  // ===================================================
-  // ETA LABEL
-  // ===================================================
-
-  const getEtaLabel = (
-    slot: AvailableDeliverySlot,
-  ): string => {
-    if (slot.etaLabel) {
-      return slot.etaLabel;
-    }
-
-    if (
-      slot.estimatedDelivery
-    ) {
-      return `Delivery in ${slot.estimatedDelivery.minMinutes}–${slot.estimatedDelivery.maxMinutes} mins`;
-    }
-
-    if (slot.deliveryTime) {
-      return `Delivery in ${slot.deliveryTime.min}–${slot.deliveryTime.max} mins`;
-    }
-
-    return 'Delivery in 20–35 mins';
   };
 
   // ===================================================
@@ -1827,28 +1850,24 @@ const CheckoutScreen = () => {
                           styles.slotInfo
                         }>
 
-                        <View style={styles.slotHeaderRow}>
-                          <Text
-                            style={[
-                              styles.etaText,
-                              isTomorrow && styles.etaTextTomorrow,
-                              isSelected &&
-                                (isTomorrow
-                                  ? styles.etaTextSelectedTomorrow
-                                  : styles.etaTextSelected),
-                            ]}>
-                            {isTomorrow ? 'Pre-Booking Slot' : getEtaLabel(slot)}
-                          </Text>
-
-                          {isTomorrow && (
+                        {isTomorrow && (
+                          <View style={styles.slotHeaderRow}>
+                            <Text
+                              style={[
+                                styles.etaText,
+                                styles.etaTextTomorrow,
+                                isSelected && styles.etaTextSelectedTomorrow,
+                              ]}>
+                              Pre-Booking Slot
+                            </Text>
                             <View style={styles.preBookingBadge}>
                               <Sparkle size={10} color="#7C3AED" weight="fill" />
                               <Text style={styles.preBookingBadgeText}>
                                 PRE-BOOKING
                               </Text>
                             </View>
-                          )}
-                        </View>
+                          </View>
+                        )}
 
                         <Text
                           style={[
@@ -1908,16 +1927,14 @@ const CheckoutScreen = () => {
                 style={
                   styles.slotEmptyTitle
                 }>
-                No delivery slots
-                available
+                No delivery slots available
               </Text>
 
               <Text
                 style={
                   styles.slotEmptyText
                 }>
-                {slotError ||
-                  'Please try again later.'}
+                {slotError || 'Please try again later.'}
               </Text>
 
               {restaurantId && (
@@ -1943,8 +1960,7 @@ const CheckoutScreen = () => {
 
           {/* SELECTED SLOT OR PRE-BOOKING BANNER */}
 
-          {selectedDeliverySlot && (
-            isTomorrowSelected ? (
+          {selectedDeliverySlot && isTomorrowSelected && (
               <View style={styles.preBookingBanner}>
                 <View style={styles.preBookingBannerHeader}>
                   <View style={styles.preBookingBannerIcon}>
@@ -1972,31 +1988,6 @@ const CheckoutScreen = () => {
                   </Text>
                 </View>
               </View>
-            ) : (
-              <View
-                style={
-                  styles.selectedSlotBadge
-                }>
-                <Text
-                  style={
-                    styles.selectedSlotBadgeText
-                  }>
-                  ✓{' '}
-                  {getEtaLabel(
-                    selectedDeliverySlot,
-                  )}
-                </Text>
-
-                <Text
-                  style={
-                    styles.selectedSlotTime
-                  }>
-                  {getSlotLabel(
-                    selectedDeliverySlot,
-                  )}
-                </Text>
-              </View>
-            )
           )}
         </View>
 
@@ -2560,10 +2551,6 @@ const styles =
       marginBottom: 3,
     },
 
-    etaTextSelected: {
-      color: '#FF5A00',
-    },
-
     slotTime: {
       fontSize: 13,
       fontWeight: '600',
@@ -2645,29 +2632,6 @@ const styles =
       fontSize: 13,
       fontWeight: '700',
       color: '#FF5A00',
-    },
-
-    selectedSlotBadge: {
-      marginTop: 2,
-      paddingHorizontal: 12,
-      paddingVertical: 10,
-      borderRadius: 9,
-      backgroundColor: '#F3F8F4',
-      borderWidth: 1,
-      borderColor: '#DDEBDD',
-    },
-
-    selectedSlotBadgeText: {
-      fontSize: 13,
-      fontWeight: '800',
-      color: '#3A7D44',
-    },
-
-    selectedSlotTime: {
-      marginTop: 3,
-      fontSize: 12,
-      fontWeight: '600',
-      color: '#5D765F',
     },
 
     // ================================================

@@ -1,6 +1,7 @@
-import React, {useCallback, useEffect, useMemo, useState} from 'react';
+import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {
   ActivityIndicator,
+  Animated,
   FlatList,
   RefreshControl,
   StatusBar,
@@ -28,6 +29,7 @@ const RestaurantsScreen: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const scrollOffset = useRef(new Animated.Value(0)).current;
 
   const loadRestaurants = useCallback(async () => {
     try {
@@ -157,8 +159,13 @@ const RestaurantsScreen: React.FC = () => {
             onPress={restaurant =>
               navigation.navigate('RestaurantDetails', {restaurant})
             }
+            scrollOffset={scrollOffset}
           />
         )}
+        onScroll={event =>
+          scrollOffset.setValue(event.nativeEvent.contentOffset.y)
+        }
+        scrollEventThrottle={16}
         contentContainerStyle={styles.list}
         showsVerticalScrollIndicator={false}
         refreshControl={
