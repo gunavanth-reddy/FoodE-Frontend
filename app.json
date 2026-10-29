@@ -17,7 +17,7 @@
       }
     },
     "android": {
-      "versionCode": 4,
+      "versionCode": 6,
       "package": "com.foode.site",
       "icon": "./plugins/app-icons/android/mipmap-xxxhdpi/ic_launcher.png",
       "googleServicesFile": "./google-services.json",
