@@ -77,6 +77,8 @@ export interface CartItem {
 
   quantity: number;
 
+  isAvailable?: boolean;
+
   restaurantId: string;
 
   restaurantName?: string;
@@ -392,6 +394,7 @@ export const CartProvider = ({
               originalPrice > finalPrice ? originalPrice : undefined,
             description: food?.description || '',
             quantity,
+            isAvailable: food?.isAvailable !== false,
             restaurantId,
             restaurantName: backendRestaurant?.name,
             rating: Number(food?.rating) || 0,

@@ -120,8 +120,11 @@ const CartQuantitySelector: React.FC<
 
       <TouchableOpacity
         activeOpacity={0.7}
-        disabled={updating}
-        style={styles.button}
+        disabled={updating || item.isAvailable === false}
+        style={[
+          styles.button,
+          item.isAvailable === false && styles.disabledButton,
+        ]}
         onPress={handleIncrease}>
 
         <Text
@@ -185,6 +188,10 @@ const styles =
       justifyContent: 'center',
 
       backgroundColor: '#FFF7F0',
+    },
+
+    disabledButton: {
+      opacity: 0.45,
     },
 
     // =================================================

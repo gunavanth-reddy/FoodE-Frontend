@@ -173,7 +173,6 @@ const HomeScreen: React.FC = () => {
     useMemo(() => {
       return foods.filter(
         food =>
-          food.isAvailable === true &&
           typeof food.preparationTime ===
             'number' &&
           food.preparationTime <= 20,
@@ -184,7 +183,6 @@ const HomeScreen: React.FC = () => {
     useMemo(() => {
       return foods.filter(
         food =>
-          food.isAvailable === true &&
           isFoodNonVegetarian(food),
       );
     }, [foods]);
@@ -193,7 +191,6 @@ const HomeScreen: React.FC = () => {
     useMemo(() => {
       return foods.filter(
         food =>
-          food.isAvailable === true &&
           isFoodVegetarian(food),
       );
     }, [foods]);

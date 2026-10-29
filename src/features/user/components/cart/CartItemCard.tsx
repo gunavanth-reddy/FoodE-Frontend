@@ -40,6 +40,12 @@ const CartItemCard: React.FC<CartItemCardProps> = ({item}) => {
           {item.name}
         </Text>
 
+        {item.isAvailable === false && (
+          <View style={styles.unavailableBadge}>
+            <Text style={styles.unavailableText}>UNAVAILABLE</Text>
+          </View>
+        )}
+
         {!!item.restaurantName && (
           <Text numberOfLines={1} style={styles.restaurantName}>
             {item.restaurantName}
@@ -133,6 +139,22 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: '#111827',
     letterSpacing: -0.2,
+  },
+
+  unavailableBadge: {
+    alignSelf: 'flex-start',
+    marginTop: 5,
+    paddingHorizontal: 6,
+    paddingVertical: 4,
+    borderRadius: 6,
+    backgroundColor: '#FDECEC',
+  },
+
+  unavailableText: {
+    color: '#B42318',
+    fontSize: 7,
+    fontWeight: '900',
+    letterSpacing: 0.25,
   },
 
   restaurantName: {

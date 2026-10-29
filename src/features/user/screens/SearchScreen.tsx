@@ -812,6 +812,12 @@ const SearchScreen = () => {
               ]}
             />
           </View>
+
+          {item.isAvailable === false && (
+            <View style={styles.unavailableBadge}>
+              <Text style={styles.unavailableBadgeText}>UNAVAILABLE</Text>
+            </View>
+          )}
         </View>
 
         <View
@@ -1529,6 +1535,24 @@ const styles =
       width: '100%',
       height: '100%',
       resizeMode: 'cover',
+    },
+
+    unavailableBadge: {
+      position: 'absolute',
+      left: 4,
+      right: 4,
+      bottom: 4,
+      alignItems: 'center',
+      paddingVertical: 3,
+      borderRadius: 6,
+      backgroundColor: 'rgba(41, 31, 27, 0.84)',
+    },
+
+    unavailableBadgeText: {
+      color: '#FFFFFF',
+      fontSize: 7,
+      fontWeight: '900',
+      letterSpacing: 0.35,
     },
 
     imagePlaceholder: {

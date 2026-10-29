@@ -81,6 +81,7 @@ const FoodCard: React.FC<FoodCardProps> = ({
   const displayPrice = hasDiscount ? discountedPrice : originalPrice;
 
   const isVeg = isFoodVegetarian(foodRecord);
+  const isUnavailable = food.isAvailable === false;
 
   const preparationTime = foodRecord.preparationTime;
 
@@ -98,6 +99,10 @@ const FoodCard: React.FC<FoodCardProps> = ({
   };
 
   const handleAdd = async () => {
+    if (isUnavailable) {
+      return;
+    }
+
     if (onAdd) {
       onAdd();
       return;
@@ -192,6 +197,12 @@ const FoodCard: React.FC<FoodCardProps> = ({
             ]}
           />
         </View>
+
+        {isUnavailable && (
+          <View style={styles.unavailableBadge} pointerEvents="none">
+            <Text style={styles.unavailableBadgeText}>UNAVAILABLE</Text>
+          </View>
+        )}
       </View>
 
       {/* Food Details */}
@@ -219,16 +230,16 @@ const FoodCard: React.FC<FoodCardProps> = ({
               style={({pressed}) => [
                 styles.addButton,
                 pressed && styles.addButtonPressed,
-                (adding || cartLoading) &&
+                (isUnavailable || adding || cartLoading) &&
                   styles.addButtonDisabled,
               ]}
               onPress={event => {
                 event.stopPropagation();
                 handleAdd();
               }}
-              disabled={!onAdd && (adding || cartLoading)}>
+              disabled={isUnavailable || (!onAdd && (adding || cartLoading))}>
               <Text style={styles.addText}>
-                {adding ? '...' : 'ADD +'}
+                {isUnavailable ? 'SOLD OUT' : adding ? '...' : 'ADD +'}
               </Text>
             </Pressable>
           )}
@@ -287,6 +298,23 @@ const styles = StyleSheet.create({
   image: {
     width: '100%',
     height: '100%',
+  },
+
+  unavailableBadge: {
+    position: 'absolute',
+    left: 7,
+    bottom: 7,
+    paddingHorizontal: 7,
+    paddingVertical: 4,
+    borderRadius: 7,
+    backgroundColor: 'rgba(41, 31, 27, 0.84)',
+  },
+
+  unavailableBadgeText: {
+    color: '#FFFFFF',
+    fontSize: 8,
+    fontWeight: '900',
+    letterSpacing: 0.45,
   },
 
   timeBadge: {

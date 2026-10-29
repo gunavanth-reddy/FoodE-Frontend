@@ -140,7 +140,6 @@ export const getFoodsUnder20Minutes = async (): Promise<Food[]> => {
 
   return foods.filter(
     food =>
-      food.isAvailable &&
       typeof food.preparationTime === 'number' &&
       food.preparationTime <= 20,
   );

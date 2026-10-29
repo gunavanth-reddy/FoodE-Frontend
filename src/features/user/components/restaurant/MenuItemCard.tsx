@@ -65,6 +65,14 @@ const MenuItemCard: React.FC<MenuItemCardProps> = ({
       return;
     }
 
+    if (item.isAvailable === false) {
+      Alert.alert(
+        'Currently unavailable',
+        'This item is temporarily unavailable and cannot be added to your cart.',
+      );
+      return;
+    }
+
     try {
       setAdding(true);
       await onPress(item);
@@ -102,6 +110,12 @@ const MenuItemCard: React.FC<MenuItemCardProps> = ({
 
         {/* Name */}
         <Text style={styles.name}>{item.name}</Text>
+
+        {item.isAvailable === false && (
+          <View style={styles.unavailableBadge}>
+            <Text style={styles.unavailableBadgeText}>UNAVAILABLE</Text>
+          </View>
+        )}
 
         {/* Rating and reviewer count */}
         <View style={styles.ratingRow}>
@@ -175,7 +189,8 @@ const MenuItemCard: React.FC<MenuItemCardProps> = ({
           item={item}
           onAdd={handleAdd}
           adding={adding}
-          disabled={!restaurantOpen}
+          disabled={!restaurantOpen || item.isAvailable === false}
+          unavailable={item.isAvailable === false}
         />
       </View>
     </TouchableOpacity>
@@ -238,6 +253,22 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '800',
     color: '#2A211B',
+  },
+
+  unavailableBadge: {
+    alignSelf: 'flex-start',
+    marginTop: 4,
+    paddingHorizontal: 7,
+    paddingVertical: 3,
+    borderRadius: 6,
+    backgroundColor: '#FDECEC',
+  },
+
+  unavailableBadgeText: {
+    color: '#B42318',
+    fontSize: 8,
+    fontWeight: '900',
+    letterSpacing: 0.45,
   },
 
   ratingRow: {

@@ -22,6 +22,7 @@ interface QuantitySelectorProps {
   onAdd?: () => void;
   adding?: boolean;
   disabled?: boolean;
+  unavailable?: boolean;
 }
 
 const QuantitySelector: React.FC<QuantitySelectorProps> = ({
@@ -29,6 +30,7 @@ const QuantitySelector: React.FC<QuantitySelectorProps> = ({
   onAdd,
   adding = false,
   disabled = false,
+  unavailable = false,
 }) => {
   const navigation = useNavigation<any>();
 
@@ -129,7 +131,9 @@ const QuantitySelector: React.FC<QuantitySelectorProps> = ({
         {isBusy ? (
           <ActivityIndicator size="small" color="#FF7A00" />
         ) : (
-          <Text style={styles.addText}>ADD</Text>
+          <Text style={styles.addText}>
+            {unavailable ? 'SOLD OUT' : disabled ? 'CLOSED' : 'ADD'}
+          </Text>
         )}
       </TouchableOpacity>
     );

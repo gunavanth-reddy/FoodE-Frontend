@@ -92,9 +92,7 @@ const CategoryFoodsScreen = () => {
 
   const filterFoods = useCallback(
     (data: Food[]): Food[] => {
-      let result = data.filter(
-        food => food.isAvailable === true,
-      );
+      let result = data;
 
     // -----------------------------
     // UNDER 20 MINUTES
@@ -146,10 +144,8 @@ const CategoryFoodsScreen = () => {
         setError('');
 
         /*
-         * Special filters need all available foods first.
-         *
-         * Normal categories can directly use the
-         * category API.
+         * Special filters use the full public menu so unavailable items
+         * remain visible with their current status.
          */
 
         const apiCategory =
@@ -163,13 +159,13 @@ const CategoryFoodsScreen = () => {
         const data =
           await getFoodsByCategory(apiCategory);
 
-        const availableFoods =
+        const categoryFoods =
           Array.isArray(data)
             ? data
             : [];
 
         setFoods(
-          filterFoods(availableFoods),
+          filterFoods(categoryFoods),
         );
       } catch (err: any) {
         console.log(
@@ -389,6 +385,12 @@ const CategoryFoodsScreen = () => {
               ]}
             />
           </View>
+
+          {food.isAvailable === false && (
+            <View style={styles.unavailableBadge}>
+              <Text style={styles.unavailableBadgeText}>UNAVAILABLE</Text>
+            </View>
+          )}
         </View>
 
         {/* CONTENT */}
@@ -512,8 +514,7 @@ const CategoryFoodsScreen = () => {
               {foods.length}{' '}
               {foods.length === 1
                 ? 'item'
-                : 'items'}{' '}
-              available
+                : 'items'}
             </Text>
           )}
         </View>
@@ -790,6 +791,24 @@ const styles = StyleSheet.create({
     height: '100%',
 
     resizeMode: 'cover',
+  },
+
+  unavailableBadge: {
+    position: 'absolute',
+    left: 4,
+    right: 4,
+    bottom: 4,
+    alignItems: 'center',
+    paddingVertical: 4,
+    borderRadius: 6,
+    backgroundColor: 'rgba(41, 31, 27, 0.84)',
+  },
+
+  unavailableBadgeText: {
+    color: '#FFFFFF',
+    fontSize: 7,
+    fontWeight: '900',
+    letterSpacing: 0.4,
   },
 
   imagePlaceholder: {
