@@ -205,16 +205,19 @@ const CategoryFoodsScreen = () => {
   const handleFoodPress = (food: Food) => {
     const restaurant = (food as any).restaurant;
     if (restaurant && typeof restaurant === 'object') {
-      handleOpenRestaurant(restaurant);
+      handleOpenRestaurant(restaurant, food._id || (food as any).id);
       return;
     }
     const restaurantId = (food as any).restaurantId || (food as any).restaurantID;
     if (restaurantId) {
-      navigation.navigate('RestaurantDetails', {restaurantId});
+      navigation.navigate('RestaurantDetails', {
+        restaurantId,
+        targetFoodId: String(food._id || (food as any).id || ''),
+      });
     }
   };
 
-  const handleOpenRestaurant = (restaurant: any) => {
+  const handleOpenRestaurant = (restaurant: any, targetFoodId?: string) => {
     if (
       typeof restaurant === 'object' &&
       restaurant !== null
@@ -253,6 +256,7 @@ const CategoryFoodsScreen = () => {
             isActive:
               restaurant.isActive,
           },
+          targetFoodId: targetFoodId ? String(targetFoodId) : undefined,
         },
       );
 
@@ -267,6 +271,7 @@ const CategoryFoodsScreen = () => {
       'RestaurantDetails',
       {
         restaurantId: restaurant,
+        targetFoodId,
       },
     );
   };

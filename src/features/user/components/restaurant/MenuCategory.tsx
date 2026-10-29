@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, {useEffect, useState} from 'react';
 import {
   FlatList,
   StyleSheet,
@@ -9,16 +9,24 @@ import {
 
 interface MenuCategoryProps {
   categories: string[];
+  selectedCategory?: string;
   onCategorySelect?: (category: string) => void;
 }
 
 const MenuCategory: React.FC<MenuCategoryProps> = ({
   categories,
+  selectedCategory,
   onCategorySelect,
 }) => {
   const [selected, setSelected] = useState(
-    categories[0] ?? 'Popular',
+    selectedCategory ?? categories[0] ?? 'Popular',
   );
+
+  useEffect(() => {
+    if (selectedCategory) {
+      setSelected(selectedCategory);
+    }
+  }, [selectedCategory]);
 
   const handlePress = (category: string) => {
     setSelected(category);

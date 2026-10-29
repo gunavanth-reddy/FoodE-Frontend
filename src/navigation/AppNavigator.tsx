@@ -93,8 +93,8 @@ export type RootStackParamList = {
 
   // Restaurant and category
   RestaurantDetails:
-    | {restaurant: any}
-    | {restaurantId: string};
+    | {restaurant: any; targetFoodId?: string}
+    | {restaurantId: string; targetFoodId?: string};
   CategoryFoods: {categoryName: string};
   AllCategories: undefined;
 

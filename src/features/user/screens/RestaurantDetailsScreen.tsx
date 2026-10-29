@@ -2,6 +2,7 @@ import React, {
   useCallback,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from 'react';
 
@@ -91,6 +92,7 @@ const RestaurantDetailsScreen: React.FC<Props> = ({
     'restaurantId' in route.params
       ? String(route.params.restaurantId)
       : String(routeRestaurant?._id || routeRestaurant?.id || '');
+  const targetFoodId = route.params.targetFoodId;
   const {addItem} = useCart();
   const {isRestaurantFavorite, toggleRestaurantFavorite} = useFavorites();
 
@@ -106,7 +108,17 @@ const RestaurantDetailsScreen: React.FC<Props> = ({
     useState('All');
 
   const [searchQuery, setSearchQuery] = useState('');
+  const menuListRef = useRef<FlatList<MenuItem>>(null);
+  const scrolledToFoodId = useRef<string | null>(null);
+  const highlightTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [highlightedFoodId, setHighlightedFoodId] = useState<string | null>(null);
   const isFavorite = isRestaurantFavorite(restaurantId || restaurantData);
+
+  useEffect(() => () => {
+    if (highlightTimer.current) {
+      clearTimeout(highlightTimer.current);
+    }
+  }, []);
 
   const handleRestaurantFavorite = useCallback(async () => {
     if (favoriteLoading) return;
@@ -352,6 +364,46 @@ const RestaurantDetailsScreen: React.FC<Props> = ({
     return items;
   }, [menuItems, selectedCategory, searchQuery]);
 
+  useEffect(() => {
+    if (!targetFoodId || loading || !menuItems.length) {
+      return;
+    }
+
+    const targetItem = menuItems.find(item => item.id === String(targetFoodId));
+    if (!targetItem) {
+      return;
+    }
+
+    if (selectedCategory !== targetItem.category || searchQuery) {
+      setSelectedCategory(targetItem.category);
+      setSearchQuery('');
+      return;
+    }
+
+    const targetIndex = filteredMenu.findIndex(
+      item => item.id === String(targetFoodId),
+    );
+    if (targetIndex < 0 || scrolledToFoodId.current === String(targetFoodId)) {
+      return;
+    }
+
+    scrolledToFoodId.current = String(targetFoodId);
+    requestAnimationFrame(() => {
+      menuListRef.current?.scrollToIndex({
+        index: targetIndex,
+        animated: true,
+        viewPosition: 0.2,
+      });
+      highlightTimer.current = setTimeout(() => {
+        setHighlightedFoodId(String(targetFoodId));
+        highlightTimer.current = setTimeout(() => {
+          setHighlightedFoodId(null);
+          highlightTimer.current = null;
+        }, 1800);
+      }, 400);
+    });
+  }, [filteredMenu, loading, menuItems, searchQuery, selectedCategory, targetFoodId]);
+
   // Retry loading
   const handleRetry = useCallback(() => {
     setLoading(true);
@@ -436,11 +488,21 @@ const RestaurantDetailsScreen: React.FC<Props> = ({
 
       <View style={styles.container}>
         <FlatList
+          ref={menuListRef}
           data={filteredMenu}
           keyExtractor={(item, index) =>
             item.id || `food-${index}`
           }
           showsVerticalScrollIndicator={false}
+          onScrollToIndexFailed={({index}) => {
+            setTimeout(() => {
+              menuListRef.current?.scrollToIndex({
+                index,
+                animated: true,
+                viewPosition: 0.2,
+              });
+            }, 120);
+          }}
           keyboardShouldPersistTaps="handled"
           contentContainerStyle={styles.listContent}
           refreshControl={
@@ -455,6 +517,7 @@ const RestaurantDetailsScreen: React.FC<Props> = ({
             <View style={styles.foodCardWrap}>
               <MenuItemCard
                 item={item as any}
+                highlighted={highlightedFoodId === item.id}
                 restaurantOpen={restaurantIsOpen}
                 onPress={async () => {
                   if (!restaurantIsOpen) {
@@ -650,6 +713,7 @@ const RestaurantDetailsScreen: React.FC<Props> = ({
                   <View style={styles.categoryWrap}>
                     <MenuCategory
                       categories={categories}
+                      selectedCategory={selectedCategory}
                       onCategorySelect={setSelectedCategory}
                     />
                   </View>

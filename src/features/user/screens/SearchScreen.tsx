@@ -585,12 +585,18 @@ const SearchScreen = () => {
 
     const restaurant = (food as any).restaurant;
     if (restaurant && typeof restaurant === 'object') {
-      navigation.navigate('RestaurantDetails', {restaurant});
+      navigation.navigate('RestaurantDetails', {
+        restaurant,
+        targetFoodId: String((food as any)._id || (food as any).id || ''),
+      });
       return;
     }
     const restaurantId = (food as any).restaurantId || (food as any).restaurantID;
     if (restaurantId) {
-      navigation.navigate('RestaurantDetails', {restaurantId});
+      navigation.navigate('RestaurantDetails', {
+        restaurantId,
+        targetFoodId: String((food as any)._id || (food as any).id || ''),
+      });
     }
   };
 

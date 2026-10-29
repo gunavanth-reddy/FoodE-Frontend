@@ -223,6 +223,7 @@ const HomeScreen: React.FC = () => {
             ...restaurantRef,
             _id: String(restaurantRef._id || restaurantRef.id),
           },
+          targetFoodId: String(foodRecord._id || (food as any).id || ''),
         });
         return;
       }
@@ -233,6 +234,7 @@ const HomeScreen: React.FC = () => {
       ) {
         navigation.navigate('RestaurantDetails', {
           restaurantId: restaurantRef,
+          targetFoodId: String(foodRecord._id || (food as any).id || ''),
         });
         return;
       }

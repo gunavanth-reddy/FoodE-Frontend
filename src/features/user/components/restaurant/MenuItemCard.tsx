@@ -20,12 +20,14 @@ interface MenuItemCardProps {
   item: MenuItem;
   onPress?: (item: MenuItem) => void;
   restaurantOpen?: boolean;
+  highlighted?: boolean;
 }
 
 const MenuItemCard: React.FC<MenuItemCardProps> = ({
   item,
   onPress,
   restaurantOpen = true,
+  highlighted = false,
 }) => {
   const [adding, setAdding] = useState(false);
   const [favoriteLoading, setFavoriteLoading] = useState(false);
@@ -74,7 +76,7 @@ const MenuItemCard: React.FC<MenuItemCardProps> = ({
   return (
     <TouchableOpacity
       activeOpacity={0.9}
-      style={styles.container}
+      style={[styles.container, highlighted && styles.highlightedContainer]}
       onPress={handleAdd}
       disabled={adding}>
 
@@ -201,6 +203,15 @@ const styles = StyleSheet.create({
       height: 3,
     },
     elevation: 3,
+  },
+
+  highlightedContainer: {
+    borderColor: '#FF7A00',
+    backgroundColor: '#FFF0DF',
+    shadowColor: '#FF7A00',
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 7,
   },
 
   content: {
