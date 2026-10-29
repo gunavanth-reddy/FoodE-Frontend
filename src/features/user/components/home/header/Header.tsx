@@ -1,4 +1,4 @@
-import React, {useEffect, useRef} from 'react';
+import React, {useCallback, useEffect, useRef, useState} from 'react';
 import {
   Animated,
   Pressable,
@@ -8,13 +8,15 @@ import {
 } from 'react-native';
 
 import {MapPin, User, Bell, CaretDown} from 'phosphor-react-native';
-import {useNavigation} from '@react-navigation/native';
+import {useFocusEffect, useNavigation} from '@react-navigation/native';
 import {BottomTabNavigationProp} from '@react-navigation/bottom-tabs';
 import {NativeStackNavigationProp} from '@react-navigation/native-stack';
 import {CompositeNavigationProp} from '@react-navigation/native';
 
 import {BottomTabParamList} from '../../../../../navigation/BottomTabNavigator';
 import {RootStackParamList} from '../../../../../navigation/AppNavigator';
+import {useAuth} from '../../../../../context/AuthContext';
+import {getMyNotifications} from '../../../../../services/notificationService';
 
 type HeaderNavigationProp = CompositeNavigationProp<
   BottomTabNavigationProp<BottomTabParamList>,
@@ -27,6 +29,32 @@ const LIGHT_ORANGE = '#FFF2EA';
 const Header: React.FC = () => {
   const navigation = useNavigation<HeaderNavigationProp>();
   const entrance = useRef(new Animated.Value(0)).current;
+  const {token} = useAuth();
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  useFocusEffect(
+    useCallback(() => {
+      let active = true;
+      if (!token) {
+        setUnreadCount(0);
+        return () => {
+          active = false;
+        };
+      }
+
+      getMyNotifications(token).then(notifications => {
+        if (active) {
+          setUnreadCount(
+            notifications.filter(notification => !notification.isRead).length,
+          );
+        }
+      });
+
+      return () => {
+        active = false;
+      };
+    }, [token]),
+  );
 
   useEffect(() => {
     Animated.spring(entrance, {
@@ -77,14 +105,24 @@ const Header: React.FC = () => {
       <View style={styles.actions}>
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="Notifications"
+          accessibilityLabel={
+            unreadCount > 0
+              ? `Notifications, ${unreadCount} unread`
+              : 'Notifications'
+          }
           onPress={() => navigation.navigate('Notifications')}
           style={({pressed}) => [
             styles.actionButton,
             pressed && styles.pressed,
           ]}>
           <Bell size={20} color="#1E232C" weight="regular" />
-          <View style={styles.notificationDot} />
+          {unreadCount > 0 && (
+            <View style={styles.notificationBadge}>
+              <Text style={styles.notificationBadgeText}>
+                {unreadCount > 99 ? '99+' : unreadCount}
+              </Text>
+            </View>
+          )}
         </Pressable>
 
         <Pressable
@@ -203,16 +241,26 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
 
-  notificationDot: {
+  notificationBadge: {
     position: 'absolute',
-    top: 8,
-    right: 8,
-    width: 7,
-    height: 7,
-    borderRadius: 4,
+    top: 2,
+    right: 1,
+    minWidth: 17,
+    height: 17,
+    paddingHorizontal: 3,
+    borderRadius: 9,
     backgroundColor: ORANGE,
     borderWidth: 1.5,
     borderColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  notificationBadgeText: {
+    color: '#FFFFFF',
+    fontSize: 9,
+    lineHeight: 12,
+    fontWeight: '900',
   },
 
   profileButton: {
