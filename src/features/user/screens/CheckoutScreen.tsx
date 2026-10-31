@@ -170,33 +170,6 @@ const timeToMinutes = (
   return hours * 60 + minutes;
 };
 
-type DeliveryTimeWindowId = '11-15' | '15-18' | '18-21';
-
-const DELIVERY_TIME_WINDOWS: Array<{
-  id: DeliveryTimeWindowId;
-  label: string;
-  start: number;
-  end: number;
-}> = [
-  {id: '11-15', label: '11 AM – 3 PM', start: 11 * 60, end: 15 * 60},
-  {id: '15-18', label: '3 PM – 6 PM', start: 15 * 60, end: 18 * 60},
-  {id: '18-21', label: '6 PM – 9 PM', start: 18 * 60, end: 21 * 60},
-];
-
-const getCurrentDeliveryTimeWindow = (
-  currentMinutes: number,
-): DeliveryTimeWindowId => {
-  if (currentMinutes >= 18 * 60 && currentMinutes < 21 * 60) {
-    return '18-21';
-  }
-  if (currentMinutes >= 15 * 60 && currentMinutes < 18 * 60) {
-    return '15-18';
-  }
-  // Before 3 PM (including before 11 AM) the next useful window is 11 AM–3 PM.
-  // After 9 PM, tomorrow's first window is the next available period.
-  return '11-15';
-};
-
 // =====================================================
 // CURRENT INDIA TIME
 // =====================================================
@@ -603,20 +576,33 @@ const CheckoutScreen = () => {
   ] = useState('');
   const [restaurantClosed, setRestaurantClosed] = useState(false);
 
-  const todayDateStr = useMemo(() => getCurrentIndiaDate(), []);
-  const tomorrowDateStr = useMemo(
-    () => addDaysToDate(todayDateStr, 1),
-    [todayDateStr],
-  );
+  // Keep the clock in India time and refresh it periodically so a slot
+  // disappears from checkout as soon as its booking cutoff is reached.
+  const [indiaClock, setIndiaClock] = useState(() => ({
+    date: getCurrentIndiaDate(),
+    minutes: getCurrentIndiaMinutes(),
+  }));
+
+  useEffect(() => {
+    const updateIndiaClock = () => {
+      setIndiaClock({
+        date: getCurrentIndiaDate(),
+        minutes: getCurrentIndiaMinutes(),
+      });
+    };
+
+    updateIndiaClock();
+    const interval = setInterval(updateIndiaClock, 15000);
+    return () => clearInterval(interval);
+  }, []);
 
   const isTomorrowSlot = useCallback(
     (slot: AvailableDeliverySlot | null): boolean => {
       if (!slot) return false;
-      const today = getCurrentIndiaDate();
-      const date = slot.date || today;
-      return date > today;
+      const slotDate = slot.date || indiaClock.date;
+      return slotDate > indiaClock.date;
     },
-    [],
+    [indiaClock.date],
   );
 
   const isTomorrowSelected = useMemo(
@@ -625,49 +611,64 @@ const CheckoutScreen = () => {
   );
 
   const [dateTab, setDateTab] = useState<'all' | 'today' | 'tomorrow'>('all');
-  const [selectedTimeWindow, setSelectedTimeWindow] =
-    useState<DeliveryTimeWindowId>(() =>
-      getCurrentDeliveryTimeWindow(getCurrentIndiaMinutes()),
-    );
+
+  // Store every active slot returned for this restaurant. Apply the cutoff
+  // check against the live clock below instead of freezing availability at
+  // the moment the API request completes.
+  const bookableDeliverySlots = useMemo(
+    () => deliverySlots.filter(slot =>
+      isDeliverySlotBookable(slot, indiaClock.minutes, indiaClock.date),
+    ),
+    [deliverySlots, indiaClock],
+  );
 
   const todaySlots = useMemo(
-    () => deliverySlots.filter(s => (s.date || todayDateStr) === todayDateStr),
-    [deliverySlots, todayDateStr],
+    () => bookableDeliverySlots.filter(
+      slot => (slot.date || indiaClock.date) === indiaClock.date,
+    ),
+    [bookableDeliverySlots, indiaClock.date],
   );
 
   const tomorrowSlots = useMemo(
-    () => deliverySlots.filter(s => (s.date || todayDateStr) > todayDateStr),
-    [deliverySlots, todayDateStr],
+    () => bookableDeliverySlots.filter(
+      slot => (slot.date || indiaClock.date) > indiaClock.date,
+    ),
+    [bookableDeliverySlots, indiaClock.date],
   );
 
   useEffect(() => {
-    if (deliverySlots.length === 0) return;
     if (todaySlots.length === 0 && tomorrowSlots.length > 0) {
       setDateTab('tomorrow');
     } else if (todaySlots.length > 0 && tomorrowSlots.length === 0) {
       setDateTab('today');
+    } else if (todaySlots.length === 0 && tomorrowSlots.length === 0) {
+      setDateTab('all');
     }
-  }, [deliverySlots, todaySlots.length, tomorrowSlots.length]);
+  }, [todaySlots.length, tomorrowSlots.length]);
 
+  // All means all currently bookable slots configured by this restaurant.
+  // No generic time-window filter is applied.
   const visibleSlots = useMemo(() => {
-    const slotsForDate =
-      dateTab === 'today'
-        ? todaySlots
-        : dateTab === 'tomorrow'
-          ? tomorrowSlots
-          : deliverySlots;
-    const timeWindow = DELIVERY_TIME_WINDOWS.find(
-      window => window.id === selectedTimeWindow,
+    if (dateTab === 'today') return todaySlots;
+    if (dateTab === 'tomorrow') return tomorrowSlots;
+    return bookableDeliverySlots;
+  }, [dateTab, todaySlots, tomorrowSlots, bookableDeliverySlots]);
+
+  // If the selected slot reaches its cutoff while checkout is open, clear it
+  // immediately so the customer cannot swipe to order with an expired slot.
+  useEffect(() => {
+    if (!selectedDeliverySlot) return;
+
+    const stillBookable = isDeliverySlotBookable(
+      selectedDeliverySlot,
+      indiaClock.minutes,
+      indiaClock.date,
     );
-    if (!timeWindow) return slotsForDate;
-    const slotsInCurrentWindow = slotsForDate.filter(slot => {
-      const startMinutes = timeToMinutes(slot.startTime);
-      return startMinutes >= timeWindow.start && startMinutes < timeWindow.end;
-    });
-    // Keep any configured slots visible when a restaurant has no slots in
-    // the current time window (for example, a restaurant with custom hours).
-    return slotsInCurrentWindow.length > 0 ? slotsInCurrentWindow : slotsForDate;
-  }, [dateTab, todaySlots, tomorrowSlots, deliverySlots, selectedTimeWindow]);
+
+    if (!stillBookable) {
+      setSelectedDeliverySlot(null);
+    }
+  }, [selectedDeliverySlot, indiaClock]);
 
   // ===================================================
   // DELIVERY ADDRESS
@@ -922,8 +923,6 @@ const CheckoutScreen = () => {
               ? backendCurrentMinutes
               : getCurrentIndiaMinutes();
 
-          setSelectedTimeWindow(getCurrentDeliveryTimeWindow(currentMinutes));
-
           console.log(
             'FoodE: Current India minutes:',
             currentMinutes,
@@ -949,35 +948,13 @@ const CheckoutScreen = () => {
           );
 
           // =========================================
-          // FILTER BOOKABLE SLOTS
+          // SORT ALL ACTIVE RESTAURANT SLOTS
           // =========================================
-          //
-          // Backend already filters these.
-          // Frontend checks again so stale data
-          // cannot be selected.
-          //
-
-          const bookableSlots =
-            validSlots.filter(
-              slot =>
-                isDeliverySlotBookable(
-                  slot,
-                  currentMinutes,
-                  currentIndiaDate,
-                ),
-            );
-
-          console.log(
-            'FoodE: Bookable slots:',
-            bookableSlots,
-          );
-
-          // =========================================
-          // SORT
-          // =========================================
+          // Keep the restaurant's active slots in state. The live India
+          // clock filters out each slot at its exact booking cutoff.
 
           const sortedSlots =
-            [...bookableSlots].sort(
+            [...validSlots].sort(
               (a, b) => {
                 const aStart = timeToMinutes(a.startTime);
                 const bStart = timeToMinutes(b.startTime);
@@ -1004,7 +981,7 @@ const CheckoutScreen = () => {
           // =========================================
 
           if (
-            sortedSlots.length === 0
+            validSlots.length === 0
           ) {
             setSlotError(
               'No delivery slots are currently available for this restaurant.',
@@ -1138,7 +1115,7 @@ const CheckoutScreen = () => {
   ): string => {
     const time = `${formatSlotTime(slot.startTime)} – ${formatSlotTime(slot.endTime)}`;
     if (!slot.date) return time;
-    const today = getCurrentIndiaDate();
+    const today = indiaClock.date;
     const tomorrow = addDaysToDate(today, 1);
     const datePrefix =
       slot.date === today ? 'Today' : slot.date === tomorrow ? 'Tomorrow' : slot.date;
@@ -1153,8 +1130,8 @@ const CheckoutScreen = () => {
     (
       slot: AvailableDeliverySlot,
     ) => {
-      const currentMinutes =
-        getCurrentIndiaMinutes();
+      const currentMinutes = getCurrentIndiaMinutes();
+      const currentDate = getCurrentIndiaDate();
 
       // -----------------------------------------------
       // FINAL CHECK
@@ -1164,6 +1141,7 @@ const CheckoutScreen = () => {
         !isDeliverySlotBookable(
           slot,
           currentMinutes,
+          currentDate,
         )
       ) {
         setSelectedDeliverySlot(
@@ -1280,13 +1258,14 @@ const CheckoutScreen = () => {
       // FINAL CUTOFF CHECK
       // -----------------------------------------------
 
-      const currentMinutes =
-        getCurrentIndiaMinutes();
+      const currentMinutes = getCurrentIndiaMinutes();
+      const currentDate = getCurrentIndiaDate();
 
       const slotStillBookable =
         isDeliverySlotBookable(
           selectedDeliverySlot,
           currentMinutes,
+          currentDate,
         );
 
       if (
@@ -1740,7 +1719,7 @@ const CheckoutScreen = () => {
                       styles.dateTabText,
                       dateTab === 'all' && styles.dateTabTextActiveNeutral,
                     ]}>
-                    All ({deliverySlots.length})
+                    All ({bookableDeliverySlots.length})
                   </Text>
                 </TouchableOpacity>
               )}
